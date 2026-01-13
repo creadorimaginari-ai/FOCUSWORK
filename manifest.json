@@ -1,7 +1,7 @@
 {
-  "name": "FocoWork",
-  "short_name": "FocoWork",
-  "description": "Control de tiempo y gestión de clientes",
+  "name": "FocuWork",
+  "short_name": "FocuWork",
+  "description": "Control de temps i gestió de clients",
   "lang": "es",
   "start_url": "/",
   "scope": "/",
