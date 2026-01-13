@@ -25,7 +25,7 @@
   <!-- iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="/focoworklimited/icons/icon-180.png">
+  <link rel="apple-touch-icon" href="/FOCUSWORK/icons/icon-180.png">
 
   <!-- Styles -->
   <link rel="stylesheet" href="styles.css" />
@@ -173,16 +173,16 @@
     <!-- VERSIÓN / ACTIVACIÓN -->
     <div id="versionBox" class="version-box">
       <div class="lock">
-        🔒 <strong>Versión de prueba</strong><br />
-        Máximo 2 clientes activos simultáneamente
+        🔒 <strong>Versió de mostra</strong><br />
+        MáÀximo 2 clients actius a la vegada
       </div>
 
       <button id="loadLicenseBtn" class="primary">
-        📄 Cargar archivo de licencia
+        📄 Carregar arxiu amb la llicència
       </button>
 
       <button id="requestLicenseBtn">
-        💬 Solicitar licencia por WhatsApp
+        💬 Solicitar llicència por WhatsApp
       </button>
       
       <div id="licenseInfo" style="display: none; margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; font-size: 13px; text-align: center; color: #10b981;"></div>
@@ -194,16 +194,16 @@
        MODALES
        =============================================== -->
 
-  <!-- MODAL: Nuevo Cliente -->
+  <!-- MODAL: Nou Client -->
   <div id="modalNewClient" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">➕</span>
-        <h2 class="modal-title">Nuevo cliente</h2>
+        <h2 class="modal-title">Nou client</h2>
       </div>
       <div class="modal-body">
-        <label class="modal-label">Cliente + descripción del trabajo</label>
-        <input type="text" id="inputNewClient" class="modal-input" placeholder="Ej: Juan - Diseño web corporativo">
+        <label class="modal-label">Client + descripció de la feina</label>
+        <input type="text" id="inputNewClient" class="modal-input" placeholder="Ex: Joan - Targetes presentació">
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalNewClient')">Cancelar</button>
@@ -217,17 +217,17 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📅</span>
-        <h2 class="modal-title">Fecha de Entrega</h2>
+        <h2 class="modal-title">Data d'Entrega</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text">Establece la fecha de entrega del proyecto:</p>
+        <p class="modal-text">Defineix data d'entrega del projecte:</p>
         <input type="date" id="inputDeliveryDate" class="modal-input">
         <p class="modal-text" style="font-size: 0.85rem; opacity: 0.7; margin-top: 12px;">
-          💡 Deja vacío para eliminar la fecha de entrega
+          💡 Deixa-ho en blanc per eliminar la data de lliurament.
         </p>
         <div style="margin-top: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
           <p style="margin: 0; font-size: 0.9rem; color: #93c5fd;">
-            ℹ️ La fecha aparecerá en el área de tareas urgentes y en el listado de clientes
+            ℹ️ La data apareixerà a l’àrea de tasques urgents i al llistat de clients.
           </p>
         </div>
       </div>
@@ -238,52 +238,52 @@
     </div>
   </div>
 
-  <!-- MODAL: Añadir Horas Extra -->
+  <!-- MODAL: Afegir Hores Extra -->
   <div id="modalExtraHours" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">⏱️</span>
-        <h2 class="modal-title">Añadir Horas Extra</h2>
+        <h2 class="modal-title">Afegir Hores Extra</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text">Registra horas trabajadas fuera del proyecto principal:</p>
+        <p class="modal-text">Registra hores treballades fora del projecte principal.:</p>
         
-        <label class="modal-label">Horas</label>
+        <label class="modal-label">Hores</label>
         <input type="number" id="inputExtraHours" class="modal-input" placeholder="Ej: 2.5" step="0.25" min="0.25">
         
-        <label class="modal-label">Descripción</label>
+        <label class="modal-label">Descripció</label>
         <input type="text" id="inputExtraDescription" class="modal-input" placeholder="Ej: Reunión cliente, Diseño adicional, etc.">
         
         <div style="margin-top: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
           <p style="margin: 0; font-size: 0.9rem; color: #93c5fd;">
-            ℹ️ Estas horas se sumarán al tiempo facturable del cliente
+            ℹ️ Aquestes hores s’afegiran al temps facturable del client.
           </p>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalExtraHours')">Cancelar</button>
-        <button class="btn-primary" onclick="saveExtraHours()">Añadir</button>
+        <button class="btn-primary" onclick="saveExtraHours()">Afegir</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Ver Horas Extra -->
+  <!-- MODAL: Veure Hores Extra -->
   <div id="modalViewExtraHours" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📊</span>
-        <h2 class="modal-title">Horas Extra Registradas</h2>
+        <h2 class="modal-title">Hores Extra Registrades</h2>
       </div>
       <div class="modal-body">
         <div id="extraHoursList" class="extra-hours-list"></div>
         <div class="total-stats" style="margin-top: 16px;">
           <div class="total-time">
-            Total horas extra: <strong id="extraHoursTotal">00:00:00</strong>
+            Total hores extra: <strong id="extraHoursTotal">00:00:00</strong>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalViewExtraHours')">Cerrar</button>
+        <button class="btn-primary" onclick="closeModal('modalViewExtraHours')">Tancar</button>
       </div>
     </div>
   </div>
@@ -293,25 +293,25 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📋</span>
-        <h2 class="modal-title">Informe de Proyecto</h2>
+        <h2 class="modal-title">Informe del Projecte</h2>
       </div>
       <div class="modal-body">
         <pre id="reportContent" class="report-content"></pre>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalReport')">Cerrar</button>
+        <button class="btn-secondary" onclick="closeModal('modalReport')">Tancar</button>
         <button class="btn-primary" onclick="copyReport()">📋 Copiar</button>
         <button class="btn-success" onclick="shareReport()">📤 Compartir</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Cambiar Cliente -->
+  <!-- MODAL: Canviar de client -->
   <div id="modalChangeClient" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">🔄</span>
-        <h2 class="modal-title">Cambiar cliente</h2>
+        <h2 class="modal-title">Canviar de client</h2>
       </div>
       <div class="modal-body">
         <div id="activeClientsList" class="clients-list"></div>
@@ -322,66 +322,66 @@
     </div>
   </div>
 
-  <!-- MODAL: Histórico -->
+  <!-- MODAL: Històric -->
   <div id="modalHistory" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📂</span>
-        <h2 class="modal-title">Histórico de clientes</h2>
+        <h2 class="modal-title">Històric de clients</h2>
       </div>
       <div class="modal-body">
-        <input type="text" id="searchHistory" class="modal-input" placeholder="🔍 Buscar cliente o trabajo...">
+        <input type="text" id="searchHistory" class="modal-input" placeholder="🔍 Buscar client o feina...">
         <div id="historyClientsList" class="clients-list"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalHistory')">Cerrar</button>
+        <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Confirmar Cerrar Cliente -->
+  <!-- MODAL: Confirmar Tancar Client -->
   <div id="modalCloseClient" class="modal-overlay hidden">
     <div class="modal modal-confirm">
       <div class="modal-header">
         <span class="modal-icon">✅</span>
-        <h2 class="modal-title">Cerrar cliente</h2>
+        <h2 class="modal-title">Tancar client</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="closeClientText"></p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalCloseClient')">Cancelar</button>
-        <button class="btn-success" onclick="confirmCloseClient()">Cerrar cliente</button>
+        <button class="btn-secondary" onclick="closeModal('modalCloseClient')">Cancel·lar</button>
+        <button class="btn-success" onclick="confirmCloseClient()">Tancar client</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Exportar antes de cerrar -->
+  <!-- MODAL: Exportar abans de tancar -->
   <div id="modalExportBeforeClose" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">💾</span>
-        <h2 class="modal-title">Guardar antes de cerrar</h2>
+        <h2 class="modal-title">Guardar abans de tancar</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="exportBeforeCloseText"></p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="confirmCloseClient()">No, cerrar sin guardar</button>
-        <button class="btn-primary" onclick="exportAndClose()">Sí, guardar y cerrar</button>
+        <button class="btn-secondary" onclick="confirmCloseClient()">No, tancar sense guardar</button>
+        <button class="btn-primary" onclick="exportAndClose()">Sí, guardar i tancar</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Importar Trabajo -->
+  <!-- MODAL: Importar Feina -->
   <div id="modalImportWork" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📂</span>
-        <h2 class="modal-title">Importar trabajo</h2>
+        <h2 class="modal-title">Importar Feina</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text">¿Deseas importar este trabajo?</p>
+        <p class="modal-text">Vols importar aquest treball?</p>
         <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
           <p style="margin: 8px 0;"><strong>Cliente:</strong> <span id="importClientName"></span></p>
           <p style="margin: 8px 0;"><strong>Tiempo total:</strong> <span id="importClientTime"></span></p>
@@ -390,37 +390,37 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalImportWork')">Cancelar</button>
+        <button class="btn-secondary" onclick="closeModal('modalImportWork')">Cancel·lar</button>
         <button class="btn-primary" onclick="confirmImport()">Importar</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Importar Backup Completo -->
+  <!-- MODAL: Importar còpia completa -->
   <div id="modalImportBackup" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📦</span>
-        <h2 class="modal-title">Restaurar backup completo</h2>
+        <h2 class="modal-title">Restaurar còpia completa</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text" style="color: #fbbf24;">⚠️ ATENCIÓN: Esto restaurará TODOS tus datos desde el backup.</p>
+        <p class="modal-text" style="color: #fbbf24;">⚠️ ATENCIÓ: això restaurarà TOTES les teves dades des de la còpia de seguretat.</p>
         <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
-          <p style="margin: 8px 0;"><strong>Total clientes:</strong> <span id="importBackupClients"></span></p>
-          <p style="margin: 8px 0;"><strong>Clientes activos:</strong> <span id="importBackupActive"></span></p>
-          <p style="margin: 8px 0;"><strong>Fecha backup:</strong> <span id="importBackupDate"></span></p>
-          <p style="margin: 8px 0;"><strong>Licencia incluida:</strong> <span id="importBackupLicense"></span></p>
+          <p style="margin: 8px 0;"><strong>Total clients:</strong> <span id="importBackupClients"></span></p>
+          <p style="margin: 8px 0;"><strong>Clients actius:</strong> <span id="importBackupActive"></span></p>
+          <p style="margin: 8px 0;"><strong>Data de la còpia:</strong> <span id="importBackupDate"></span></p>
+          <p style="margin: 8px 0;"><strong>Llicència incluida:</strong> <span id="importBackupLicense"></span></p>
         </div>
         <p class="modal-text" style="font-size: 13px; opacity: 0.8;">La página se recargará automáticamente después de restaurar.</p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalImportBackup')">Cancelar</button>
-        <button class="btn-success" onclick="confirmImportBackup()">Restaurar backup</button>
+        <button class="btn-secondary" onclick="closeModal('modalImportBackup')">Cancel·lar</button>
+        <button class="btn-success" onclick="confirmImportBackup()">Restaurar còpia</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Confirmar Borrar Cliente -->
+  <!-- MODAL: Confirmar Eliminar Client -->
   <div id="modalDeleteClient" class="modal-overlay hidden">
     <div class="modal modal-confirm">
       <div class="modal-header">
@@ -429,23 +429,23 @@
       </div>
       <div class="modal-body">
         <p class="modal-text" id="deleteClientText"></p>
-        <label class="modal-label">Escribe BORRAR para confirmar</label>
-        <input type="text" id="inputDeleteConfirm" class="modal-input" placeholder="BORRAR">
+        <label class="modal-label">Escriu ELIMINAR per confirmar</label>
+        <input type="text" id="inputDeleteConfirm" class="modal-input" placeholder="ELIMINAR">
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalDeleteClient')">Cancelar</button>
+        <button class="btn-secondary" onclick="closeModal('modalDeleteClient')">Cancel·lar</button>
         <button class="btn-danger" onclick="confirmDeleteClient()">Eliminar</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Enfoque Diario -->
+  <!-- MODAL: Focus diari -->
   <div id="modalEnfoque" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">🎯</span>
         <div>
-          <h2 class="modal-title">Enfoque diario</h2>
+          <h2 class="modal-title">Focus diari</h2>
           <p class="modal-subtitle" id="modalUserName"></p>
         </div>
       </div>
@@ -453,38 +453,38 @@
         <div class="activity-list" id="modalActivityList"></div>
         <div class="total-stats">
           <div class="total-time">
-            Total trabajado: <strong id="modalTotalTime"></strong>
+            Total treballat: <strong id="modalTotalTime"></strong>
           </div>
         </div>
         <div id="modalFocusState" class="focus-state"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalEnfoque')">Aceptar</button>
+        <button class="btn-primary" onclick="closeModal('modalEnfoque')">Acceptar</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Configurar Horario de Enfoque -->
+  <!-- MODAL: Configurar horari Focus diari -->
   <div id="modalSchedule" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">⏰</span>
-        <h2 class="modal-title">Horario de enfoque</h2>
+        <h2 class="modal-title">Horari de Focus diari</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
-          El enfoque solo contabiliza tiempo dentro del horario configurado. Fuera de ese horario puedes seguir trabajando, pero no afecta a las métricas de enfoque.
+          L’enfocament només comptabilitza el temps dins de l’horari configurat. Fora d’aquest horari pots continuar treballant, però no afecta les mètriques d’enfocament.
         </p>
 
         <label class="modal-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
           <input type="checkbox" id="scheduleEnabled" style="width: 20px; height: 20px; cursor: pointer;">
-          <span>Activar horario de enfoque</span>
+          <span>Activar Horari de Focus diari</span>
         </label>
 
         <div id="scheduleConfig" style="display: none;">
           <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
             <div style="flex: 1;">
-              <label class="modal-label">Hora inicio</label>
+              <label class="modal-label">Hora inici</label>
               <input type="time" id="scheduleStart" class="modal-input" value="09:00">
             </div>
             <div style="flex: 1;">
@@ -494,12 +494,12 @@
           </div>
 
           <div class="schedule-presets">
-            <p class="modal-label" style="margin-bottom: 10px;">Presets rápidos:</p>
+            <p class="modal-label" style="margin-bottom: 10px;">Predefinits ràpids:</p>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-              <button class="btn-secondary" onclick="applyPreset('07:00', '14:00')">🌅 Mañana<br><small>07:00 - 14:00</small></button>
-              <button class="btn-secondary" onclick="applyPreset('15:00', '22:00')">🌆 Tarde<br><small>15:00 - 22:00</small></button>
+              <button class="btn-secondary" onclick="applyPreset('07:00', '14:00')">🌅 Matí<br><small>07:00 - 14:00</small></button>
+              <button class="btn-secondary" onclick="applyPreset('15:00', '22:00')">🌆 Tarda<br><small>15:00 - 22:00</small></button>
               <button class="btn-secondary" onclick="applyPreset('09:00', '17:00')">🏢 Oficina<br><small>09:00 - 17:00</small></button>
-              <button class="btn-secondary" onclick="applyPreset('09:00', '18:00')">💼 Completo<br><small>09:00 - 18:00</small></button>
+              <button class="btn-secondary" onclick="applyPreset('09:00', '18:00')">💼 Complet<br><small>09:00 - 18:00</small></button>
             </div>
           </div>
 
@@ -508,33 +508,33 @@
               <strong id="schedulePreview">09:00 - 17:00</strong>
             </p>
             <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.7;">
-              Duración: <span id="scheduleDuration">8h 0m</span>
+              Duració: <span id="scheduleDuration">8h 0m</span>
             </p>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalSchedule')">Cancelar</button>
+        <button class="btn-secondary" onclick="closeModal('modalSchedule')">Cancel·lar</button>
         <button class="btn-primary" onclick="saveScheduleConfig()">Guardar</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Configuración de Backups Automáticos -->
+  <!-- MODAL: Configuración de còpies automàtiques -->
   <div id="modalBackupConfig" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">⚙️</span>
-        <h2 class="modal-title">Configuración de Backups</h2>
+        <h2 class="modal-title">Configuración de còpies</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
-          Configura los backups automáticos a Google Drive. Se realizarán cada medianoche.
+          Configura les còpies de seguretat automàtiques a Google Drive. Es faran cada mitjanit.
         </p>
 
         <label class="modal-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
           <input type="checkbox" id="autoDriveBackupCheckbox" style="width: 20px; height: 20px; cursor: pointer;">
-          <span>Activar backups automáticos en Drive</span>
+          <span>Activar còpies automàtiques a Drive</span>
         </label>
 
         <div style="padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
@@ -544,7 +544,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalBackupConfig')">Cancelar</button>
+        <button class="btn-secondary" onclick="closeModal('modalBackupConfig')">Cancel·lar</button>
         <button class="btn-primary" onclick="saveBackupConfig()">Guardar</button>
       </div>
     </div>
@@ -558,7 +558,7 @@
         <h2 class="modal-title">Eliminar foto</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text">¿Eliminar esta foto del cliente?</p>
+        <p class="modal-text">¿Eliminar aquesta foto del client?</p>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalDeletePhoto')">Cancelar</button>
@@ -567,18 +567,18 @@
     </div>
   </div>
 
-  <!-- MODAL: Avisos (reemplaza alert genérico) -->
+  <!-- MODAL: Avisos (substitueix alert genèric) -->
   <div id="modalAlert" class="modal-overlay hidden">
     <div class="modal modal-alert">
       <div class="modal-header">
         <span class="modal-icon" id="alertIcon">ℹ️</span>
-        <h2 class="modal-title" id="alertTitle">Aviso</h2>
+        <h2 class="modal-title" id="alertTitle">Avís</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="alertText"></p>
       </div>
       <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalAlert')">Aceptar</button>
+        <button class="btn-primary" onclick="closeModal('modalAlert')">Acceptar</button>
       </div>
     </div>
   </div>
