@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>FocoWork</title>
+  <title>FocusWork</title>
 
   <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
@@ -75,7 +75,7 @@
         <textarea 
           id="clientWorkpad" 
           class="workpad-area" 
-          placeholder="Apuntes, tareas pendientes, detalles del proyecto..."
+          placeholder="Apunts, tasques pendents, detalls del projecte…"
           style="display: none;"
         ></textarea>
       </div>
@@ -90,7 +90,7 @@
         <textarea
           id="taskUrgent"
           class="workpad-area urgent"
-          placeholder="🔴 Urgent (avui, foc, bloquejant...)"
+          placeholder="🔴 Urgent (avui, bloquejant...)"
         ></textarea>
 
         <textarea
@@ -108,7 +108,7 @@
 
       <div class="grid" style="margin-top: 12px;">
         <button id="setDeliveryDateBtn" class="primary">
-          📅 Fecha
+          📅 Data
         </button>
         <button id="generateReportBtn" class="primary">
           📋 Informe
@@ -117,15 +117,15 @@
 
       <div class="grid" style="margin-top: 12px;">
         <button id="addExtraHoursBtn" class="secondary">
-          ⏱️ Añadir horas
+          ⏱️ Afegir hores
         </button>
         <button id="viewExtraHoursBtn" class="secondary">
-          📊 Ver horas
+          📊 Veure hores
         </button>
       </div>
 
       <button id="cameraBtn" class="primary">
-        📷 Añadir foto al cliente
+        📷 Afegir foto al cliente
       </button>
 
       <!-- Galería (se llenará por JS) -->
@@ -135,31 +135,31 @@
     <!-- CLIENTES -->
     <section class="panel">
       <div class="grid actions">
-        <button id="newClient">➕ Nuevo</button>
-        <button id="changeClient">🔄 Cambiar</button>
-        <button id="historyBtn">📂 Histórico</button>
-        <button id="closeClient" class="danger">✅ Cerrar</button>
+        <button id="newClient">➕ Nou</button>
+        <button id="changeClient">🔄 Canviar</button>
+        <button id="historyBtn">📂 Històric</button>
+        <button id="closeClient" class="danger">✅ Tancar</button>
       </div>
     </section>
 
     <!-- BACKUP Y GESTIÓN -->
     <section class="panel">
       <div class="grid">
-        <button id="exportWorkBtn">💾 Guardar trabajo</button>
-        <button id="importWorkBtn">📂 Cargar trabajo</button>
-        <button id="exportAllBtn" class="full-width">📦 Backup completo</button>
+        <button id="exportWorkBtn">💾 Guardar feina</button>
+        <button id="importWorkBtn">📂 Carregar treball</button>
+        <button id="exportAllBtn" class="full-width">📦 Còpia completa</button>
         <button id="exportToDriveBtn" class="full-width">☁️ Exportar a Drive</button>
-        <button id="backupConfigBtn" class="full-width">⚙️ Config. Backups</button>
+        <button id="backupConfigBtn" class="full-width">⚙️ Config. còpies</button>
       </div>
       <p style="font-size: 12px; opacity: 0.6; text-align: center; margin-top: 8px;">
-        💡 El botón "Cargar trabajo" acepta tanto trabajos individuales como backups completos
+        💡 El botó “Carregar treball” accepta tant treballs individuals com còpies de seguretat completes.
       </p>
     </section>
 
-    <!-- BORRAR CLIENTE (solo visible para clientes cerrados) -->
+    <!-- BORRAR CLIENT (només visible per a clients tancats) -->
     <section class="panel">
       <button id="deleteClientBtn" class="danger" style="display: none;">
-        🗑️ Borrar este cliente
+        🗑️ Esborrar aquest client
       </button>
     </section>
 
