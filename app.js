@@ -23,14 +23,15 @@ const ACTIVITIES = {
 
 function activityLabel(act) {
   switch (act) {
-    case ACTIVITIES.WORK: return "Trabajo";
-    case ACTIVITIES.PHONE: return "Teléfono";
-    case ACTIVITIES.CLIENT: return "Cliente";
-    case ACTIVITIES.VISIT: return "Visitando";
-    case ACTIVITIES.OTHER: return "Otros";
+    case ACTIVITIES.WORK: return "Feina";
+    case ACTIVITIES.PHONE: return "Trucades";
+    case ACTIVITIES.CLIENT: return "Reunions";
+    case ACTIVITIES.VISIT: return "Visitant";
+    case ACTIVITIES.OTHER: return "Altres";
     default: return act;
   }
 }
+
 
 /* ================= HELPERS ================= */
 const $ = (id) => document.getElementById(id);
@@ -138,13 +139,13 @@ function performFullAutoBackup() {
     timestamp: new Date().toISOString(),
     userName: userName,
     state: JSON.parse(JSON.stringify(state)),
-    type: 'full_backup'
+    type: 'còpia sencera'
   };
 
   try {
     localStorage.setItem('focowork_full_autobackup', JSON.stringify(backup));
   } catch (e) {
-    console.warn('Backup completo automático fallido:', e);
+    console.warn('Ha fallat la còpia de seguretat completa automàtica:', e);
   }
 
   if (state.autoDriveBackup) exportAllToDrive(true);
@@ -254,7 +255,7 @@ async function uploadToDriveNow(autoMode = false) {
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
 
   const metadata = {
-    name: `focowork_completo_${todayKey()}.focowork`,
+    name: `focuswork_complet_${todayKey()}.focuswork`,
     mimeType: 'application/json'
   };
 
@@ -263,7 +264,7 @@ async function uploadToDriveNow(autoMode = false) {
   form.append('file', blob);
 
   try {
-    console.log('📤 Subiendo archivo a Drive...');
+    console.log('📤 Pujant el fitxer a Drive...');
     const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
       method: 'POST',
       headers: { Authorization: `Bearer ${googleAccessToken}` },
@@ -274,17 +275,17 @@ async function uploadToDriveNow(autoMode = false) {
 
     if (!res.ok) {
       console.error('❌ Error de Drive:', responseData);
-      throw new Error(responseData.error?.message || 'Error subiendo a Drive');
+      throw new Error(responseData.error?.message || 'Error carregant a Drive');
     }
 
-    console.log('✅ Archivo subido exitosamente:', responseData);
+    console.log('✅ Archivo carregat exitosamente:', responseData);
     if (!autoMode) {
-      showAlert('✅ Exportado a Drive', `Backup subido correctamente a Google Drive\n\nArchivo: ${metadata.name}`, '✅');
+      showAlert('✅ Exportanta Drive', `còpia s'ha pujat correctamente a Google Drive\n\nArchivo: ${metadata.name}`, '✅');
     }
   } catch (err) {
-    console.error('❌ Error en subida a Drive:', err);
+    console.error('❌ Error en carregar arxiu a Drive:', err);
     if (!autoMode) {
-      showAlert('Error Drive', `No se pudo subir a Drive:\n${err.message}\n\nIntenta de nuevo o usa la exportación local.`, '❌');
+      showAlert('Error Drive', `No s'ha pugut carregar a Drive:\n${err.message}\n\nIntenta de nou l'exportació local.`, '❌');
     }
   }
 }
@@ -302,13 +303,13 @@ function loadGoogleScript() {
     script.defer = true;
     
     script.onload = () => {
-      console.log('Google script cargado');
+      console.log('Google script carregat');
       setTimeout(() => resolve(), 500);
     };
     
     script.onerror = () => {
-      console.error('Error cargando Google script');
-      reject(new Error('No se pudo cargar Google Identity Services'));
+      console.error('Error carregant Google script');
+      reject(new Error('No s ha pogut carregar Google Identity Services'));
     };
     
     document.head.appendChild(script);
@@ -328,11 +329,11 @@ function saveBackupConfig() {
     state.autoDriveBackup = checkbox.checked;
     save();
     closeModal('modalBackupConfig');
-    showAlert('Configuración guardada', state.autoDriveBackup ? 'Backups automáticos en Drive activados' : 'Backups automáticos en Drive desactivados', '✅');
+    showAlert('Configuració guardada', state.autoDriveBackup ? 'còpia d arxius a Drive activados' : 'còpia d arxius a Drive desactivats', '✅');
   }
 }
 
-/* ================= DAILY RESET ================= */
+/* ================= REINICI DIARI ================= */
 function resetDayIfNeeded() {
   if (state.day !== todayKey()) {
     state.day = todayKey();
@@ -341,7 +342,7 @@ function resetDayIfNeeded() {
   }
 }
 
-/* ================= SISTEMA DE LICENCIAS ================= */
+/* ================= SISTEMA DE LLICÈNCIES ================= */
 async function loadLicenseFile() {
   const input = document.createElement('input');
   input.type = 'file';
@@ -356,14 +357,18 @@ async function loadLicenseFile() {
       const license = JSON.parse(text);
 
       if (!license.signature || !license.clientId) {
-        showAlert('Archivo inválido', 'Este no es un archivo de licencia válido', '❌');
+        showAlert('Fitxer invàlid', 'Aquest no és un fitxer de llicència vàlid', '❌');
         return;
       }
 
       if (license.expiryDate) {
         const expiry = new Date(license.expiryDate);
         if (expiry < new Date()) {
-          showAlert('Licencia caducada', 'Esta licencia ha expirado el ' + expiry.toLocaleDateString(), '⏰');
+          showAlert(
+            'Llicència caducada',
+            'Aquesta llicència ha expirat el ' + expiry.toLocaleDateString(),
+            '⏰'
+          );
           return;
         }
       }
@@ -374,16 +379,16 @@ async function loadLicenseFile() {
       updateUI();
 
       const expiryText = license.expiryDate
-        ? `Válida hasta: ${new Date(license.expiryDate).toLocaleDateString()}`
-        : 'Sin límite de tiempo';
+        ? `Vàlida fins a: ${new Date(license.expiryDate).toLocaleDateString()}`
+        : 'Sense límit de temps';
 
       showAlert(
-        '¡Licencia activada!',
-        `FocoWork completo activado\n\nCliente: ${license.clientName}\n${expiryText}\n\n¡Disfruta de clientes ilimitados!`,
+        'Llicència activada!',
+        `FocoWork complet activat\n\nClient: ${license.clientName}\n${expiryText}\n\nGaudeix de clients il·limitats!`,
         '🎉'
       );
     } catch (err) {
-      showAlert('Error', 'No se pudo leer el archivo de licencia', '❌');
+      showAlert('Error', 'No s’ha pogut llegir el fitxer de llicència', '❌');
     }
   };
 
@@ -391,15 +396,15 @@ async function loadLicenseFile() {
 }
 
 function requestLicense() {
-  const msg = `Hola, necesito una licencia de FocoWork completo`;
+  const msg = `Hola, necessito una llicència de FocoWork complet`;
   window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`);
 }
 
-/* ================= EXPORTACIÓN/IMPORTACIÓN ================= */
+/* ================= EXPORTACIÓ / IMPORTACIÓ ================= */
 function exportCurrentWork() {
   const client = state.clients[state.currentClientId];
   if (!client) {
-    showAlert('Sin cliente', 'Selecciona un cliente primero', '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
 
@@ -416,12 +421,16 @@ function exportCurrentWork() {
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = `trabajo_${client.name.replace(/[^a-z0-9]/gi, '_')}_${todayKey()}.focowork`;
+  a.download = `treball_${client.name.replace(/[^a-z0-9]/gi, '_')}_${todayKey()}.focowork`;
   a.click();
 
   URL.revokeObjectURL(url);
 
-  showAlert('Trabajo guardado', 'El archivo se ha descargado correctamente.\n\n¡Guárdalo en lugar seguro!', '💾');
+  showAlert(
+    'Treball desat',
+    'El fitxer s’ha descarregat correctament.\n\nDesa’l en un lloc segur!',
+    '💾'
+  );
 }
 
 function importWork() {
@@ -443,7 +452,11 @@ function importWork() {
       }
 
       if (!fileData.client || !fileData.version) {
-        showAlert('Archivo inválido', 'Este archivo no es un trabajo válido de FocoWork', '❌');
+        showAlert(
+          'Fitxer invàlid',
+          'Aquest fitxer no és un treball vàlid de FocoWork',
+          '❌'
+        );
         return;
       }
 
@@ -456,7 +469,7 @@ function importWork() {
 
       openModal('modalImportWork');
     } catch (err) {
-      showAlert('Error', 'No se pudo leer el archivo', '❌');
+      showAlert('Error', 'No s’ha pogut llegir el fitxer', '❌');
     }
   };
 
@@ -486,12 +499,16 @@ function confirmImport() {
   updateUI();
   closeModal('modalImportWork');
 
-  showAlert('Trabajo importado', `Cliente "${workData.client.name}" importado correctamente\n\nTiempo: ${formatTime(workData.client.total)}\nFotos: ${workData.client.photos.length}`, '✅');
+  showAlert(
+    'Treball importat',
+    `Client "${workData.client.name}" importat correctament\n\nTemps: ${formatTime(workData.client.total)}\nFotos: ${workData.client.photos.length}`,
+    '✅'
+  );
 
   window.pendingImport = null;
 }
 
-/* ================= BACKUP COMPLETO ================= */
+/* ================= CÒPIA DE SEGURETAT COMPLETA ================= */
 function exportAllData() {
   const dataSize = getStorageSize();
 
@@ -515,12 +532,16 @@ function exportAllData() {
 
   URL.revokeObjectURL(url);
 
-  showAlert('Backup completo', `Todos tus datos han sido exportados.\n\nTamaño: ${dataSize}\n\n¡Guarda este archivo en lugar seguro!`, '💾');
+  showAlert(
+    'Còpia de seguretat completa',
+    `Totes les teves dades s’han exportat.\n\nMida: ${dataSize}\n\nDesa aquest fitxer en un lloc segur!`,
+    '💾'
+  );
 }
 
 function handleBackupFile(backupData) {
   if (!backupData.state || !backupData.version) {
-    showAlert('Archivo inválido', 'Este archivo de backup está corrupto', '❌');
+    showAlert('Fitxer invàlid', 'Aquest fitxer de còpia de seguretat està corrupte', '❌');
     return;
   }
 
@@ -545,7 +566,7 @@ function confirmImportBackup() {
   if (backupData.state) state = backupData.state;
   if (backupData.userName) {
     userName = backupData.userName;
-    localStorage.setItem("focowork_user_name", userName);
+    localStorage.setItem('focowork_user_name', userName);
   }
   if (backupData.license) {
     state.license = backupData.license;
@@ -560,14 +581,18 @@ function confirmImportBackup() {
   closeModal('modalImportBackup');
 
   const clientCount = Object.keys(state.clients).length;
-  showAlert('Backup restaurado', `✅ Backup completo restaurado correctamente\n\n${clientCount} clientes recuperados\nLicencia: ${state.license ? 'Activada' : 'No incluida'}`, '🎉');
+  showAlert(
+    'Còpia de seguretat restaurada',
+    `✅ Còpia de seguretat completa restaurada correctament\n\n${clientCount} clients recuperats\nLlicència: ${state.license ? 'Activada' : 'No inclosa'}`,
+    '🎉'
+  );
 
   window.pendingBackup = null;
 
   setTimeout(() => location.reload(), 2000);
 }
 
-/* ================= UTILIDADES DE ALMACENAMIENTO ================= */
+/* ================= UTILITATS D’EMMAGATZEMATGE ================= */
 function getStorageSize() {
   let total = 0;
   for (let key in localStorage) {
@@ -590,17 +615,19 @@ function showStorageInfo() {
   let totalPhotos = 0;
   Object.values(state.clients).forEach(c => totalPhotos += c.photos.length);
 
-  const avgPhotoSize = totalPhotos > 0 ? '~' + (parseFloat(size) / totalPhotos).toFixed(0) + ' KB/foto' : 'N/A';
+  const avgPhotoSize = totalPhotos > 0
+    ? '~' + (parseFloat(size) / totalPhotos).toFixed(0) + ' KB/foto'
+    : 'N/D';
 
   showAlert(
-    'Uso de almacenamiento',
-    `📊 Espacio usado: ${size}\n\n` +
-    `👥 Clientes totales: ${clientCount}\n` +
-    `   • Activos: ${activeCount}\n` +
-    `   • Cerrados: ${closedCount}\n\n` +
-    `📷 Fotos totales: ${totalPhotos}\n` +
+    'Ús de l’emmagatzematge',
+    `📊 Espai utilitzat: ${size}\n\n` +
+    `👥 Clients totals: ${clientCount}\n` +
+    `   • Actius: ${activeCount}\n` +
+    `   • Tancats: ${closedCount}\n\n` +
+    `📷 Fotos totals: ${totalPhotos}\n` +
     `   ${avgPhotoSize}\n\n` +
-    `💡 Consejo: Exporta y borra clientes cerrados para liberar espacio`,
+    `💡 Consell: Exporta i esborra clients tancats per alliberar espai`,
     '📊'
   );
 }
@@ -609,10 +636,14 @@ function resetTodayFocus() {
   state.focus = {};
   state.day = todayKey();
   save();
-  showAlert('Enfoque reseteado', 'Los datos de enfoque de hoy han sido reseteados.\n\nAhora solo contabilizará tiempo dentro del horario configurado.', '✅');
+  showAlert(
+    'Enfocament reiniciat',
+    'Les dades d’enfocament d’avui s’han reiniciat.\n\nAra només comptabilitzarà el temps dins de l’horari configurat.',
+    '✅'
+  );
 }
 
-/* ================= TIME ENGINE ================= */
+/* ================= MOTOR DE TEMPS ================= */
 function tick() {
   resetDayIfNeeded();
 
@@ -630,17 +661,20 @@ function tick() {
   state.sessionElapsed += elapsed;
   client.total += elapsed;
 
-  client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + elapsed;
+  client.activities[state.currentActivity] =
+    (client.activities[state.currentActivity] || 0) + elapsed;
 
-  // Contabilizar tiempo facturable
+  // Comptabilitzar temps facturable
   if (state.focusSchedule.enabled) {
     if (isWithinFocusSchedule()) {
       client.billableTime = (client.billableTime || 0) + elapsed;
-      state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
+      state.focus[state.currentActivity] =
+        (state.focus[state.currentActivity] || 0) + elapsed;
     }
   } else {
     client.billableTime = (client.billableTime || 0) + elapsed;
-    state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
+    state.focus[state.currentActivity] =
+      (state.focus[state.currentActivity] || 0) + elapsed;
   }
 
   save();
@@ -649,11 +683,12 @@ function tick() {
 
 setInterval(tick, 1000);
 
-/* ================= ACTIVIDADES ================= */
+
+/* ================= ACTIVITATS ================= */
 function setActivity(activity) {
   const client = state.clients[state.currentClientId];
   if (!client || !client.active) {
-    showAlert('Sin cliente', 'Primero selecciona un cliente activo', '⚠️');
+    showAlert('Sense client', 'Selecciona primer un client actiu', '⚠️');
     return;
   }
 
@@ -702,7 +737,7 @@ function handleWorkpadInput(e) {
   workpadTimeout = setTimeout(save, 1000);
 }
 
-/* ================= TASKS ================= */
+/* ================= TASQUES ================= */
 let taskTimeouts = { urgent: null, important: null, later: null };
 let areTasksInitialized = false;
 
@@ -732,13 +767,13 @@ function updateTasks() {
   }
 
   if (!areTasksInitialized) {
-    // Área de urgentes con fecha de entrega
+    // Àrea d’urgents amb data de lliurament
     let urgentText = client.tasks.urgent || '';
     
-    // Si hay fecha de entrega, mostrarla al principio
+    // Si hi ha data de lliurament, mostrar-la al principi
     if (client.deliveryDate) {
       const deliveryDate = new Date(client.deliveryDate);
-      const dateStr = deliveryDate.toLocaleDateString('es-ES', { 
+      const dateStr = deliveryDate.toLocaleDateString('ca-ES', { 
         day: '2-digit', 
         month: '2-digit', 
         year: 'numeric' 
@@ -753,15 +788,15 @@ function updateTasks() {
       
       let urgencyPrefix = '';
       if (diffDays < 0) {
-        urgencyPrefix = `⚠️ VENCIDO (${Math.abs(diffDays)}d) - ${dateStr}\n`;
+        urgencyPrefix = `⚠️ VENCUT (${Math.abs(diffDays)}d) - ${dateStr}\n`;
       } else if (diffDays === 0) {
-        urgencyPrefix = `🔴 HOY - ${dateStr}\n`;
+        urgencyPrefix = `🔴 AVUI - ${dateStr}\n`;
       } else if (diffDays === 1) {
-        urgencyPrefix = `🟡 MAÑANA - ${dateStr}\n`;
+        urgencyPrefix = `🟡 DEMÀ - ${dateStr}\n`;
       } else if (diffDays <= 3) {
-        urgencyPrefix = `🟡 ${diffDays} DÍAS - ${dateStr}\n`;
+        urgencyPrefix = `🟡 ${diffDays} DIES - ${dateStr}\n`;
       } else {
-        urgencyPrefix = `📅 Entrega: ${dateStr}\n`;
+        urgencyPrefix = `📅 Lliurament: ${dateStr}\n`;
       }
       
       urgentText = urgencyPrefix + (urgentText.replace(/^[⚠️🔴🟡📅].*\n/, ''));
@@ -792,7 +827,7 @@ function handleTaskInput(taskType, e) {
 function setDeliveryDate() {
   const client = state.clients[state.currentClientId];
   if (!client) {
-    showAlert('Sin cliente', 'Selecciona un cliente primero', '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
 
@@ -814,33 +849,49 @@ function saveDeliveryDate() {
   
   if (dateValue) {
     client.deliveryDate = dateValue;
-    showAlert('Fecha guardada', `Fecha de entrega establecida para el ${new Date(dateValue).toLocaleDateString('es-ES')}`, '✅');
+    showAlert(
+      'Data desada',
+      `Data de lliurament establerta per al ${new Date(dateValue).toLocaleDateString('ca-ES')}`,
+      '✅'
+    );
   } else {
     client.deliveryDate = null;
-    showAlert('Fecha eliminada', 'Se ha eliminado la fecha de entrega', 'ℹ️');
+    showAlert(
+      'Data eliminada',
+      'S’ha eliminat la data de lliurament',
+      'ℹ️'
+    );
   }
 
-  areTasksInitialized = false; // Forzar actualización de tareas
+  areTasksInitialized = false; // Forçar actualització de tasques
   save();
   updateUI();
   closeModal('modalDeliveryDate');
 }
 
-/* ================= UI ================= */
+/* ================= IU ================= */
 function updateUI() {
   const client = state.currentClientId ? state.clients[state.currentClientId] : null;
 
-  $("clientName").textContent = client ? `Cliente: ${client.name}${client.active ? "" : " (cerrado)"}` : "Sin cliente activo";
+  $("clientName").textContent = client
+    ? `Client: ${client.name}${client.active ? "" : " (tancat)"}`
+    : "Sense client actiu";
 
-  $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
+  $("activityName").textContent = state.currentActivity
+    ? activityLabel(state.currentActivity)
+    : "—";
 
-  $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
+  $("timer").textContent = client && client.active
+    ? formatTime(state.sessionElapsed)
+    : "00:00:00";
 
   if ($("clientTotal")) {
-    $("clientTotal").textContent = client ? `Total cliente: ${formatTime(client.total)}` : "";
+    $("clientTotal").textContent = client
+      ? `Total client: ${formatTime(client.total)}`
+      : "";
   }
 
-  // Mostrar tiempo facturable si hay horario configurado
+  // Mostrar temps facturable si hi ha horari configurat
   if (client && state.focusSchedule.enabled) {
     const billableBox = $("billableTimeBox");
     if (billableBox) {
@@ -852,7 +903,7 @@ function updateUI() {
     $("billableTimeBox").style.display = "none";
   }
 
-  // Mostrar fecha de entrega si existe
+  // Mostrar data de lliurament si existeix
   if (client && client.deliveryDate) {
     updateDeliveryDateDisplay(client);
   } else if ($("deliveryDateBox")) {
@@ -881,7 +932,7 @@ function updateUI() {
 function updateDeliveryDateDisplay(client) {
   const deliveryBox = $("deliveryDateBox");
   if (!deliveryBox) {
-    console.warn('deliveryDateBox no encontrado');
+    console.warn('deliveryDateBox no trobat');
     return;
   }
 
@@ -904,19 +955,23 @@ function updateDeliveryDateDisplay(client) {
   let className = "delivery-info";
 
   if (diffDays < 0) {
-    message = `⚠️ Entrega vencida (${Math.abs(diffDays)} días)`;
+    message = `⚠️ Lliurament vençut (${Math.abs(diffDays)} dies)`;
     className = "delivery-overdue";
   } else if (diffDays === 0) {
-    message = "🔴 ¡Entrega HOY!";
+    message = "🔴 Lliurament AVUI!";
     className = "delivery-today";
   } else if (diffDays === 1) {
-    message = "🟡 Entrega MAÑANA";
+    message = "🟡 Lliurament DEMÀ";
     className = "delivery-tomorrow";
   } else if (diffDays <= 3) {
-    message = `🟡 Entrega en ${diffDays} días`;
+    message = `🟡 Lliurament en ${diffDays} dies`;
     className = "delivery-soon";
   } else {
-    message = `📅 Entrega: ${deliveryDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+    message = `📅 Lliurament: ${deliveryDate.toLocaleDateString('ca-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })}`;
     className = "delivery-normal";
   }
 
@@ -931,10 +986,10 @@ function updateLicenseInfo() {
   if (!infoEl || !state.license) return;
 
   const expiryText = state.license.expiryDate
-    ? `Válida hasta: ${new Date(state.license.expiryDate).toLocaleDateString()}`
-    : 'Sin límite';
+    ? `Vàlida fins a: ${new Date(state.license.expiryDate).toLocaleDateString()}`
+    : 'Sense límit';
 
-  infoEl.textContent = `✓ Licencia activa - ${state.license.clientName} - ${expiryText}`;
+  infoEl.textContent = `✓ Llicència activa - ${state.license.clientName} - ${expiryText}`;
   infoEl.style.display = 'block';
 }
 
@@ -943,18 +998,22 @@ function updateFocusScheduleStatus() {
   if (!statusEl) return;
 
   if (state.focusSchedule.enabled && !isWithinFocusSchedule()) {
-    statusEl.textContent = "⏳ Fuera de horario de enfoque";
+    statusEl.textContent = "⏳ Fora de l’horari d’enfocament";
     statusEl.style.display = "block";
   } else {
     statusEl.style.display = "none";
   }
 }
 
-/* ================= CLIENTES ================= */
+/* ================= CLIENTS ================= */
 function newClient() {
   const activeClients = Object.values(state.clients).filter(c => c.active);
   if (!state.isFull && activeClients.length >= 2) {
-    showAlert('Versión demo', 'Máximo 2 clientes activos.\n\nActiva la versión completa para clientes ilimitados.', '🔒');
+    showAlert(
+      'Versió demo',
+      'Màxim 2 clients actius.\n\nActiva la versió completa per a clients il·limitats.',
+      '🔒'
+    );
     return;
   }
 
@@ -1002,7 +1061,7 @@ function confirmNewClient() {
 function changeClient() {
   const actives = Object.values(state.clients).filter(c => c.active);
   if (!actives.length) {
-    showAlert('Sin clientes', 'No hay clientes activos', '⚠️');
+    showAlert('Sense clients', 'No hi ha clients actius', '⚠️');
     return;
   }
 
@@ -1024,13 +1083,16 @@ function changeClient() {
       const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
       
       if (diffDays < 0) {
-        deliveryInfo = ` • <span style="color: #ef4444;">⚠️ Vencido</span>`;
+        deliveryInfo = ` • <span style="color: #ef4444;">⚠️ Vençut</span>`;
       } else if (diffDays === 0) {
-        deliveryInfo = ` • <span style="color: #ef4444;">🔴 HOY</span>`;
+        deliveryInfo = ` • <span style="color: #ef4444;">🔴 AVUI</span>`;
       } else if (diffDays <= 3) {
         deliveryInfo = ` • <span style="color: #f59e0b;">🟡 ${diffDays}d</span>`;
       } else {
-        deliveryInfo = ` • 📅 ${deliveryDate.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}`;
+        deliveryInfo = ` • 📅 ${deliveryDate.toLocaleDateString('ca-ES', {
+          day: '2-digit',
+          month: '2-digit'
+        })}`;
       }
     }
     
@@ -1064,7 +1126,7 @@ function closeClient() {
 
   if (client.photos.length > 0 || (client.notes && client.notes.trim())) {
     $('exportBeforeCloseText').textContent =
-      `Este cliente tiene ${client.photos.length} fotos y notas.\n\n¿Deseas exportar el trabajo antes de cerrar?`;
+      `Aquest client té ${client.photos.length} fotos i notes.\n\nVols exportar el treball abans de tancar?`;
 
     window.clientToClose = client.id;
     openModal('modalExportBeforeClose');
@@ -1072,7 +1134,7 @@ function closeClient() {
   }
 
   $('closeClientText').textContent =
-    `Cliente: ${client.name}\nTiempo total: ${formatTime(client.total)}`;
+    `Client: ${client.name}\nTemps total: ${formatTime(client.total)}`;
 
   openModal('modalCloseClient');
 }
@@ -1095,7 +1157,11 @@ function confirmCloseClient() {
   closeModal('modalCloseClient');
   closeModal('modalExportBeforeClose');
 
-  showAlert('Cliente cerrado', `${client.name}\nTiempo total: ${formatTime(client.total)}`, '✅');
+  showAlert(
+    'Client tancat',
+    `${client.name}\nTemps total: ${formatTime(client.total)}`,
+    '✅'
+  );
 
   window.clientToClose = null;
 }
@@ -1105,11 +1171,12 @@ function exportAndClose() {
   setTimeout(confirmCloseClient, 500);
 }
 
-/* ================= HISTÓRICO ================= */
+
+/* ================= HISTÒRIC ================= */
 function showHistory() {
   const closed = Object.values(state.clients).filter(c => !c.active);
   if (!closed.length) {
-    showAlert('Sin histórico', 'No hay clientes cerrados', 'ℹ️');
+    showAlert('Sense històric', 'No hi ha clients tancats', 'ℹ️');
     return;
   }
 
@@ -1122,7 +1189,7 @@ function renderHistoryList(clients) {
   list.innerHTML = '';
 
   if (!clients.length) {
-    list.innerHTML = '<p class="modal-text" style="opacity: 0.6; text-align: center;">Sin resultados</p>';
+    list.innerHTML = '<p class="modal-text" style="opacity: 0.6; text-align: center;">Sense resultats</p>';
     return;
   }
 
@@ -1155,13 +1222,13 @@ function selectHistoryClient(clientId) {
   closeModal('modalHistory');
 }
 
-/* ================= BORRAR CLIENTE ================= */
+/* ================= ESBORRAR CLIENT ================= */
 function deleteCurrentClient() {
   const client = state.clients[state.currentClientId];
   if (!client || client.active) return;
 
   $('deleteClientText').textContent =
-    `Cliente: ${client.name}\nTiempo: ${formatTime(client.total)}\nFotos: ${client.photos.length}\n\nEsta acción no se puede deshacer.`;
+    `Client: ${client.name}\nTemps: ${formatTime(client.total)}\nFotos: ${client.photos.length}\n\nAquesta acció no es pot desfer.`;
 
   $('inputDeleteConfirm').value = '';
   openModal('modalDeleteClient');
@@ -1170,10 +1237,10 @@ function deleteCurrentClient() {
 }
 
 function confirmDeleteClient() {
-  const confirm = $('inputDeleteConfirm').value.trim().toUpperCase();
+  const confirmText = $('inputDeleteConfirm').value.trim().toUpperCase();
 
-  if (confirm !== 'BORRAR') {
-    showAlert('Error', 'Debes escribir BORRAR para confirmar', '⚠️');
+  if (confirmText !== 'ESBORRAR') {
+    showAlert('Error', 'Has d’escriure ESBORRAR per confirmar', '⚠️');
     return;
   }
 
@@ -1188,7 +1255,7 @@ function confirmDeleteClient() {
   updateUI();
   closeModal('modalDeleteClient');
 
-  showAlert('Cliente eliminado', 'El cliente ha sido eliminado definitivamente', '🗑️');
+  showAlert('Client eliminat', 'El client s’ha eliminat definitivament', '🗑️');
 }
 
 /* ================= FOTOS ================= */
@@ -1241,36 +1308,6 @@ function addPhotoToClient() {
   input.click();
 }
 
-function renderPhotoGallery() {
-  const gallery = $("photoGallery");
-  if (!gallery) return;
-  gallery.innerHTML = "";
-
-  const client = state.clients[state.currentClientId];
-  if (!client || !client.photos.length) return;
-
-  [...client.photos]
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .forEach(p => {
-      const img = document.createElement("img");
-      img.src = p.data;
-      img.className = "photo-thumb";
-
-      img.onclick = () => {
-        const w = window.open();
-        if (w) w.document.write(`<img src="${p.data}" style="width:100%;background:#000">`);
-      };
-
-      img.oncontextmenu = (e) => {
-        e.preventDefault();
-        photoToDelete = p.id;
-        openModal('modalDeletePhoto');
-      };
-
-      gallery.appendChild(img);
-    });
-}
-
 function confirmDeletePhoto() {
   if (!photoToDelete) return;
 
@@ -1285,16 +1322,16 @@ function confirmDeletePhoto() {
   closeModal('modalDeletePhoto');
 }
 
-/* ================= ENFOQUE ================= */
+/* ================= ENFOCAMENT ================= */
 function showFocus() {
   const total = Object.values(state.focus).reduce((a, b) => a + b, 0);
   if (!total) {
-    showAlert('Sin datos', 'Aún no hay datos de enfoque hoy', 'ℹ️');
+    showAlert('Sense dades', 'Encara no hi ha dades d’enfocament avui', 'ℹ️');
     return;
   }
 
-  const trabajo = state.focus[ACTIVITIES.WORK] || 0;
-  const pct = Math.round((trabajo / total) * 100);
+  const treball = state.focus[ACTIVITIES.WORK] || 0;
+  const pct = Math.round((treball / total) * 100);
 
   $('modalUserName').textContent = userName;
   $('modalTotalTime').textContent = formatTime(total);
@@ -1320,14 +1357,14 @@ function showFocus() {
 
   const focusState = $('modalFocusState');
   if (pct >= 64) {
-    focusState.className = 'focus-state enfocado';
-    focusState.innerHTML = '🟢 Enfocado';
+    focusState.className = 'focus-state enfocat';
+    focusState.innerHTML = '🟢 Enfocat';
   } else if (pct >= 40) {
-    focusState.className = 'focus-state atencion';
-    focusState.innerHTML = '🟡 Atención';
+    focusState.className = 'focus-state atencio';
+    focusState.innerHTML = '🟡 Atenció';
   } else {
-    focusState.className = 'focus-state disperso';
-    focusState.innerHTML = '🔴 Disperso';
+    focusState.className = 'focus-state dispers';
+    focusState.innerHTML = '🔴 Dispers';
   }
 
   openModal('modalEnfoque');
@@ -1335,7 +1372,7 @@ function showFocus() {
 
 /* ================= CSV ================= */
 function exportTodayCSV() {
-  let csv = "Usuario,Cliente,Tiempo,Notas\n";
+  let csv = "Usuari,Client,Temps,Notes\n";
   Object.values(state.clients).forEach(c => {
     const notes = (c.notes || '').replace(/[\n\r]/g, ' ').replace(/"/g, '""');
     csv += `${userName},"${c.name}",${formatTime(c.total)},"${notes}"\n`;
@@ -1347,14 +1384,14 @@ function exportTodayCSV() {
   a.download = `focowork_${todayKey()}.csv`;
   a.click();
 
-  showAlert('CSV exportado', 'El archivo se ha descargado correctamente', '📄');
+  showAlert('CSV exportat', 'El fitxer s’ha descarregat correctament', '📄');
 }
 
-/* ================= HORAS EXTRAS ================= */
+/* ================= HORES EXTRA ================= */
 function addExtraHours() {
   const client = state.clients[state.currentClientId];
   if (!client) {
-    showAlert('Sin cliente', 'Selecciona un cliente primero', '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
 
@@ -1373,7 +1410,7 @@ function saveExtraHours() {
   const description = $('inputExtraDescription').value.trim();
 
   if (!hours || hours <= 0) {
-    showAlert('Error', 'Introduce un número de horas válido', '⚠️');
+    showAlert('Error', 'Introdueix un nombre d’hores vàlid', '⚠️');
     return;
   }
 
@@ -1384,7 +1421,7 @@ function saveExtraHours() {
     date: new Date().toISOString(),
     hours: hours,
     seconds: Math.round(hours * 3600),
-    description: description || 'Horas extra',
+    description: description || 'Hores extra',
     billable: true
   };
 
@@ -1393,18 +1430,22 @@ function saveExtraHours() {
 
   save();
   closeModal('modalExtraHours');
-  showAlert('Horas añadidas', `${hours}h añadidas correctamente\n\n"${extraEntry.description}"`, '✅');
+  showAlert(
+    'Hores afegides',
+    `${hours}h afegides correctament\n\n"${extraEntry.description}"`,
+    '✅'
+  );
 }
 
 function showExtraHours() {
   const client = state.clients[state.currentClientId];
   if (!client) {
-    showAlert('Sin cliente', 'Selecciona un cliente primero', '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
 
   if (!client.extraHours || !client.extraHours.length) {
-    showAlert('Sin horas extra', 'Este cliente no tiene horas extra registradas', 'ℹ️');
+    showAlert('Sense hores extra', 'Aquest client no té hores extra registrades', 'ℹ️');
     return;
   }
 
@@ -1420,10 +1461,10 @@ function showExtraHours() {
     item.innerHTML = `
       <div class="extra-hour-header">
         <span class="extra-hour-amount">⏱️ ${entry.hours}h</span>
-        <span class="extra-hour-date">${new Date(entry.date).toLocaleDateString('es-ES')}</span>
+        <span class="extra-hour-date">${new Date(entry.date).toLocaleDateString('ca-ES')}</span>
       </div>
       <div class="extra-hour-description">${entry.description}</div>
-      <button class="btn-danger-small" onclick="deleteExtraHour('${entry.id}')">🗑️ Eliminar</button>
+      <button class="btn-danger-small" onclick="deleteExtraHour('${entry.id}')">🗑️ Esborrar</button>
     `;
     list.appendChild(item);
   });
@@ -1440,59 +1481,63 @@ function deleteExtraHour(entryId) {
   const entry = client.extraHours.find(e => e.id === entryId);
   if (!entry) return;
 
-  if (!confirm(`¿Eliminar ${entry.hours}h de horas extra?\n\n"${entry.description}"`)) return;
+  if (!confirm(`Vols eliminar ${entry.hours}h d’hores extra?\n\n"${entry.description}"`)) return;
 
   client.extraHours = client.extraHours.filter(e => e.id !== entryId);
   client.billableTime = (client.billableTime || 0) - entry.seconds;
 
   save();
   closeModal('modalViewExtraHours');
-  showAlert('Hora eliminada', 'La entrada de horas extra ha sido eliminada', '🗑️');
+  showAlert(
+    'Hora eliminada',
+    'L’entrada d’hores extra s’ha eliminat',
+    '🗑️'
+  );
 }
 
-/* ================= REPORT MEJORADO ================= */
+/* ================= INFORME MILLORAT ================= */
 function generateReport() {
   const client = state.clients[state.currentClientId];
   if (!client) {
-    showAlert('Sin cliente', 'Selecciona un cliente primero', '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
 
-  // Calcular tiempo facturable
+  // Calcular temps facturable
   const billableTime = client.billableTime || 0;
   const extraHoursTotal = (client.extraHours || []).reduce((sum, e) => sum + e.seconds, 0);
   const totalBillable = billableTime;
 
-  // Desglose de actividades facturables
+  // Desglossament d’activitats facturables
   let activitiesBreakdown = '';
   const billableActivities = {};
   
-  // Solo mostrar actividades si hay horario configurado
+  // Només mostrar activitats si hi ha horari configurat
   if (state.focusSchedule.enabled) {
-    activitiesBreakdown = '\n📊 DESGLOSE DE ACTIVIDADES FACTURABLES:\n';
+    activitiesBreakdown = '\n📊 DESGLOSSAMENT D’ACTIVITATS FACTURABLES:\n';
     for (const act in client.activities) {
       const time = client.activities[act];
       activitiesBreakdown += `   • ${activityLabel(act)}: ${formatTime(time)}\n`;
     }
   }
 
-  // Horas extra
+  // Hores extra
   let extraHoursSection = '';
   if (client.extraHours && client.extraHours.length > 0) {
-    extraHoursSection = '\n⏱️ HORAS EXTRA:\n';
+    extraHoursSection = '\n⏱️ HORES EXTRA:\n';
     client.extraHours.forEach(entry => {
-      const date = new Date(entry.date).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+      const date = new Date(entry.date).toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit' });
       extraHoursSection += `   • ${date}: ${entry.hours}h - ${entry.description}\n`;
     });
     extraHoursSection += `   TOTAL EXTRA: ${formatTime(extraHoursTotal)}\n`;
   }
 
-  // Notas
+  // Notes
   const notesSection = client.notes && client.notes.trim() 
-    ? `\n📝 NOTAS:\n${client.notes}\n` 
+    ? `\n📝 NOTES:\n${client.notes}\n` 
     : '';
 
-  // Fecha de entrega
+  // Data de lliurament
   let deliverySection = '';
   if (client.deliveryDate) {
     const deliveryDate = new Date(client.deliveryDate);
@@ -1503,37 +1548,37 @@ function generateReport() {
     const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
     
     let status = '';
-    if (diffDays < 0) status = '⚠️ VENCIDA';
-    else if (diffDays === 0) status = '🔴 HOY';
-    else if (diffDays <= 3) status = `🟡 ${diffDays} días`;
+    if (diffDays < 0) status = '⚠️ VENÇUDA';
+    else if (diffDays === 0) status = '🔴 AVUI';
+    else if (diffDays <= 3) status = `🟡 ${diffDays} dies`;
     else status = '📅';
     
-    deliverySection = `\n📅 FECHA DE ENTREGA: ${deliveryDate.toLocaleDateString('es-ES')} ${status}\n`;
+    deliverySection = `\n📅 DATA DE LLIURAMENT: ${deliveryDate.toLocaleDateString('ca-ES')} ${status}\n`;
   }
 
-  // Configuración horaria
+  // Configuració horària
   const scheduleInfo = state.focusSchedule.enabled 
-    ? `\n⏰ HORARIO FACTURABLE: ${state.focusSchedule.start} - ${state.focusSchedule.end}\n` 
-    : '\n⏰ Sin horario facturable configurado (todo el tiempo cuenta)\n';
+    ? `\n⏰ HORARI FACTURABLE: ${state.focusSchedule.start} - ${state.focusSchedule.end}\n` 
+    : '\n⏰ Sense horari facturable configurat (tot el temps compta)\n';
 
   const reportText = 
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `       📋 INFORME DE PROYECTO\n` +
+    `       📋 INFORME DE PROJECTE\n` +
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `👤 CLIENTE: ${client.name}\n` +
-    `📅 Fecha: ${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}\n` +
+    `👤 CLIENT: ${client.name}\n` +
+    `📅 Data: ${new Date().toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}\n` +
     `👨‍💼 Responsable: ${userName}\n` +
     deliverySection +
     scheduleInfo +
     `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `⏱️ TIEMPO TOTAL TRABAJADO: ${formatTime(client.total)}\n` +
-    `💰 TIEMPO FACTURABLE: ${formatTime(totalBillable)}\n` +
+    `⏱️ TEMPS TOTAL TREBALLAT: ${formatTime(client.total)}\n` +
+    `💰 TEMPS FACTURABLE: ${formatTime(totalBillable)}\n` +
     `${extraHoursSection}` +
     activitiesBreakdown +
-    `\n📷 FOTOGRAFÍAS: ${client.photos.length}\n` +
+    `\n📷 FOTOGRAFIES: ${client.photos.length}\n` +
     notesSection +
     `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `Generado con FocoWork v${APP_VERSION}\n` +
+    `Generat amb FocoWork v${APP_VERSION}\n` +
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
   $('reportContent').textContent = reportText;
@@ -1546,7 +1591,7 @@ function copyReport() {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(reportText)
       .then(() => {
-        showAlert('Copiado', 'Informe copiado al portapapeles', '✅');
+        showAlert('Copiat', 'Informe copiat al porta-retalls', '✅');
       })
       .catch(() => {
         fallbackCopy(reportText);
@@ -1566,9 +1611,9 @@ function fallbackCopy(text) {
   
   try {
     document.execCommand('copy');
-    showAlert('Copiado', 'Informe copiado al portapapeles', '✅');
+    showAlert('Copiat', 'Informe copiat al porta-retalls', '✅');
   } catch (err) {
-    showAlert('Error', 'No se pudo copiar. Copia manualmente desde el modal.', '⚠️');
+    showAlert('Error', 'No s’ha pogut copiar. Copia manualment des del modal.', '⚠️');
   }
   
   document.body.removeChild(textarea);
@@ -1613,7 +1658,7 @@ async function shareReport() {
 }
 
 
-/* ================= CONFIGURACIÓN DE HORARIO ================= */
+/* ================= CONFIGURACIÓ D’HORARI ================= */
 function openScheduleModal() {
   const checkbox = $('scheduleEnabled');
   const config = $('scheduleConfig');
@@ -1672,7 +1717,7 @@ function saveScheduleConfig() {
   const [eh, em] = end.split(':').map(Number);
 
   if ((eh * 60 + em) <= (sh * 60 + sm)) {
-    showAlert('Error', 'La hora de fin debe ser posterior a la hora de inicio', '⚠️');
+    showAlert('Error', 'L’hora de finalització ha de ser posterior a l’hora d’inici', '⚠️');
     return;
   }
 
@@ -1684,19 +1729,20 @@ function saveScheduleConfig() {
   closeModal('modalSchedule');
 
   const message = enabled
-    ? `Horario activado: ${start} - ${end}\n\nEl enfoque solo contabilizará tiempo dentro de este horario.`
-    : 'Horario desactivado\n\nEl enfoque contabilizará todo el tiempo trabajado.';
+    ? `Horari activat: ${start} - ${end}\n\nL’enfocament només comptabilitzarà el temps dins d’aquest horari.`
+    : 'Horari desactivat\n\nL’enfocament comptabilitzarà tot el temps treballat.';
 
-  showAlert('Configuración guardada', message, '✅');
+  showAlert('Configuració desada', message, '✅');
 }
 
-/* ================= EVENT LISTENERS ================= */
+
+/* ================= ESCOLTADORS D’ESDEVENIMENTS ================= */
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await loadGoogleScript();
     initGoogleDrive();
   } catch (e) {
-    console.error('Error inicializando Google Drive:', e);
+    console.error('Error inicialitzant Google Drive:', e);
   }
 
   $('newClient').onclick = newClient;
@@ -1724,7 +1770,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   let focusLongPressTimer;
   $('focusBtn').addEventListener('mousedown', () => {
     focusLongPressTimer = setTimeout(() => {
-      if (confirm('¿Resetear datos de enfoque de hoy?\n\nEsto NO afecta a los tiempos de clientes, solo a las estadísticas de enfoque diario.')) {
+      if (confirm(
+        'Voleu reiniciar les dades d’enfocament d’avui?\n\nAixò NO afecta els temps dels clients, només les estadístiques d’enfocament diari.'
+      )) {
         resetTodayFocus();
       }
     }, 2000);
@@ -1732,7 +1780,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('focusBtn').addEventListener('mouseup', () => clearTimeout(focusLongPressTimer));
   $('focusBtn').addEventListener('touchstart', () => {
     focusLongPressTimer = setTimeout(() => {
-      if (confirm('¿Resetear datos de enfoque de hoy?\n\nEsto NO afecta a los tiempos de clientes, solo a las estadísticas de enfoque diario.')) {
+      if (confirm(
+        'Voleu reiniciar les dades d’enfocament d’avui?\n\nAixò NO afecta els temps dels clients, només les estadístiques d’enfocament diari.'
+      )) {
         resetTodayFocus();
       }
     }, 2000);
@@ -1773,10 +1823,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       state.isFull = false;
       state.license = null;
       save();
-      showAlert('Licencia caducada', 'Tu licencia ha expirado. Contacta para renovarla.', '⏰');
+      showAlert(
+        'Llicència caducada',
+        'La teva llicència ha expirat. Contacta per renovar-la.',
+        '⏰'
+      );
     }
   }
 
   scheduleFullAutoBackup();
   updateUI();
 });
+
