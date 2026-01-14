@@ -301,10 +301,15 @@ button:hover,
    BOTÃ"N DANGER (Cerrar)
    =============================== */
 
-.danger,
-#closeClient {
+.danger {
   grid-column: span 2;
 }
+
+/* Tancar NO ocupa dos columnas */
+#closeClient {
+  grid-column: auto;
+}
+
 /* Botón Tancar – verde degradado permanente */
 #closeClient {
   background: linear-gradient(135deg, #10b981, #059669);
