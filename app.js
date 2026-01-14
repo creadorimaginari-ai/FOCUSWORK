@@ -1134,8 +1134,12 @@ function updateUI() {
 
   $("cameraBtn").style.display = client && client.active ? "block" : "none";
 
-  const deleteBtn = $("deleteClientBtn");
-  if (deleteBtn) deleteBtn.style.display = client && !client.active ? "block" : "none";
+const deletePanel = $("deleteClientPanel");
+
+if (deletePanel) {
+  deletePanel.style.display = client && !client.active ? "block" : "none";
+}
+
 
   $("versionBox").style.display = state.isFull ? "none" : "block";
 
