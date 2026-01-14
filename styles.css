@@ -208,13 +208,13 @@ button:hover,
 /* Botón Nou – reborde neón verde */
 #newClient {
   border: 1px solid rgba(16, 185, 129, 0.6);
-  box-shadow:
+ border-color: rgba
     0 0 8px rgba(16, 185, 129, 0.4),
     inset 0 0 6px rgba(16, 185, 129, 0.2);
 }
 #newClient:hover {
   border-color: rgba(16, 185, 129, 0.9);
-  box-shadow:
+ border-color:
     0 0 14px rgba(16, 185, 129, 0.7),
     inset 0 0 8px rgba(16, 185, 129, 0.3);
 }
