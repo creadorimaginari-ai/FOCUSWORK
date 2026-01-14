@@ -1,3 +1,4 @@
+const CACHE_NAME = "focowork-cache-v3";
 const BASE_PATH = "/FOCUSWORK";
 
 const CORE_ASSETS = [
@@ -13,7 +14,6 @@ const CORE_ASSETS = [
   `${BASE_PATH}/icons/icon-512-maskable.png`
 ];
 
-
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS))
@@ -24,9 +24,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -52,7 +50,7 @@ self.addEventListener("fetch", event => {
         })
         .catch(() => {
           if (event.request.destination === "document") {
-            return caches.match("/index.html");
+            return caches.match(`${BASE_PATH}/index.html`);
           }
         });
     })
