@@ -208,13 +208,28 @@ button:hover,
 /* Botón Nou – reborde neón verde */
 #newClient {
   border: 1px solid rgba(16, 185, 129, 0.6);
- border-color: rgba
+  box-shadow:
     0 0 8px rgba(16, 185, 129, 0.4),
     inset 0 0 6px rgba(16, 185, 129, 0.2);
 }
+
+@keyframes neonPulseGreen {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.8);
+  }
+}
+
+#newClient {
+  animation: neonPulseGreen 2.5s ease-in-out infinite;
+}
+
+
 #newClient:hover {
   border-color: rgba(16, 185, 129, 0.9);
- border-color:
+  box-shadow:
     0 0 14px rgba(16, 185, 129, 0.7),
     inset 0 0 8px rgba(16, 185, 129, 0.3);
 }
