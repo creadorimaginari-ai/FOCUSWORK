@@ -275,7 +275,23 @@ button:hover,
 #closeClient {
   grid-column: span 2;
 }
-
+/* Botón Tancar – verde degradado permanente */
+#closeClient {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #ffffff;
+  box-shadow:
+    0 0 0 3px rgba(16, 185, 129, 0.15),
+    0 8px 24px rgba(5, 150, 105, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+#closeClient:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow:
+    0 0 0 3px rgba(16, 185, 129, 0.25),
+    0 12px 32px rgba(5, 150, 105, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
 .danger.active,
 #closeClient.active {
   background: linear-gradient(135deg, #10b981, #059669);
