@@ -2,34 +2,25 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-  <title>FocusWork</title>
+  <title>Focuswork</title>
 
   <!-- PWA -->
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/icon-180.png">
-<link rel="stylesheet" href="/styles.css">
-
-<script src="/app.js"></script>
-
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw-v2.js");
-    });
-  }
-</script>
-
+  <link rel="manifest" href="/FOCUSWORK/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="background-color" content="#0f172a">
 
   <!-- iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="/FOCUSWORK/icons/icon-180.png">
+  <meta name="apple-mobile-web-app-title" content="FocoWork">
+  <link rel="apple-touch-icon" href="/FOCUSWORK/icons/icon-192.png">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/FOCUSWORK/styles.css">
 </head>
+
 
 <body>
   <div class="app">
@@ -584,7 +575,18 @@
   </div>
 
             
-  <script src="app.js"></script>
+<script src="/FOCUSWORK/app.js"></script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/FOCUSWORK/sw-v2.js", {
+        scope: "/FOCUSWORK/"
+      });
+    });
+  }
+</script>
+
 
 </body>
 </html>
