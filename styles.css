@@ -37,7 +37,10 @@ html, body {
   width: 100%;
 }
 
-
+/* Separació entre botons i blocs de workpad */
+.panel .grid + .workpad-container {
+  margin-top: 16px;
+}
 
 /* ===============================
    CONTENEDOR PRINCIPAL
