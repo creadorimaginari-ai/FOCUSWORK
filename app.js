@@ -106,13 +106,30 @@ function save() {
 }
 
 /* ================= AUTO-BACKUP ================= */
+
 let autoBackupTimeout = null;
+let lastAutoBackupTime = 0;
+
+// temps mínim entre backups (5 minuts)
+const AUTO_BACKUP_INTERVAL = 5 * 60 * 1000;
+
+// temps d'espera després de l'últim canvi (1 minut)
+const AUTO_BACKUP_DELAY = 60 * 1000;
 
 function scheduleAutoBackup() {
+  const now = Date.now();
+
+  // si ja s'ha fet un backup fa menys del límit, no programem res
+  if (now - lastAutoBackupTime < AUTO_BACKUP_INTERVAL) return;
+
   clearTimeout(autoBackupTimeout);
+
   autoBackupTimeout = setTimeout(() => {
-    if (state.currentClientId && state.clients[state.currentClientId]) performAutoBackup();
-  }, 300000);
+    if (state.currentClientId && state.clients[state.currentClientId]) {
+      performAutoBackup();
+      lastAutoBackupTime = Date.now();
+    }
+  }, AUTO_BACKUP_DELAY);
 }
 
 function performAutoBackup() {
@@ -122,15 +139,26 @@ function performAutoBackup() {
   const backup = {
     version: APP_VERSION,
     timestamp: new Date().toISOString(),
+    clientId: client.id,
     client: client
   };
 
   try {
-    localStorage.setItem(`focowork_autobackup_${client.id}`, JSON.stringify(backup));
+    localStorage.setItem(
+      `focowork_autobackup_${client.id}`,
+      JSON.stringify(backup)
+    );
+
+    console.log(
+      'AUTO-BACKUP fet:',
+      client.name,
+      new Date().toLocaleTimeString()
+    );
   } catch (e) {
     console.warn('Auto-backup ha fallat:', e);
   }
 }
+
 
 /* ================= BACKUPS AUTOMÀTICS A MITJANIT ================= */
 function performFullAutoBackup() {
