@@ -1791,7 +1791,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     $('focusBtn').addEventListener('touchend', () => clearTimeout(focusLongPressTimer));
   }
-
+$('focusPriorityBtn')?.addEventListener('click', () => {
+  state.currentActivity = 'work';
+  updateUI();
+});
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
