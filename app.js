@@ -1119,7 +1119,17 @@ function saveDeliveryDate() {
 
 /* ================= UI ================= */
 function updateUI() {
-  const client = state.currentClientId ? state.clients[state.currentClientId] : null;
+ const activitiesPanel = $('activitiesPanel');
+ const activitiesGrid = $('activitiesGrid');
+ const client = state.currentClientId ? state.clients[state.currentClientId] : null;
+
+
+if (!state.currentClientId) {
+  // Estat neutre: només Feina
+  activitiesPanel.classList.add('single-activity');
+} else {
+  activitiesPanel.classList.remove('single-activity');
+}
 
   $("clientName").textContent = client
     ? `Client: ${client.name}${client.active ? "" : " (tancat)"}`
