@@ -77,15 +77,15 @@
 
   <!-- Accions petites -->
   <div class="grid">
-    <button id="newClient">➕ Nou</button>
-    <button id="changeClient">🔄 Canviar</button>
+    <button id="newClient">➕ Nou encàrrec</button>
+    <button id="changeClient">🔄 Activar client</button>
   </div>
     
       <!-- FEINES PER URGÈNCIA -->
       <div class="workpad-container">
         <div class="workpad-header">
           <span class="workpad-icon">🚨</span>
-          <span class="workpad-title">Feines per urgència</span>
+          <span class="workpad-title">Entregues properes</span>
         </div>
 
         <textarea
@@ -109,9 +109,9 @@
 
       <div class="grid" style="margin-top: 12px;">
         <button id="setDeliveryDateBtn" class="primary">
-          📅 Data
+          📅 Data d’entrega
         </button>
-        </div> <!-- ❗ ESTE CIERRE FALTABA -->
+        </div> 
         
 
       <div class="grid centered" style="margin-top: 12px;">
@@ -119,13 +119,13 @@
           ⏱️ Afegir hores
         </button>
         <button id="viewExtraHoursBtn" class="secondary">
-          📊 Veure hores
+          📊 Veure resum d’hores
         </button>
       </div>
 
              <div class="grid centered" style="margin-top: 12px;">
   <button id="generateReportBtn" class="primary">
-    📋 Informe
+    📋 Generar informe
   </button>
 </div>
 
@@ -141,7 +141,7 @@
 
   <!-- Accions grans -->
   <div class="grid full-actions" style="margin-top: 12px;">
-    <button id="historyBtn">📂 Històric</button>
+    <button id="historyBtn">📂 Clients tancats</button>
     <button id="closeClient" class="danger">✅ Tancar</button>
   </div>
 
@@ -150,15 +150,11 @@
     <!-- BACKUP Y GESTIÓN -->
     <section class="panel">
       <div class="grid">
-        <button id="exportWorkBtn">💾 Guardar feina</button>
+        <button id="exportWorkBtn">💾 Guardar sessió</button>
         <button id="importWorkBtn">📂 Carregar treball</button>
-        <button id="exportAllBtn" class="full-width">📦 Còpia completa</button>
-        <button id="exportToDriveBtn" class="full-width">☁️ Exportar a Drive</button>
-        <button id="backupConfigBtn" class="full-width">⚙️ Config. còpies</button>
+        <button id="importWorkBtn">📂 Restaurar còpia completa</button>
+        <button id="exportAllBtn" class="full-width">📦 Còpia de seguretat</button>
       </div>
-      <p style="font-size: 12px; opacity: 0.6; text-align: center; margin-top: 8px;">
-        💡 El botó “Carregar treball” accepta tant treballs individuals com còpies de seguretat completes.
-      </p>
     </section>
 
     <!-- BORRAR CLIENT (només visible per a clients tancats) -->
