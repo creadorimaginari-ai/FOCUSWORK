@@ -1138,6 +1138,7 @@ function updateUI() {
       : "";
   }
 
+  // --- Temps facturable ---
   if (client && state.focusSchedule.enabled) {
     const billableBox = $("billableTimeBox");
     if (billableBox) {
@@ -1149,7 +1150,7 @@ function updateUI() {
     $("billableTimeBox").style.display = "none";
   }
 
-  // --- Delivery date ---
+  // --- Data d'entrega ---
   if (client && client.deliveryDate) {
     updateDeliveryDateDisplay(client);
   } else {
@@ -1159,39 +1160,55 @@ function updateUI() {
       deliveryBox.classList.add("hidden");
     }
   }
+
+  // --- Estat botons d'activitat ---
   document.querySelectorAll(".activity").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.activity === state.currentActivity);
+    btn.classList.toggle(
+      "active",
+      btn.dataset.activity === state.currentActivity
+    );
   });
 
-  $("cameraBtn").style.display = client && client.active ? "block" : "none";
+  // --- Botó càmera ---
+  if ($("cameraBtn")) {
+    $("cameraBtn").style.display = client && client.active ? "block" : "none";
+  }
 
-const deletePanel = $("deleteClientPanel");
+  // --- Panell eliminar client ---
+  const deletePanel = $("deleteClientPanel");
+  if (deletePanel) {
+    deletePanel.style.display = client && !client.active ? "block" : "none";
+  }
 
-if (deletePanel) {
-  deletePanel.style.display = client && !client.active ? "block" : "none";
-}
+  // --- Caixa versió ---
+  if ($("versionBox")) {
+    $("versionBox").style.display = state.isFull ? "none" : "block";
+  }
 
+  if (state.isFull && state.license) {
+    updateLicenseInfo();
+  }
 
-  $("versionBox").style.display = state.isFull ? "none" : "block";
-
-  if (state.isFull && state.license) updateLicenseInfo();
-
+  // --- Estat horari focus ---
   updateFocusScheduleStatus();
+
+  // --- Blocs dependents de client ---
   updateWorkpad();
   updateTasks();
   renderPhotoGallery();
-}
-  
-  // --- Sortir del client (SEMPRE fora dels ifs específics) ---
-  const exitContainer = $('exitClientContainer');
-  if (exitContainer) {
-    exitContainer.style.display = client ? 'block' : 'none';
-  }
 
+  // --- Sortir del client (CONTROL FINAL I ÚNIC) ---
+  const exitContainer = $("exitClientContainer");
+  if (exitContainer) {
+    exitContainer.style.display = client ? "block" : "none";
+  }
+}
+
+/* ================= DELIVERY DATE ================= */
 function updateDeliveryDateDisplay(client) {
   const deliveryBox = $("deliveryDateBox");
   if (!deliveryBox) {
-    console.warn('deliveryDateBox no trobat');
+    console.warn("deliveryDateBox no trobat");
     return;
   }
 
@@ -1226,7 +1243,10 @@ function updateDeliveryDateDisplay(client) {
     message = `🟡 Lliurament en ${diffDays} dies`;
     className = "delivery-soon";
   } else {
-    message = `📅 Lliurament: ${deliveryDate.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+    message = `📅 Lliurament: ${deliveryDate.toLocaleDateString(
+      "ca-ES",
+      { day: "2-digit", month: "2-digit", year: "numeric" }
+    )}`;
     className = "delivery-normal";
   }
 
@@ -1236,18 +1256,20 @@ function updateDeliveryDateDisplay(client) {
   deliveryBox.style.display = "block";
 }
 
+/* ================= LICENSE ================= */
 function updateLicenseInfo() {
   const infoEl = $("licenseInfo");
   if (!infoEl || !state.license) return;
 
   const expiryText = state.license.expiryDate
     ? `Vàlida fins: ${new Date(state.license.expiryDate).toLocaleDateString()}`
-    : 'Sense límit';
+    : "Sense límit";
 
   infoEl.textContent = `✓ Llicència activa - ${state.license.clientName} - ${expiryText}`;
-  infoEl.style.display = 'block';
+  infoEl.style.display = "block";
 }
 
+/* ================= FOCUS SCHEDULE ================= */
 function updateFocusScheduleStatus() {
   const statusEl = $("focusScheduleStatus");
   if (!statusEl) return;
@@ -1260,6 +1282,7 @@ function updateFocusScheduleStatus() {
   }
 }
 
+/* ================= CLIENTS ================= */
 
 /* ================= CLIENTS ================= */
 function newClient() {
