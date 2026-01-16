@@ -1738,6 +1738,7 @@ function saveScheduleConfig() {
 }
 
 /* ================= EVENT LISTENERS ================= */
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await loadGoogleScript();
@@ -1747,6 +1748,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // BOTONS PRINCIPALS - IDs CORREGITS
+ $('focusPriorityBtn')?.addEventListener('click', () => {
+  state.currentActivity = 'work';
+  updateUI();
+});
+
   if ($('newClientBtn')) $('newClientBtn').onclick = newClient;
   if ($('changeClient')) $('changeClient').onclick = changeClient;
   if ($('historyBtn')) $('historyBtn').onclick = showHistory;
@@ -1789,12 +1795,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }, 2000);
     });
-    $('focusBtn').addEventListener('touchend', () => clearTimeout(focusLongPressTimer));
-  }
-$('focusPriorityBtn')?.addEventListener('click', () => {
-  state.currentActivity = 'work';
-  updateUI();
-});
+
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
