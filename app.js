@@ -1121,14 +1121,21 @@ function saveDeliveryDate() {
 function updateUI() {
   const client = state.currentClientId ? state.clients[state.currentClientId] : null;
 
-  $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Sense client actiu";
+  $("clientName").textContent = client
+    ? `Client: ${client.name}${client.active ? "" : " (tancat)"}`
+    : "Sense client actiu";
 
-  $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
+  $("activityName").textContent = state.currentActivity
+    ? activityLabel(state.currentActivity)
+    : "—";
 
-  $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
+  $("timer").textContent =
+    client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
 
   if ($("clientTotal")) {
-    $("clientTotal").textContent = client ? `Total client: ${formatTime(client.total)}` : "";
+    $("clientTotal").textContent = client
+      ? `Total client: ${formatTime(client.total)}`
+      : "";
   }
 
   if (client && state.focusSchedule.enabled) {
@@ -1142,6 +1149,7 @@ function updateUI() {
     $("billableTimeBox").style.display = "none";
   }
 
+  // --- Delivery date ---
   if (client && client.deliveryDate) {
     updateDeliveryDateDisplay(client);
   } else {
@@ -1151,6 +1159,15 @@ function updateUI() {
       deliveryBox.classList.add("hidden");
     }
   }
+
+  // --- Sortir del client (SEMPRE fora dels ifs específics) ---
+  const exitContainer = $('exitClientContainer');
+  if (exitContainer) {
+    exitContainer.style.display = client ? 'block' : 'none';
+  }
+}
+
+
 
   document.querySelectorAll(".activity").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.activity === state.currentActivity);
@@ -1247,11 +1264,6 @@ function updateFocusScheduleStatus() {
   }
 }
 
-const exitContainer = $('exitClientContainer');
-
-if (exitContainer) {
-  exitContainer.style.display = state.currentClientId ? 'block' : 'none';
-}
 
 /* ================= CLIENTS ================= */
 function newClient() {
@@ -1410,11 +1422,12 @@ function exportAndClose() {
 function exitClient() {
   state.currentClientId = null;
   state.currentActivity = null;
+  state.lastTick = null;
 
-  stopTimer?.(); // només si ja tens aquesta funció
+  save();
   updateUI();
-  saveState?.();
 }
+
 
 /* ================= HISTÒRIC ================= */
 function showHistory() {
