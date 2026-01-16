@@ -961,23 +961,19 @@ function setActivity(activity) {
   updateUI();
 }
 
-/* ================= WORKPAD ================= */
-let workpadTimeout = null;
-let isWorkpadInitialized = false;
-
 function updateWorkpad() {
   const workpadArea = $('clientWorkpad');
+  const workpadContainer = document.querySelector('.workpad-container');
   const client = state.clients[state.currentClientId];
 
-  if (!workpadArea || !client) {
-    if (workpadArea) {
-      workpadArea.style.display = 'none';
-      isWorkpadInitialized = false;
-    }
+  if (!workpadArea || !workpadContainer || !client) {
+    if (workpadContainer) workpadContainer.style.display = 'none';
+    isWorkpadInitialized = false;
     return;
   }
 
-  workpadArea.style.display = 'block';
+  workpadContainer.style.display = 'block';
+
 
   const savedNote = client.notes || '';
   if (workpadArea.value !== savedNote && !isWorkpadInitialized) {
