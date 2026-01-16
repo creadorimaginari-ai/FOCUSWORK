@@ -1159,3 +1159,17 @@ button.secondary:hover,
     padding-bottom: calc(180px + env(safe-area-inset-bottom));
   }
 }
+/* Estat neutre: només Feina */
+#activitiesPanel.single-activity {
+  display: flex;
+  justify-content: center;
+}
+
+#activitiesPanel.single-activity .activities {
+  justify-content: center;
+}
+
+#activitiesPanel.single-activity .activity {
+  min-width: 200px;
+}
+
