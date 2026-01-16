@@ -1246,6 +1246,13 @@ function updateFocusScheduleStatus() {
     statusEl.style.display = "none";
   }
 }
+
+const exitContainer = $('exitClientContainer');
+
+if (exitContainer) {
+  exitContainer.style.display = state.currentClientId ? 'block' : 'none';
+}
+
 /* ================= CLIENTS ================= */
 function newClient() {
   const activeClients = Object.values(state.clients).filter(c => c.active);
@@ -1399,6 +1406,14 @@ function confirmCloseClient() {
 function exportAndClose() {
   exportCurrentWork();
   setTimeout(confirmCloseClient, 500);
+}
+function exitClient() {
+  state.currentClientId = null;
+  state.currentActivity = null;
+
+  stopTimer?.(); // només si ja tens aquesta funció
+  updateUI();
+  saveState?.();
 }
 
 /* ================= HISTÒRIC ================= */
@@ -1995,6 +2010,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('todayBtn').onclick = exportTodayCSV;
   $('cameraBtn').onclick = addPhotoToClient;
   $('deleteClientBtn').onclick = deleteCurrentClient;
+  $('exitClientBtn')?.addEventListener('click', exitClient);
+
 
   if ($('setDeliveryDateBtn')) $('setDeliveryDateBtn').onclick = setDeliveryDate;
   if ($('addExtraHoursBtn')) $('addExtraHoursBtn').onclick = addExtraHours;
