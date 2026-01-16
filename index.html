@@ -128,7 +128,8 @@
   </button>
 </div>
 
-      <button id="cameraBtn" class="primary">
+ <div class="grid centered" style="margin-top: 12px;">
+  <button id="cameraBtn" class="primary">
         📷 Afegir foto al client
       </button>
 
@@ -216,7 +217,15 @@
       </div>
       <div class="modal-body">
         <label class="modal-label">Client + descripció de la feina</label>
-        <input type="text" id="inputNewClient" class="modal-input" placeholder="Ex: Joan - Targetes presentació">
+        <input
+  type="text"
+  id="newClientInput"
+  placeholder="Ex: Joan - Targetes presentació"
+  autocomplete="off"
+  autocorrect="off"
+  autocapitalize="sentences"
+  spellcheck="false"
+/>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalNewClient')">Cancelar</button>
