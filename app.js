@@ -1159,16 +1159,6 @@ function updateUI() {
       deliveryBox.classList.add("hidden");
     }
   }
-
-  // --- Sortir del client (SEMPRE fora dels ifs específics) ---
-  const exitContainer = $('exitClientContainer');
-  if (exitContainer) {
-    exitContainer.style.display = client ? 'block' : 'none';
-  }
-}
-
-
-
   document.querySelectorAll(".activity").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.activity === state.currentActivity);
   });
@@ -1191,6 +1181,14 @@ if (deletePanel) {
   updateTasks();
   renderPhotoGallery();
 }
+  
+  // --- Sortir del client (SEMPRE fora dels ifs específics) ---
+  const exitContainer = $('exitClientContainer');
+  if (exitContainer) {
+    exitContainer.style.display = client ? 'block' : 'none';
+  }
+}
+
 
 function updateDeliveryDateDisplay(client) {
   const deliveryBox = $("deliveryDateBox");
