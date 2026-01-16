@@ -1591,6 +1591,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (e) {
     console.error('Error inicialitzant Google Drive:', e);
   }
+// --- ACCIÓ FOCUS PRIORITARI ---
+$('focusPriorityBtn')?.addEventListener('click', () => {
+  if (!state.currentClientId) {
+    changeClient(); // obre selector si no hi ha client
+  } else {
+    state.currentActivity = ACTIVITIES.WORK;
+    updateUI();
+  }
+});
+
+// --- SORTIR DEL CLIENT ---
+$('exitClientBtn')?.addEventListener('click', exitClient);
+
+// --- DATA D’ENTREGA ---
+$('setDeliveryDateBtn')?.addEventListener('click', setDeliveryDate);
+
+// --- HORES EXTRES ---
+$('addExtraHoursBtn')?.addEventListener('click', addExtraHours);
+$('viewExtraHoursBtn')?.addEventListener('click', showExtraHours);
+
+// --- INFORME ---
+$('generateReportBtn')?.addEventListener('click', generateReport);
+
+// --- CÀMERA ---
+$('cameraBtn')?.addEventListener('click', addPhotoToClient);
+
+// --- BACKUPS ---
+$('exportWorkBtn')?.addEventListener('click', exportCurrentWork);
+$('importWorkBtn')?.addEventListener('click', importWork);
+$('exportAllBtn')?.addEventListener('click', exportAllData);
+
+// --- FOOTER ---
+$('focusBtn')?.addEventListener('click', showFocus);
+$('scheduleBtn')?.addEventListener('click', openScheduleModal);
+$('todayBtn')?.addEventListener('click', exportTodayCSV);
 
   // BOTONS PRINCIPALS - IDs CORREGITS
  $('focusPriorityBtn')?.addEventListener('click', () => {
