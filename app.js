@@ -1187,8 +1187,6 @@ if (deletePanel) {
   if (exitContainer) {
     exitContainer.style.display = client ? 'block' : 'none';
   }
-}
-
 
 function updateDeliveryDateDisplay(client) {
   const deliveryBox = $("deliveryDateBox");
