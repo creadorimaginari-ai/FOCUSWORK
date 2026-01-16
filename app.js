@@ -1170,15 +1170,15 @@ function updateUI() {
   });
 
   // --- Botó càmera ---
-  if ($("cameraBtn")) {
-    $("cameraBtn").style.display = client && client.active ? "block" : "none";
-  }
+  // ---  if ($("cameraBtn")) {
+   // ---   $("cameraBtn").style.display = client && client.active ? "block" : "none";
+  // ---  }
 
   // --- Panell eliminar client ---
-  const deletePanel = $("deleteClientPanel");
-  if (deletePanel) {
-    deletePanel.style.display = client && !client.active ? "block" : "none";
-  }
+   // --- const deletePanel = $("deleteClientPanel");
+  // ---  if (deletePanel) {
+   // ---   deletePanel.style.display = client && !client.active ? "block" : "none";
+  // ---  }
 
   // --- Caixa versió ---
   if ($("versionBox")) {
