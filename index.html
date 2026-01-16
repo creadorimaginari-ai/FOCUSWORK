@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="ca">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -14,13 +14,12 @@
   <!-- iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="FocousWork">
+  <meta name="apple-mobile-web-app-title" content="FocusWork">
   <link rel="apple-touch-icon" href="/FOCUSWORK/icons/icon-192.png">
 
   <!-- Styles -->
   <link rel="stylesheet" href="/FOCUSWORK/styles.css">
 </head>
-
 
 <body>
   <div class="app">
@@ -41,25 +40,17 @@
 
     <!-- ACTIVIDADES -->
     <section class="panel" id="activitiesPanel">
-  <div class="grid activities" id="activitiesGrid">
-    <button class="activity" data-activity="work">🟦 Feina</button>
-  </div>
-</section>
+      <div class="grid activities" id="activitiesGrid">
+        <button class="activity" data-activity="work">🟦 Feina</button>
+      </div>
+    </section>
 
-         <!--
-        <button class="activity" data-activity="phone">📞 Trucades</button>
-      <button class="activity" data-activity="client">👥 Reunions</button>
-       <button class="activity" data-activity="visit">📘 Visitant</button>
-        <button class="activity full-width" data-activity="other">⚙️ Altres</button><!--
-    
-
-    <!-- INFO CLIENTE (CÁMARA + NOTAS)<!--
+    <!-- INFO CLIENTE (CÁMARA + NOTAS) -->
     <section class="panel" id="clientInfoPanel">
       
       <!-- FECHA DE ENTREGA -->
       <div id="deliveryDateBox" class="delivery-info hidden"></div>
 
-      
       <!-- WORKPAD (Bloc de notas) -->
       <div class="workpad-container">
         <div class="workpad-header">
@@ -70,18 +61,14 @@
           id="clientWorkpad" 
           class="workpad-area" 
           placeholder="Apunts, tasques pendents, detalls del projecte…"
-           ></textarea>
+        ></textarea>
       </div>
 
-<!-- CLIENTES -->
-<!-- ACCIONS CLIENT -->
-<section class="panel">
-
-  <!-- Accions petites -->
-  <div class="grid">
-    <button id="newClientBtn">➕ Nou encàrrec</button>
-    <button id="changeClient">🔄 Activar client</button>
-  </div>
+      <!-- ACCIONS CLIENT -->
+      <div class="grid">
+        <button id="newClientBtn">➕ Nou encàrrec</button>
+        <button id="changeClient">🔄 Activar client</button>
+      </div>
     
       <!-- FEINES PER URGÈNCIA -->
       <div class="workpad-container">
@@ -111,74 +98,67 @@
 
       <div class="grid" style="margin-top: 12px;">
         <button id="setDeliveryDateBtn" class="primary">
-          📅 Data d’entrega
+          📅 Data d'entrega
         </button>
-        </div> 
+      </div> 
         
-
       <div class="grid centered" style="margin-top: 12px;">
         <button id="addExtraHoursBtn" class="secondary">
           ⏱️ Afegir hores
         </button>
         <button id="viewExtraHoursBtn" class="secondary">
-          📊 Veure resum d’hores
+          📊 Veure resum d'hores
         </button>
       </div>
 
-             <div class="grid centered" style="margin-top: 12px;">
-  <button id="generateReportBtn" class="primary">
-    📋 Generar informe
-  </button>
-</div>
+      <div class="grid centered" style="margin-top: 12px;">
+        <button id="generateReportBtn" class="primary">
+          📋 Generar informe
+        </button>
+      </div>
 
- <div class="grid centered" style="margin-top: 12px;">
-  <button id="cameraBtn" class="primary">
-        📷 Afegir foto al client
-      </button>
+      <div class="grid centered" style="margin-top: 12px;">
+        <button id="cameraBtn" class="primary">
+          📷 Afegir foto al client
+        </button>
+      </div>
 
       <!-- Galería (se llenará por JS) -->
       <div id="photoGallery" class="photo-gallery"></div>
     </section>
 
-    
+    <!-- Accions grans -->
+    <div class="grid full-actions" style="margin-top: 12px;">
 
-  <!-- Accions grans -->
- 
-      <div class="grid full-actions" style="margin-top: 12px;">
+      <div class="grid centered" id="exitClientContainer" style="display: none;">
+        <button id="exitClientBtn" class="secondary full-width">
+          ↩️ Sortir del client
+        </button>
+        <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 4px; text-align: center;">
+          No es tanca el client ni es perden dades
+        </div>
+      </div>
 
-  <div class="grid centered" id="exitClientContainer" style="display: none;">
-    <button id="exitClientBtn" class="secondary"class="full-width">
-      ↩️ Sortir del client
-    </button>
-    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 4px; text-align: center;">
-      No es tanca el client ni es perden dades
+      <button id="historyBtn">📂 Clients tancats</button>
+      <button id="closeClient" class="danger">✅ Tancar</button>
+
     </div>
-  </div>
-
-  <button id="historyBtn">📂 Clients tancats</button>
-  <button id="closeClient" class="danger">✅ Tancar</button>
-
-</div>
-
-
-</section>
 
     <!-- BACKUP Y GESTIÓN -->
     <section class="panel">
       <div class="grid">
         <button id="exportWorkBtn">💾 Guardar sessió</button>
         <button id="importWorkBtn">📂 Carregar treball</button>
-        <button id="importBackupBtn"class="full-width">📂 Restaurar còpia completa</button>
         <button id="exportAllBtn" class="full-width">📦 Còpia de seguretat</button>
       </div>
     </section>
 
     <!-- BORRAR CLIENT (només visible per a clients tancats) -->
     <section class="panel" id="deleteClientPanel" style="display: none;">
-  <button id="deleteClientBtn" class="danger">
-    🗑️ Esborrar aquest client
-  </button>
-</section>
+      <button id="deleteClientBtn" class="danger">
+        🗑️ Esborrar aquest client
+      </button>
+    </section>
 
     <!-- FOOTER -->
     <footer class="footer">
@@ -199,7 +179,7 @@
       </button>
 
       <button id="requestLicenseBtn">
-        💬 Solicitar llicència por WhatsApp
+        💬 Sol·licitar llicència per WhatsApp
       </button>
       
       <div id="licenseInfo" style="display: none; margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; font-size: 13px; text-align: center; color: #10b981;"></div>
@@ -211,7 +191,7 @@
        MODALES
        =============================================== -->
 
-  <!-- MODAL: Nou Client -->
+  <!-- MODAL: Nou Client - ID CORREGIT -->
   <div id="modalNewClient" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
@@ -221,17 +201,17 @@
       <div class="modal-body">
         <label class="modal-label">Client + descripció de la feina</label>
         <input
-  type="text"
-  id="newClientInput"
-  placeholder="Ex: Joan - Targetes presentació"
-  autocomplete="off"
-  autocorrect="off"
-  autocapitalize="sentences"
-  spellcheck="false"
-/>
+          type="text"
+          id="newClientInput"
+          placeholder="Ex: Joan - Targetes presentació"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="sentences"
+          spellcheck="false"
+        />
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalNewClient')">Cancelar</button>
+        <button class="btn-secondary" onclick="closeModal('modalNewClient')">Cancel·lar</button>
         <button class="btn-primary" onclick="confirmNewClient()">Crear</button>
       </div>
     </div>
@@ -252,12 +232,12 @@
         </p>
         <div style="margin-top: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
           <p style="margin: 0; font-size: 0.9rem; color: #93c5fd;">
-            ℹ️ La data apareixerà a l’àrea de tasques urgents i al llistat de clients.
+            ℹ️ La data apareixerà a l'àrea de tasques urgents i al llistat de clients.
           </p>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalDeliveryDate')">Cancelar</button>
+        <button class="btn-secondary" onclick="closeModal('modalDeliveryDate')">Cancel·lar</button>
         <button class="btn-primary" onclick="saveDeliveryDate()">Guardar</button>
       </div>
     </div>
@@ -271,17 +251,17 @@
         <h2 class="modal-title">Afegir Hores Extra</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text">Registra hores treballades fora del projecte principal.:</p>
+        <p class="modal-text">Registra hores treballades fora del projecte principal:</p>
         
         <label class="modal-label">Hores</label>
-        <input type="number" id="inputExtraHours" class="modal-input" placeholder="Ej: 2.5" step="0.25" min="0.25">
+        <input type="number" id="inputExtraHours" class="modal-input" placeholder="Ex: 2.5" step="0.25" min="0.25">
         
         <label class="modal-label">Descripció</label>
-        <input type="text" id="inputExtraDescription" class="modal-input" placeholder="Ej: Reunión cliente, Diseño adicional, etc.">
+        <input type="text" id="inputExtraDescription" class="modal-input" placeholder="Ex: Reunió client, Disseny addicional, etc.">
         
         <div style="margin-top: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
           <p style="margin: 0; font-size: 0.9rem; color: #93c5fd;">
-            ℹ️ Aquestes hores s’afegiran al temps facturable del client.
+            ℹ️ Aquestes hores s'afegiran al temps facturable del client.
           </p>
         </div>
       </div>
@@ -408,10 +388,10 @@
       <div class="modal-body">
         <p class="modal-text">Vols importar aquest treball?</p>
         <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
-          <p style="margin: 8px 0;"><strong>Cliente:</strong> <span id="importClientName"></span></p>
-          <p style="margin: 8px 0;"><strong>Tiempo total:</strong> <span id="importClientTime"></span></p>
+          <p style="margin: 8px 0;"><strong>Client:</strong> <span id="importClientName"></span></p>
+          <p style="margin: 8px 0;"><strong>Temps total:</strong> <span id="importClientTime"></span></p>
           <p style="margin: 8px 0;"><strong>Fotos:</strong> <span id="importClientPhotos"></span></p>
-          <p style="margin: 8px 0;"><strong>Notas:</strong> <span id="importClientNotes"></span></p>
+          <p style="margin: 8px 0;"><strong>Notes:</strong> <span id="importClientNotes"></span></p>
         </div>
       </div>
       <div class="modal-footer">
@@ -434,9 +414,9 @@
           <p style="margin: 8px 0;"><strong>Total clients:</strong> <span id="importBackupClients"></span></p>
           <p style="margin: 8px 0;"><strong>Clients actius:</strong> <span id="importBackupActive"></span></p>
           <p style="margin: 8px 0;"><strong>Data de la còpia:</strong> <span id="importBackupDate"></span></p>
-          <p style="margin: 8px 0;"><strong>Llicència incluida:</strong> <span id="importBackupLicense"></span></p>
+          <p style="margin: 8px 0;"><strong>Llicència inclosa:</strong> <span id="importBackupLicense"></span></p>
         </div>
-        <p class="modal-text" style="font-size: 13px; opacity: 0.8;">La página se recargará automáticamente después de restaurar.</p>
+        <p class="modal-text" style="font-size: 13px; opacity: 0.8;">La pàgina es recarregarà automàticament després de restaurar.</p>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalImportBackup')">Cancel·lar</button>
@@ -450,12 +430,12 @@
     <div class="modal modal-confirm">
       <div class="modal-header">
         <span class="modal-icon">🗑️</span>
-        <h2 class="modal-title">Eliminar cliente</h2>
+        <h2 class="modal-title">Eliminar client</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="deleteClientText"></p>
-        <label class="modal-label">Escriu ELIMINAR per confirmar</label>
-        <input type="text" id="inputDeleteConfirm" class="modal-input" placeholder="ELIMINAR">
+        <label class="modal-label">Escriu ESBORRAR per confirmar</label>
+        <input type="text" id="inputDeleteConfirm" class="modal-input" placeholder="ESBORRAR">
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalDeleteClient')">Cancel·lar</button>
@@ -498,7 +478,7 @@
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
-          L’enfocament només comptabilitza el temps dins de l’horari configurat. Fora d’aquest horari pots continuar treballant, però no afecta les mètriques d’enfocament.
+          L'enfocament només comptabilitza el temps dins de l'horari configurat. Fora d'aquest horari pots continuar treballant, però no afecta les mètriques d'enfocament.
         </p>
 
         <label class="modal-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
@@ -513,7 +493,7 @@
               <input type="time" id="scheduleStart" class="modal-input" value="09:00">
             </div>
             <div style="flex: 1;">
-              <label class="modal-label">Hora fin</label>
+              <label class="modal-label">Hora fi</label>
               <input type="time" id="scheduleEnd" class="modal-input" value="17:00">
             </div>
           </div>
@@ -550,7 +530,7 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">⚙️</span>
-        <h2 class="modal-title">Configuración de còpies</h2>
+        <h2 class="modal-title">Configuració de còpies</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
@@ -564,7 +544,7 @@
 
         <div style="padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
           <p style="margin: 0; font-size: 0.9rem; color: #93c5fd;">
-            ℹ️ Los backups se guardarán automáticamente en tu Google Drive cada día a medianoche
+            ℹ️ Els backups es guardaran automàticament al teu Google Drive cada dia a mitjanit
           </p>
         </div>
       </div>
@@ -583,7 +563,7 @@
         <h2 class="modal-title">Eliminar foto</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text">¿Eliminar aquesta foto del client?</p>
+        <p class="modal-text">Eliminar aquesta foto del client?</p>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalDeletePhoto')">Cancel·lar</button>
@@ -608,7 +588,6 @@
     </div>
   </div>
 
-            
 <script src="/FOCUSWORK/app.js"></script>
 
 <script>
@@ -620,7 +599,6 @@
     });
   }
 </script>
-
 
 </body>
 </html>
