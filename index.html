@@ -141,19 +141,21 @@
   <!-- Accions grans -->
  
       <div class="grid full-actions" style="margin-top: 12px;">
- <div class="grid centered" id="exitClientContainer" style="margin-top: 12px; display: none;">
-  <button id="exitClientBtn" class="secondary">
-    ↩️ Sortir del client
-  </button>
-  <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 4px; text-align: center;">
-    No es tanca el client ni es perden dades
+
+  <div class="grid centered" id="exitClientContainer" style="display: none;">
+    <button id="exitClientBtn" class="secondary"class="full-width">>
+      ↩️ Sortir del client
+    </button>
+    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 4px; text-align: center;">
+      No es tanca el client ni es perden dades
+    </div>
   </div>
+
+  <button id="historyBtn">📂 Clients tancats</button>
+  <button id="closeClient" class="danger">✅ Tancar</button>
+
 </div>
 
-      <div class="grid full-actions" style="margin-top: 12px;">
-    <button id="historyBtn">📂 Clients tancats</button>
-    <button id="closeClient" class="danger">✅ Tancar</button>
-  </div>
 
 </section>
 
@@ -162,7 +164,7 @@
       <div class="grid">
         <button id="exportWorkBtn">💾 Guardar sessió</button>
         <button id="importWorkBtn">📂 Carregar treball</button>
-        <button id="importWorkBtn">📂 Restaurar còpia completa</button>
+        <button id="importWorkBtn"class="full-width">📂 Restaurar còpia completa</button>
         <button id="exportAllBtn" class="full-width">📦 Còpia de seguretat</button>
       </div>
     </section>
