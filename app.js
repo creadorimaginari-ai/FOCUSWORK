@@ -28,6 +28,22 @@ function activityLabel(act) {
   }
 }
 
+function updateLicenseHint() {
+  const panel = document.getElementById('licenseHintPanel');
+  if (!panel) return;
+
+  const hasLicense = state.hasLicense === true;
+  const activeClients = Object.values(state.clients || {}).filter(c => c.active).length;
+
+  if (!hasLicense && activeClients >= 2) {
+    panel.classList.remove('hidden');
+  } else {
+    panel.classList.add('hidden');
+  }
+}
+
+
+
 /* ================= AJUDANTS ================= */
 const $ = (id) => document.getElementById(id);
 
@@ -570,6 +586,7 @@ function saveDeliveryDate() {
 
 /* ================= UI ================= */
 function updateUI() {
+  updateLicenseHint();
   const activitiesPanel = $('activitiesPanel');
   const client = state.currentClientId ? state.clients[state.currentClientId] : null;
   if (!state.currentClientId) {
@@ -1311,6 +1328,10 @@ document.addEventListener('DOMContentLoaded', () => {
     $('focusPriorityBtn').onclick = () => {
       // SEMPRE obre el selector de clients
       changeClient();
+      document.getElementById('openLicenseOptions')?.addEventListener('click', () => {
+  document.getElementById('versionBox')?.scrollIntoView({ behavior: 'smooth' });
+});
+
     };
   }
   if ($('newClientBtn')) $('newClientBtn').onclick = newClient;
