@@ -214,15 +214,17 @@
       </div>
       <div class="modal-body">
         <label class="modal-label">Client + descripció de la feina</label>
-        <input
-          type="text"
-          id="newClientInput"
-          placeholder="Ex: Joan - Targetes presentació"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="sentences"
-          spellcheck="false"
-        />
+        <textarea
+  id="newClientInput"
+  class="workpad-area"
+  placeholder="Ex: Joan - Targetes presentació"
+  rows="2"
+  autocomplete="off"
+  autocorrect="off"
+  autocapitalize="sentences"
+  spellcheck="false"
+></textarea>
+
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalNewClient')">Cancel·lar</button>
