@@ -6,7 +6,7 @@
 const WHATSAPP_PHONE = "34649383847";
 const APP_VERSION = "3.1";
 const LICENSE_SECRET = "FW2025-SECURE-KEY-X7Y9Z";
-
+const GOOGLE_CLIENT_ID = '339892728740-ghh878p6g57relsi79cprbti5vac1hd4.apps.googleusercontent.com';
 
 /* ================= ACTIVITATS ================= */
 const ACTIVITIES = {
@@ -782,10 +782,20 @@ function changeClient() {
 }
 
 function selectClient(clientId) {
+  const previousClient = state.currentClientId;
+  
   state.currentClientId = clientId;
-  state.currentActivity = ACTIVITIES.WORK;
-  state.sessionElapsed = 0;
-  state.lastTick = Date.now();
+  
+  // Si ja hi havia un client actiu, NO reiniciem el temps de sessió
+  // només canviem de client i continuem comptant
+  if (!previousClient) {
+    // Només si venim de "sense client" iniciem nova sessió
+    state.currentActivity = ACTIVITIES.WORK;
+    state.sessionElapsed = 0;
+    state.lastTick = Date.now();
+  }
+  // Si ja hi havia client, el tick() continuarà comptant automàticament
+  
   isWorkpadInitialized = false;
   areTasksInitialized = false;
   save();
@@ -1299,15 +1309,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // BOTONS PRINCIPALS
   if ($('focusPriorityBtn')) {
     $('focusPriorityBtn').onclick = () => {
-      if (!state.currentClientId) {
-        changeClient();
-      } else {
-        state.currentActivity = ACTIVITIES.WORK;
-        state.sessionElapsed = 0;
-        state.lastTick = Date.now();
-        save();
-        updateUI();
-      }
+      // SEMPRE obre el selector de clients
+      changeClient();
     };
   }
   if ($('newClientBtn')) $('newClientBtn').onclick = newClient;
