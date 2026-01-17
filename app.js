@@ -6,7 +6,7 @@
 const WHATSAPP_PHONE = "34649383847";
 const APP_VERSION = "3.1";
 const LICENSE_SECRET = "FW2025-SECURE-KEY-X7Y9Z";
-const GOOGLE_CLIENT_ID = '339892728740-ghh878p6g57relsi79cprbti5vac1hd4.apps.googleusercontent.com';
+
 
 /* ================= ACTIVITATS ================= */
 const ACTIVITIES = {
@@ -700,9 +700,18 @@ function confirmNewClient() {
   if (!name) return;
   const id = uid();
   state.clients[id] = {
-    id, name, active: true, total: 0, billableTime: 0,
-    activities: {}, photos: [], notes: "", deliveryDate: null,
-    extraHours: [], tasks: { urgent: "", important: "", later: "" }
+    id,
+    name,
+    createdAt: Date.now(),
+    active: true,
+    total: 0,
+    billableTime: 0,
+    activities: {},
+    photos: [],
+    notes: "",
+    deliveryDate: null,
+    extraHours: [],
+    tasks: { urgent: "", important: "", later: "" }
   };
   state.currentClientId = id;
   state.currentActivity = ACTIVITIES.WORK;
@@ -716,7 +725,25 @@ function confirmNewClient() {
 }
 
 function changeClient() {
-  const actives = Object.values(state.clients).filter(c => c.active);
+  const actives = Object.values(state.clients)
+    .filter(c => c.active)
+    .sort((a, b) => {
+      const aHasDate = !!a.deliveryDate;
+      const bHasDate = !!b.deliveryDate;
+
+      // 1️⃣ Clients amb data d'entrega primer
+      if (aHasDate && !bHasDate) return -1;
+      if (!aHasDate && bHasDate) return 1;
+
+      // 2️⃣ Tots dos amb data → la més propera primer
+      if (aHasDate && bHasDate) {
+        return new Date(a.deliveryDate) - new Date(b.deliveryDate);
+      }
+
+      // 3️⃣ Cap té data → el més antic primer
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
+    
   if (!actives.length) {
     showAlert('Sense clients', 'No hi ha clients actius', '⚠️');
     return;
