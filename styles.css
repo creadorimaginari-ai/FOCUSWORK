@@ -657,9 +657,13 @@ button:hover,
   min-height: 0 !important;
   height: auto !important;
   border-radius: 8px !important;
-    display: flex;
-  flex-direction: column;
-  align-items: center;   /* 🔥 CENTRA HO TOT */
+
+  display: inline-flex;          /* ✅ no flex normal */
+  align-items: center;           /* centra verticalment */
+  justify-content: center;       /* centra horitzontalment */
+  gap: 6px;                      /* separa emoji + text */
+
+  width: auto !important;        /* 🔥 clau */
 }
 
 
