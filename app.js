@@ -35,24 +35,24 @@ function updateLicenseHint() {
 
   if (!hintPanel) return;
 
-  // Si hi ha llicència activa → no mostrem cap panell
-  if (state.hasLicense === true) {
+  // Si hi ha llicència activa → no mostrem res
+  if (state.isFull === true) {
     hintPanel.classList.add('hidden');
-    if (versionBox) versionBox.classList.add('hidden');
+    if (versionBox) versionBox.style.display = 'none';
     return;
   }
+
+  // versionBox SEMPRE visible si no hi ha llicència
+  if (versionBox) versionBox.style.display = 'block';
 
   const clients = Object.values(state.clients || {});
   const activeClients = clients.filter(c => c.active).length;
 
-  // Quan s'arriba al límit → només panell discret
+  // Panel inferior només amb 2 clients
   if (activeClients >= 2) {
     hintPanel.classList.remove('hidden');
-    if (versionBox) versionBox.classList.add('hidden');
   } else {
-    // En qualsevol altre cas → no mostrem res
     hintPanel.classList.add('hidden');
-    if (versionBox) versionBox.classList.add('hidden');
   }
 }
 
