@@ -117,7 +117,52 @@ html, body {
   opacity: 0.6;
   letter-spacing: 0.3px;
 }
+/* PANEL DE LLICÈNCIA INFERIOR */
+.license-hint {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.95) 20%, rgba(15, 23, 42, 1) 100%);
+  padding: 20px 16px 16px;
+  z-index: 40;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
 
+.license-hint.hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.license-hint-content {
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: center;
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.license-hint-content strong {
+  display: block;
+  color: #fbbf24;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.license-hint-content p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  margin: 0 0 12px 0;
+}
+
+.license-hint-content button {
+  width: 100%;
+  max-width: 250px;
+}
 /* ===============================
    BLOQUES / PANELS
    =============================== */
