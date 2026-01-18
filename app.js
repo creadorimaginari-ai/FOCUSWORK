@@ -32,15 +32,23 @@ function updateLicenseHint() {
   const panel = document.getElementById('licenseHintPanel');
   if (!panel) return;
 
-  const hasLicense = state.hasLicense === true;
-  const activeClients = Object.values(state.clients || {}).filter(c => c.active).length;
+  // Llicència activa → no mostrem res
+  if (state.hasLicense === true) {
+    panel.classList.add('hidden');
+    return;
+  }
 
-  if (!hasLicense && activeClients >= 2) {
+  const clients = Object.values(state.clients || {});
+  const activeClients = clients.filter(c => c.active).length;
+
+  // Només apareix quan realment hi ha fricció
+  if (activeClients >= 2) {
     panel.classList.remove('hidden');
   } else {
     panel.classList.add('hidden');
   }
 }
+
 
 
 
