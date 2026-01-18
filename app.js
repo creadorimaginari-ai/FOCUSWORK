@@ -28,35 +28,20 @@ function activityLabel(act) {
   }
 }
 
-function updateLicenseHint() {
-  const panel = document.getElementById('licenseHintPanel');
-  if (!panel) return;
-
-  // Llicència activa → no mostrem res
-  if (state.hasLicense === true) {
-    panel.classList.add('hidden');
-    return;
-  }
-
-  const clients = Object.values(state.clients || {});
-  const activeClients = clients.filter(c => c.active).length;
-
-  // Només apareix quan realment hi ha fricció
-  if (activeClients >= 2) {
-    panel.classList.remove('hidden');
-  } else {
-    panel.classList.add('hidden');
-  }
-}
-
-
-
-
 /* ================= AJUDANTS ================= */
 const $ = (id) => document.getElementById(id);
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function getDeviceId() {
+  let id = localStorage.getItem('focuswork_device_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('focuswork_device_id', id);
+  }
+  return id;
 }
 
 function formatTime(sec) {
@@ -227,6 +212,13 @@ async function loadLicenseFile() {
         showAlert('Arxiu invàlid', 'Aquest no és un arxiu de llicència vàlid', '❌');
         return;
       }
+      
+      // Verificar que la llicència correspon a aquest dispositiu
+      if (license.deviceId && license.deviceId !== getDeviceId()) {
+        showAlert('Llicència invàlida', 'Aquesta llicència correspon a un altre dispositiu.\n\nContacta amb nosaltres si necessites transferir la llicència.', '⚠️');
+        return;
+      }
+      
       if (license.expiryDate) {
         const expiry = new Date(license.expiryDate);
         if (expiry < new Date()) {
@@ -250,8 +242,11 @@ async function loadLicenseFile() {
 }
 
 function requestLicense() {
-  const msg = `Hola, necessito una llicència de FocoWork complet`;
-  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`);
+  const deviceId = getDeviceId();
+  const message = encodeURIComponent(
+    `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
+  );
+  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`);
 }
 
 /* ================= EXPORTACIÓ/IMPORTACIÓ ================= */
@@ -594,7 +589,6 @@ function saveDeliveryDate() {
 
 /* ================= UI ================= */
 function updateUI() {
-  updateLicenseHint();
   const activitiesPanel = $('activitiesPanel');
   const client = state.currentClientId ? state.clients[state.currentClientId] : null;
   if (!state.currentClientId) {
@@ -1336,10 +1330,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('focusPriorityBtn').onclick = () => {
       // SEMPRE obre el selector de clients
       changeClient();
-      document.getElementById('openLicenseOptions')?.addEventListener('click', () => {
-  document.getElementById('versionBox')?.scrollIntoView({ behavior: 'smooth' });
-});
-
     };
   }
   if ($('newClientBtn')) $('newClientBtn').onclick = newClient;
