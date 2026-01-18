@@ -32,6 +32,15 @@ function activityLabel(act) {
 const $ = (id) => document.getElementById(id);
 
 function uid() {
+  function getDeviceId() {
+  let id = localStorage.getItem("focowork_device_id");
+  if (!id) {
+    id = "FW-" + uid();
+    localStorage.setItem("focowork_device_id", id);
+  }
+  return id;
+}
+
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
@@ -227,10 +236,17 @@ async function loadLicenseFile() {
 
 function requestLicense() {
   const deviceId = getDeviceId();
+  const version = APP_VERSION;
+  const clientCount = Object.keys(state.clients).length;
+
   const message = encodeURIComponent(
-    `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
+    `Hola! Vull activar FocusWork.\n\n` +
+    `📱 Device ID: ${deviceId}\n` +
+    `🧩 Versió: ${version}\n` +
+    `👥 Clients creats: ${clientCount}\n`
   );
-  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`);
+
+  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`, "_blank");
 }
 
 /* ================= EXPORTACIÓ/IMPORTACIÓ ================= */
