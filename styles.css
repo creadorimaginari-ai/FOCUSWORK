@@ -123,7 +123,6 @@ html, body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.95) 20%, rgba(15, 23, 42, 1) 100%);
   padding: 20px 16px 16px;
   z-index: 40;
   transition: transform 0.3s ease, opacity 0.3s ease;
