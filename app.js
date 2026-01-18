@@ -30,25 +30,32 @@ function activityLabel(act) {
 }
 
 function updateLicenseHint() {
-  const panel = $('licenseHintPanel');
-  if (!panel) return;
+  const hintPanel = document.getElementById('licenseHintPanel');
+  const versionBox = document.getElementById('versionBox');
 
-  // Llicència activa → no mostrem res
-  if (state.isFull === true) {
-    panel.classList.add('hidden');
+  if (!hintPanel) return;
+
+  // Si hi ha llicència activa → no mostrem cap panell
+  if (state.hasLicense === true) {
+    hintPanel.classList.add('hidden');
+    if (versionBox) versionBox.classList.add('hidden');
     return;
   }
 
   const clients = Object.values(state.clients || {});
   const activeClients = clients.filter(c => c.active).length;
 
-  // Només apareix quan realment hi ha fricció
+  // Quan s'arriba al límit → només panell discret
   if (activeClients >= 2) {
-    panel.classList.remove('hidden');
+    hintPanel.classList.remove('hidden');
+    if (versionBox) versionBox.classList.add('hidden');
   } else {
-    panel.classList.add('hidden');
+    // En qualsevol altre cas → no mostrem res
+    hintPanel.classList.add('hidden');
+    if (versionBox) versionBox.classList.add('hidden');
   }
 }
+
 
 /* ================= AJUDANTS ================= */
 const $ = (id) => document.getElementById(id);
