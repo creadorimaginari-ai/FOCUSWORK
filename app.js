@@ -1364,7 +1364,8 @@ if (licenseBtn) {
       `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
     );
 
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`, '_blank');
+    //                              ^^^^^^^^^^^^^ ✅ USA LA CONSTANT
   });
 }
 
