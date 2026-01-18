@@ -1399,24 +1399,6 @@ if (licenseBtn) {
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
   
-  // BOTÓ DEL PANEL DE LLICÈNCIA INFERIOR
-  if ($('openLicenseOptions')) {
-    $('openLicenseOptions').onclick = () => {
-      const versionBox = $('versionBox');
-      if (versionBox) {
-        versionBox.scrollIntoView({ behavior: 'smooth' });
-        // Highlight temporal per cridar l'atenció
-        versionBox.style.transition = 'all 0.3s ease';
-        versionBox.style.transform = 'scale(1.02)';
-        versionBox.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)';
-        setTimeout(() => {
-          versionBox.style.transform = 'scale(1)';
-          versionBox.style.boxShadow = '';
-        }, 600);
-      }
-    };
-  }
-  
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
