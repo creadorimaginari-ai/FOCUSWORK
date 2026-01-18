@@ -226,8 +226,11 @@ async function loadLicenseFile() {
 }
 
 function requestLicense() {
-  const msg = `Hola, necessito una llicència de FocoWork complet`;
-  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`);
+  const deviceId = getDeviceId();
+  const message = encodeURIComponent(
+    `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
+  );
+  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`);
 }
 
 /* ================= EXPORTACIÓ/IMPORTACIÓ ================= */
