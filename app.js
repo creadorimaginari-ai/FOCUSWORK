@@ -1,4 +1,3 @@
-
 /*************************************************
  * FOCUSWORK – app.js (V3.1 CORREGIT)
  *************************************************/
@@ -29,48 +28,11 @@ function activityLabel(act) {
   }
 }
 
-function updateLicenseHint() {
-  const hintPanel = document.getElementById('licenseHintPanel');
-  const versionBox = document.getElementById('versionBox');
-
-  if (!hintPanel) return;
-
-  // Si hi ha llicència activa → no mostrem res
-  if (state.isFull === true) {
-    hintPanel.classList.add('hidden');
-    if (versionBox) versionBox.style.display = 'none';
-    return;
-  }
-
-  // versionBox SEMPRE visible si no hi ha llicència
-  if (versionBox) versionBox.style.display = 'block';
-
-  const clients = Object.values(state.clients || {});
-  const activeClients = clients.filter(c => c.active).length;
-
-  // Panel inferior només amb 2 clients
-  if (activeClients >= 2) {
-    hintPanel.classList.remove('hidden');
-  } else {
-    hintPanel.classList.add('hidden');
-  }
-}
-
-
 /* ================= AJUDANTS ================= */
 const $ = (id) => document.getElementById(id);
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
-function getDeviceId() {
-  let id = localStorage.getItem('focuswork_device_id');
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem('focuswork_device_id', id);
-  }
-  return id;
 }
 
 function formatTime(sec) {
@@ -241,13 +203,6 @@ async function loadLicenseFile() {
         showAlert('Arxiu invàlid', 'Aquest no és un arxiu de llicència vàlid', '❌');
         return;
       }
-      
-      // Verificar que la llicència correspon a aquest dispositiu
-      if (license.deviceId && license.deviceId !== getDeviceId()) {
-        showAlert('Llicència invàlida', 'Aquesta llicència correspon a un altre dispositiu.\n\nContacta amb nosaltres si necessites transferir la llicència.', '⚠️');
-        return;
-      }
-      
       if (license.expiryDate) {
         const expiry = new Date(license.expiryDate);
         if (expiry < new Date()) {
@@ -271,11 +226,8 @@ async function loadLicenseFile() {
 }
 
 function requestLicense() {
-  const deviceId = getDeviceId();
-  const message = encodeURIComponent(
-    `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
-  );
-  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`);
+  const msg = `Hola, necessito una llicència de FocoWork complet`;
+  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`);
 }
 
 /* ================= EXPORTACIÓ/IMPORTACIÓ ================= */
@@ -618,7 +570,6 @@ function saveDeliveryDate() {
 
 /* ================= UI ================= */
 function updateUI() {
-  updateLicenseHint();
   const activitiesPanel = $('activitiesPanel');
   const client = state.currentClientId ? state.clients[state.currentClientId] : null;
   if (!state.currentClientId) {
@@ -1355,22 +1306,6 @@ function saveScheduleConfig() {
 
 /* ================= EVENT LISTENERS ================= */
 document.addEventListener('DOMContentLoaded', () => {
-  const licenseBtn = document.getElementById('openLicenseOptions');
-
-if (licenseBtn) {
-  licenseBtn.addEventListener('click', () => {
-    const deviceId = getDeviceId();
-    const message = encodeURIComponent(
-      `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
-    );
-
-    window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`, '_blank');
-    //                              ^^^^^^^^^^^^^ ✅ USA LA CONSTANT
-  });
-}
-
-  
-  
   // BOTONS PRINCIPALS
   if ($('focusPriorityBtn')) {
     $('focusPriorityBtn').onclick = () => {
@@ -1410,14 +1345,10 @@ if (licenseBtn) {
     });
   });
   
-  // INPUT NOU CLIENT - Support per Enter i textarea
+  // INPUT NOU CLIENT
   if ($('newClientInput')) {
-    $('newClientInput').addEventListener('keydown', e => {
-      // Ctrl+Enter o Cmd+Enter per crear
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        confirmNewClient();
-      }
+    $('newClientInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') confirmNewClient();
     });
   }
   
