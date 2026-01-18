@@ -1333,6 +1333,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
   
+  // BOTÓ DEL PANEL INFERIOR (sol·licitar llicència)
+  if ($('openLicenseOptions')) {
+    $('openLicenseOptions').onclick = requestLicense;
+  }
+  
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
@@ -1345,10 +1350,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
-  // INPUT NOU CLIENT
+  // INPUT NOU CLIENT - Support per Ctrl+Enter
   if ($('newClientInput')) {
-    $('newClientInput').addEventListener('keypress', e => {
-      if (e.key === 'Enter') confirmNewClient();
+    $('newClientInput').addEventListener('keydown', e => {
+      // Ctrl+Enter o Cmd+Enter per crear
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        confirmNewClient();
+      }
     });
   }
   
