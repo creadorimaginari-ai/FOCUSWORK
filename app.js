@@ -1,3 +1,4 @@
+
 /*************************************************
  * FOCUSWORK – app.js (V3.1 CORREGIT)
  *************************************************/
@@ -25,6 +26,27 @@ function activityLabel(act) {
     case ACTIVITIES.VISIT: return "Visitant";
     case ACTIVITIES.OTHER: return "Altres";
     default: return act;
+  }
+}
+
+function updateLicenseHint() {
+  const panel = $('licenseHintPanel');
+  if (!panel) return;
+
+  // Llicència activa → no mostrem res
+  if (state.isFull === true) {
+    panel.classList.add('hidden');
+    return;
+  }
+
+  const clients = Object.values(state.clients || {});
+  const activeClients = clients.filter(c => c.active).length;
+
+  // Només apareix quan realment hi ha fricció
+  if (activeClients >= 2) {
+    panel.classList.remove('hidden');
+  } else {
+    panel.classList.add('hidden');
   }
 }
 
@@ -589,6 +611,7 @@ function saveDeliveryDate() {
 
 /* ================= UI ================= */
 function updateUI() {
+  updateLicenseHint();
   const activitiesPanel = $('activitiesPanel');
   const client = state.currentClientId ? state.clients[state.currentClientId] : null;
   if (!state.currentClientId) {
@@ -1352,6 +1375,24 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
   
+  // BOTÓ DEL PANEL DE LLICÈNCIA INFERIOR
+  if ($('openLicenseOptions')) {
+    $('openLicenseOptions').onclick = () => {
+      const versionBox = $('versionBox');
+      if (versionBox) {
+        versionBox.scrollIntoView({ behavior: 'smooth' });
+        // Highlight temporal per cridar l'atenció
+        versionBox.style.transition = 'all 0.3s ease';
+        versionBox.style.transform = 'scale(1.02)';
+        versionBox.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)';
+        setTimeout(() => {
+          versionBox.style.transform = 'scale(1)';
+          versionBox.style.boxShadow = '';
+        }, 600);
+      }
+    };
+  }
+  
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
@@ -1364,10 +1405,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
-  // INPUT NOU CLIENT
+  // INPUT NOU CLIENT - Support per Enter i textarea
   if ($('newClientInput')) {
-    $('newClientInput').addEventListener('keypress', e => {
-      if (e.key === 'Enter') confirmNewClient();
+    $('newClientInput').addEventListener('keydown', e => {
+      // Ctrl+Enter o Cmd+Enter per crear
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        confirmNewClient();
+      }
     });
   }
   
