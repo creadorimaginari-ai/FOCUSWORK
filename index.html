@@ -181,25 +181,23 @@
       <button id="todayBtn">📄 Report CSV</button>
     </footer>
 
-    <!-- VERSIÓN / ACTIVACIÓN -->
-    <div id="versionBox" class="version-box">
-      <div class="lock">
-        🔒 <strong>Versió de mostra</strong><br />
-        Màxim 2 clients actius a la vegada
-      </div>
-
-      <button id="loadLicenseBtn" class="primary">
-        📄 Carregar arxiu amb la llicència
-      </button>
-
-      <button id="requestLicenseBtn">
-        💬 Sol·licitar llicència per WhatsApp
-      </button>
-      
-      <div id="licenseInfo" style="display: none; margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; font-size: 13px; text-align: center; color: #10b981;"></div>
-    </div>
-
+   <!-- VERSIÓ / ACTIVACIÓ -->
+<div id="versionBox" class="version-box">
+  <div class="lock">
+    🔒 <strong>Versió de mostra</strong><br />
+    Màxim 2 clients actius a la vegada
   </div>
+
+  <button id="loadLicenseBtn" class="primary">
+    📄 Carregar arxiu amb la llicència
+  </button>
+
+  <button id="requestLicenseBtn">
+    💬 Sol·licitar llicència per WhatsApp
+  </button>
+  
+  <div id="licenseInfo" style="display: none; ..."></div>
+</div>
 
   <!-- ===============================================
        MODALES
@@ -620,17 +618,15 @@
   <div class="license-hint-content">
     <strong>Versió de mostra</strong>
     <p>Màxim 2 clients actius.</p>
+    
     <button id="openLicenseOptions" class="secondary small">
-     💬 Demanar llicència per WhatsApp
-      </button>
+      Veure opcions de llicència
+    </button>
   </div>
-  <div id="licenseHintPanel" class="license-hint hidden">
-  <div class="license-hint-content">
-  <button id="loadLicenseBtn" class="primary">
-        📄 Carregar arxiu amb la llicència
-      </button>
-      <div id="licenseInfo" style="display: none; margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; font-size: 13px; text-align: center; color: #10b981;"></div>
 </div>
 
+<script src="/FOCUSWORK/app.js"></script>
+<!-- ... service worker ... -->
 </body>
 </html>
+
