@@ -1,3 +1,5 @@
+console.log("✅ app.js carregat correctament");
+
 /*************************************************
  * FOCUSWORK – app.js (V3.1 CORREGIT)
  *************************************************/
