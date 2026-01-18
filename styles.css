@@ -651,22 +651,12 @@ button:hover,
 }
 
 .version-box button {
-  width: 100%;
-  border-radius: 10px;     /* ⬇️ antes 16 */
-  padding: 8px 12px;       /* ⬅️ CLAVE */
-  border: none;
-  font-size: 14px;         /* ⬇️ antes 16 */
-  font-weight: 600;        /* ⬇️ menos inflado */
-  line-height: 1.2;        /* controla la altura real */
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 
-    0 3px 10px rgba(37, 99, 235, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  letter-spacing: 0.2px;
-  margin-bottom: 8px;      /* ⬇️ antes 12 */
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  border-radius: 8px !important;
 }
 
 
