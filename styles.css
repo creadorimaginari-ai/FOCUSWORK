@@ -145,18 +145,7 @@ html, body {
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-.license-hint-content strong {
-  display: block;
-  color: #fbbf24;
-  font-size: 0.9rem;
-  margin-bottom: 4px;
-}
 
-.license-hint-content p {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.85rem;
-  margin: 0 0 12px 0;
-}
 
 .license-hint-content button {
   width: 100%;
