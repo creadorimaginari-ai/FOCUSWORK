@@ -129,11 +129,11 @@ html, body {
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-.license-hint.hidden {
-  transform: translateY(100%);
-  opacity: 0;
-  pointer-events: none;
+.hidden {
+  display: none !important;
+  pointer-events: none !important;
 }
+
 
 .license-hint-content {
   max-width: 500px;
