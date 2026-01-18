@@ -1359,9 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 if (licenseBtn) {
   licenseBtn.addEventListener('click', () => {
-    const phone = '+34649383847'; // ⬅️ posa el teu número
     const deviceId = getDeviceId();
-
     const message = encodeURIComponent(
       `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
     );
