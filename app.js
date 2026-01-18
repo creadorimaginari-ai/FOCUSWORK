@@ -1355,6 +1355,23 @@ function saveScheduleConfig() {
 
 /* ================= EVENT LISTENERS ================= */
 document.addEventListener('DOMContentLoaded', () => {
+  const licenseBtn = document.getElementById('openLicenseOptions');
+
+if (licenseBtn) {
+  licenseBtn.addEventListener('click', () => {
+    const phone = '+34649383847'; // ⬅️ posa el teu número
+    const deviceId = getDeviceId();
+
+    const message = encodeURIComponent(
+      `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
+    );
+
+    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+  });
+}
+
+  
+  
   // BOTONS PRINCIPALS
   if ($('focusPriorityBtn')) {
     $('focusPriorityBtn').onclick = () => {
