@@ -617,35 +617,50 @@ button:hover,
   letter-spacing: 0.3px;
 }
 
+/* ===============================
+   BOTONS VERSIÓ / LLICÈNCIA (ALÇADA BAIXA)
+   =============================== */
+
 .version-box button {
   width: 100%;
-  border-radius: 16px;
-  padding: 16px;
+  max-width: 360px;
+
+  padding: 6px 14px;        /* 👈 CLAU: alçada baixa */
+  margin-bottom: 8px;
+
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+
   border: none;
-  font-size: 16px;
-  font-weight: 700;
+  border-radius: 999px;     /* 👈 estil “pill” com a la imatge */
+
   background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #fff;
+  color: #ffffff;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
   cursor: pointer;
-  box-shadow: 
-    0 4px 16px rgba(37, 99, 235, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  letter-spacing: 0.3px;
-  margin-bottom: 12px;
+
+  box-shadow:
+    0 2px 8px rgba(37, 99, 235, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .version-box button:hover {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  transform: translateY(-2px);
-  box-shadow: 
-    0 8px 24px rgba(37, 99, 235, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .version-box button:active {
   transform: translateY(0);
 }
+
 
 .version-box input {
   width: 100%;
