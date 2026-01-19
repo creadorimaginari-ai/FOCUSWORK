@@ -17,6 +17,20 @@ html, body {
                Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
   overflow-x: hidden;
 }
+#requestLicenseBtn {
+  position: relative;
+  z-index: 999999;
+  pointer-events: auto !important;
+}
+
+.version-box {
+  z-index: 999998;
+  pointer-events: auto;
+}
+
+.modal-overlay {
+  pointer-events: none !important;
+}
 
 /* ===============================
    GRID DE BOTONES
