@@ -217,7 +217,7 @@ async function loadLicenseFile() {
       const expiryText = license.expiryDate
         ? `Vàlida fins: ${new Date(license.expiryDate).toLocaleDateString()}`
         : 'Sense límit de temps';
-      showAlert('Llicència activada!', `FocoWork complet activat\n\nClient: ${license.clientName}\n${expiryText}\n\nGaudeix de clients il·limitats!`, '🎉');
+      showAlert('Llicència activada!', `FocusWork complet activat\n\nClient: ${license.clientName}\n${expiryText}\n\nGaudeix de clients il·limitats!`, '🎉');
     } catch (err) {
       showAlert('Error', 'No s\'ha pogut llegir l\'arxiu de llicència', '❌');
     }
@@ -230,7 +230,8 @@ function requestLicense() {
   const message = encodeURIComponent(
     `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
   );
-  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`);
+  window.location.href = `https://wa.me/${WHATSAPP_PHONE}?text=${message}`;
+
 }
 
 
