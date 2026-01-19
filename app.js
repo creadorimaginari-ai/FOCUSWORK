@@ -1433,7 +1433,9 @@ document.addEventListener('DOMContentLoaded', () => {
       showAlert('Llicència caducada', 'La teva llicència ha caducat. Contacta per renovar-la.', '⏰');
     }
   }
-  
+  window.requestLicense = requestLicense;
+window.loadLicenseFile = loadLicenseFile;
+
   // PROGRAMAR BACKUP AUTOMÀTIC
   scheduleFullAutoBackup();
   
