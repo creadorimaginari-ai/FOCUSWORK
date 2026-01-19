@@ -225,17 +225,24 @@ async function loadLicenseFile() {
   input.click();
 }
 
+function getDeviceId() {
+  let id = localStorage.getItem("focuswork_device_id");
+  if (!id) {
+    id = "FW-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    localStorage.setItem("focuswork_device_id", id);
+  }
+  return id;
+}
+
 function requestLicense() {
   const deviceId = getDeviceId();
   const message = encodeURIComponent(
     `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
   );
+
+  // MÉS FIABLE QUE window.open
   window.location.href = `https://wa.me/${WHATSAPP_PHONE}?text=${message}`;
-
 }
-
-
-
 
 
 
