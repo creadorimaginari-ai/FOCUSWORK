@@ -1,5 +1,3 @@
-console.log("✅ app.js carregat correctament");
-
 /*************************************************
  * FOCUSWORK – app.js (V3.1 CORREGIT)
  *************************************************/
@@ -34,15 +32,6 @@ function activityLabel(act) {
 const $ = (id) => document.getElementById(id);
 
 function uid() {
-  function getDeviceId() {
-  let id = localStorage.getItem("focowork_device_id");
-  if (!id) {
-    id = "FW-" + uid();
-    localStorage.setItem("focowork_device_id", id);
-  }
-  return id;
-}
-
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
@@ -237,18 +226,8 @@ async function loadLicenseFile() {
 }
 
 function requestLicense() {
-  const deviceId = getDeviceId();
-  const version = APP_VERSION;
-  const clientCount = Object.keys(state.clients).length;
-
-  const message = encodeURIComponent(
-    `Hola! Vull activar FocusWork.\n\n` +
-    `📱 Device ID: ${deviceId}\n` +
-    `🧩 Versió: ${version}\n` +
-    `👥 Clients creats: ${clientCount}\n`
-  );
-
-  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`, "_blank");
+  const msg = `Hola, necessito una llicència de FocoWork complet`;
+  window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`);
 }
 
 /* ================= EXPORTACIÓ/IMPORTACIÓ ================= */
@@ -1354,11 +1333,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
   
-  // BOTÓ DEL PANEL INFERIOR (sol·licitar llicència)
-  if ($('openLicenseOptions')) {
-    $('openLicenseOptions').onclick = requestLicense;
-  }
-  
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
@@ -1371,14 +1345,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
-  // INPUT NOU CLIENT - Support per Ctrl+Enter
+  // INPUT NOU CLIENT
   if ($('newClientInput')) {
-    $('newClientInput').addEventListener('keydown', e => {
-      // Ctrl+Enter o Cmd+Enter per crear
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        confirmNewClient();
-      }
+    $('newClientInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') confirmNewClient();
     });
   }
   
@@ -1433,9 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showAlert('Llicència caducada', 'La teva llicència ha caducat. Contacta per renovar-la.', '⏰');
     }
   }
-  window.requestLicense = requestLicense;
-window.loadLicenseFile = loadLicenseFile;
-
+  
   // PROGRAMAR BACKUP AUTOMÀTIC
   scheduleFullAutoBackup();
   
