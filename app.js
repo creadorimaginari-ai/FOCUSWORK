@@ -77,6 +77,10 @@ function showAlert(title, message, icon = 'ℹ️') {
   openModal('modalAlert');
 }
 
+const EXIT_BUTTON_DELAY = 4000; // 4 segons
+let exitButtonTimeout = null;
+
+
 /* ================= USUARI ================= */
 let userName = localStorage.getItem("focowork_user_name") || "Usuari";
 
@@ -697,6 +701,24 @@ function updateFocusScheduleStatus() {
   } else {
     statusEl.style.display = "none";
   }
+}
+function scheduleExitButton(clientId) {
+  const btn = document.getElementById("exitClientFloating");
+  if (!btn || !clientId) return;
+
+  btn.classList.add("hidden");
+  clearTimeout(exitButtonTimeout);
+
+  exitButtonTimeout = setTimeout(() => {
+    if (state.currentClientId === clientId) {
+      btn.classList.remove("hidden");
+    }
+  }, EXIT_BUTTON_DELAY);
+}
+
+function hideExitButton() {
+  const btn = document.getElementById("exitClientFloating");
+  if (btn) btn.classList.add("hidden");
 }
 
 /* ================= CLIENTS ================= */
