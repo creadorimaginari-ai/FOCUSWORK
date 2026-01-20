@@ -97,7 +97,11 @@ let state = JSON.parse(localStorage.getItem("focowork_state")) || {
   focus: {},
   focusSchedule: { enabled: false, start: "09:00", end: "17:00" },
   autoDriveBackup: false
+  
 };
+/* ================= RELLOTGE VISUAL ================= */
+let visualSeconds = 0;
+
 
 function save() {
   localStorage.setItem("focowork_state", JSON.stringify(state));
@@ -421,30 +425,51 @@ function resetTodayFocus() {
 /* ================= MOTOR DE TEMPS ================= */
 function tick() {
   resetDayIfNeeded();
+
   const client = state.clients[state.currentClientId];
-  if (!client || !client.active || !state.currentActivity || !state.lastTick) {
+  if (!client || !client.active || !state.currentActivity) {
     state.lastTick = Date.now();
     return;
   }
+
   const now = Date.now();
+  if (!state.lastTick) {
+    state.lastTick = now;
+    return;
+  }
+
   const elapsed = Math.floor((now - state.lastTick) / 1000);
   if (elapsed <= 0) return;
+
   state.lastTick = now;
+
+  // ⏱️ TEMPS REAL (NO TOCAR)
   state.sessionElapsed += elapsed;
   client.total += elapsed;
-  client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + elapsed;
+  client.activities[state.currentActivity] =
+    (client.activities[state.currentActivity] || 0) + elapsed;
+
   if (state.focusSchedule.enabled) {
     if (isWithinFocusSchedule()) {
       client.billableTime = (client.billableTime || 0) + elapsed;
-      state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
+      state.focus[state.currentActivity] =
+        (state.focus[state.currentActivity] || 0) + elapsed;
     }
   } else {
     client.billableTime = (client.billableTime || 0) + elapsed;
-    state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
+    state.focus[state.currentActivity] =
+      (state.focus[state.currentActivity] || 0) + elapsed;
   }
+
+  // 👀 RELLOTGE VISUAL (CLAU)
+  for (let i = 0; i < elapsed; i++) {
+    visualSeconds += 1;
+  }
+
   save();
   updateUI();
 }
+
 
 setInterval(tick, 1000);
 
