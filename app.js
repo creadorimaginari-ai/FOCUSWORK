@@ -760,6 +760,7 @@ function confirmNewClient() {
   save();
   updateUI();
   closeModal('modalNewClient');
+  scheduleExitButton(state.currentClientId);
 }
 
 function changeClient() {
@@ -839,6 +840,7 @@ function selectClient(clientId) {
   save();
   updateUI();
   closeModal('modalChangeClient');
+  scheduleExitButton(state.currentClientId);
 }
 
 function closeClient() {
@@ -870,6 +872,7 @@ function confirmCloseClient() {
   closeModal('modalExportBeforeClose');
   showAlert('Client tancat', `${client.name}\nTemps total: ${formatTime(client.total)}`, '✅');
   window.clientToClose = null;
+  hideExitButton();
 }
 
 function exportAndClose() {
@@ -883,6 +886,7 @@ function exitClient() {
   state.lastTick = null;
   save();
   updateUI();
+  hideExitButton();
 }
 
 /* ================= HISTÒRIC ================= */
@@ -1370,7 +1374,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('focusBtn')) $('focusBtn').onclick = showFocus;
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
-  
+
+  // FA DESAPAREIXER BOTO SORTIR CLIENT
+  const exitBtn = document.getElementById("exitClientFloating");
+if (exitBtn) {
+  exitBtn.onclick = () => exitClient();
+}
+
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
