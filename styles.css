@@ -1233,18 +1233,26 @@ button.secondary:hover,
   left: 50%;
   transform: translateX(-50%);
 
-  padding: 8px 18px;
+  padding: 11px 22px;
   border-radius: 999px;
 
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
 
-  background: rgba(51, 65, 85, 0.9);
-  color: #e2e8f0;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+background: linear-gradient(
+  135deg,
+  rgba(251, 191, 36, 0.95),
+  rgba(245, 158, 11, 0.95)
+);
+color: #1f2933;
+
+border: 1px solid rgba(251, 191, 36, 0.6);
+
 
   backdrop-filter: blur(10px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+ box-shadow:
+  0 6px 20px rgba(0, 0, 0, 0.45),
+  0 0 0 2px rgba(251, 191, 36, 0.25);
 
   z-index: 9000;
   cursor: pointer;
