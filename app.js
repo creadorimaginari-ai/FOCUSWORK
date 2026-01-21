@@ -240,11 +240,8 @@ function requestLicense() {
     `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
   );
 
-  // MÉS FIABLE QUE window.open
   window.location.href = `https://wa.me/${WHATSAPP_PHONE}?text=${message}`;
 }
-
-
 
 /* ================= EXPORTACIÓ/IMPORTACIÓ ================= */
 function exportCurrentWork() {
@@ -291,7 +288,7 @@ function importWork() {
       $('importClientName').textContent = fileData.client.name;
       $('importClientTime').textContent = formatTime(fileData.client.total);
       $('importClientPhotos').textContent = fileData.client.photos.length;
-      $('importClientNotes').textContent = fileData.client.notes ? '✔ Sí' : '– No';
+      $('importClientNotes').textContent = fileData.client.notes ? '✔ Sí' : '— No';
       window.pendingImport = fileData;
       openModal('modalImportWork');
     } catch (err) {
@@ -355,7 +352,7 @@ function handleBackupFile(backupData) {
   $('importBackupClients').textContent = clientCount;
   $('importBackupActive').textContent = activeCount;
   $('importBackupDate').textContent = new Date(backupData.exportDate).toLocaleDateString();
-  $('importBackupLicense').textContent = backupData.license ? '✔ Sí' : '– No';
+  $('importBackupLicense').textContent = backupData.license ? '✔ Sí' : '— No';
   window.pendingBackup = backupData;
   openModal('modalImportBackup');
 }
@@ -588,17 +585,21 @@ function saveDeliveryDate() {
 function updateUI() {
   const activitiesPanel = $('activitiesPanel');
   const client = state.currentClientId ? state.clients[state.currentClientId] : null;
+  
   if (!state.currentClientId) {
     activitiesPanel?.classList.add('single-activity');
   } else {
     activitiesPanel?.classList.remove('single-activity');
   }
+  
   $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Sense client actiu";
   $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
   $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
+  
   if ($("clientTotal")) {
     $("clientTotal").textContent = client ? `Total client: ${formatTime(client.total)}` : "";
   }
+  
   if (client && state.focusSchedule.enabled) {
     const billableBox = $("billableTimeBox");
     if (billableBox) {
@@ -609,6 +610,7 @@ function updateUI() {
   } else if ($("billableTimeBox")) {
     $("billableTimeBox").style.display = "none";
   }
+  
   if (client && client.deliveryDate) {
     updateDeliveryDateDisplay(client);
   } else {
@@ -618,23 +620,39 @@ function updateUI() {
       deliveryBox.classList.add("hidden");
     }
   }
+  
   document.querySelectorAll(".activity").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.activity === state.currentActivity);
   });
+  
   if ($("versionBox")) {
     $("versionBox").style.display = state.isFull ? "none" : "block";
   }
+  
   if (state.isFull && state.license) {
     updateLicenseInfo();
   }
+  
   updateFocusScheduleStatus();
   updateWorkpad();
   updateTasks();
   renderPhotoGallery();
+  
   const exitContainer = $("exitClientContainer");
   if (exitContainer) {
     exitContainer.style.display = client ? "block" : "none";
   }
+  
+  // BOTÓ FLOTANT SORTIR
+  const exitFloating = $("exitClientFloating");
+  if (exitFloating) {
+    if (client && client.active) {
+      exitFloating.classList.remove('hidden');
+    } else {
+      exitFloating.classList.add('hidden');
+    }
+  }
+  
   const deletePanel = $("deleteClientPanel");
   if (deletePanel) {
     deletePanel.style.display = (client && !client.active) ? "block" : "none";
@@ -822,13 +840,16 @@ function selectClient(clientId) {
 function closeClient() {
   const client = state.clients[state.currentClientId];
   if (!client) return;
+  
   if (client.photos.length > 0 || (client.notes && client.notes.trim())) {
     $('exportBeforeCloseText').textContent = `Aquest client té ${client.photos.length} fotos i notes.\n\nVols exportar el treball abans de tancar?`;
     window.clientToClose = client.id;
     openModal('modalExportBeforeClose');
     return;
   }
+  
   $('closeClientText').textContent = `Client: ${client.name}\nTemps total: ${formatTime(client.total)}`;
+  window.clientToClose = client.id;
   openModal('modalCloseClient');
 }
 
@@ -859,13 +880,6 @@ function exitClient() {
   state.currentClientId = null;
   state.currentActivity = null;
   state.lastTick = null;
-
-  // Mostrar/ocultar botó flotant
-  const exitBtn = $("exitClientFloating");
-  if (exitBtn) {
-    exitBtn.classList.toggle('hidden', !client);
-  }
-  
   save();
   updateUI();
 }
@@ -1356,6 +1370,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
   if ($('exitClientFloating')) $('exitClientFloating').onclick = exitClient;
+  
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
