@@ -183,6 +183,10 @@ function updateWorkpad() {
 
 /* ================= UI ================= */
 function updateUI() {
+  const exitBtn = document.getElementById("exitClientFloating");
+if (exitBtn) {
+  exitBtn.classList.toggle("hidden", !state.currentClientId);
+      }
   const client = state.clients[state.currentClientId] || null;
 
   if ($("clientName")) {
@@ -690,29 +694,66 @@ function saveScheduleConfig() {
 }
 
 /* ================= INIT ================= */
-document.addEventListener("DOMContentLoaded", () => {
-  $("newClient").onclick = newClient;
-  $("changeClient").onclick = changeClient;
-  $("historyBtn").onclick = showHistory;
-  $("closeClient").onclick = closeClient;
+.document.addEventListener("DOMContentLoaded", () => {
 
-  $("cameraBtn").onclick = addPhotoToClient;
-  $("setDeliveryDateBtn").onclick = setDeliveryDate;
+  const bind = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el) el.onclick = fn;
+  };
 
-  $("addExtraHoursBtn").onclick = addExtraHours;
-  $("viewExtraHoursBtn").onclick = showExtraHours;
+  /* CLIENTS */
+  bind("newClientBtn", newClient);
+  bind("changeClient", changeClient);
+  bind("historyBtn", showHistory);
 
-  $("generateReportBtn").onclick = generateReport;
-  $("exportWorkBtn").onclick = exportCurrentWork;
-  $("importWorkBtn").onclick = importWork;
+  bind("closeClient", () => {
+    const client = state.clients[state.currentClientId];
+    if (!client) return;
 
-  $("scheduleBtn").onclick = openScheduleModal;
+    document.getElementById("closeClientText").textContent =
+      `Client: ${client.name}\nTemps total: ${formatTime(client.total)}`;
 
-  document
-    .querySelectorAll(".activity")
-    .forEach(btn => btn.onclick = () =>
-      state.currentActivity = btn.dataset.activity
+    openModal("modalCloseClient");
+  });
+
+  bind("deleteClientBtn", deleteCurrentClient);
+
+  /* SORTIR CLIENT (floating) */
+  bind("exitClientFloating", () => {
+    state.currentClientId = null;
+    state.currentActivity = null;
+    state.lastTick = null;
+    updateUI();
+  });
+
+  /* FOCUS */
+  bind("focusBtn", showFocus);
+  bind("focusPriorityBtn", () => {
+    showAlert(
+      "Focus prioritaris",
+      "Funció en construcció: servirà per enfocar clients urgents 🔧",
+      "🎯"
     );
+  });
+
+  /* ALTRES */
+  bind("cameraBtn", addPhotoToClient);
+  bind("setDeliveryDateBtn", setDeliveryDate);
+  bind("addExtraHoursBtn", addExtraHours);
+  bind("viewExtraHoursBtn", showExtraHours);
+  bind("generateReportBtn", generateReport);
+  bind("exportWorkBtn", exportCurrentWork);
+  bind("importWorkBtn", importWork);
+  bind("scheduleBtn", openScheduleModal);
+  bind("todayBtn", exportTodayCSV);
+
+  /* ACTIVITATS */
+  document.querySelectorAll(".activity").forEach(btn => {
+    btn.onclick = () => {
+      state.currentActivity = btn.dataset.activity;
+      updateUI();
+    };
+  });
 
   updateUI();
 });
