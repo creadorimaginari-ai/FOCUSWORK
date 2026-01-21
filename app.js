@@ -720,70 +720,148 @@ async function shareReport() {
   }
 }
 
-/* ================= EXPORTAR/IMPORTAR ================= */
-function exportCurrentWork() {
-  const client = state.clients[state.currentClientId];
-  if (!client) {
-    showAlert('Sense client', 'Selecciona un client', '⚠️');
-    return;
-  }
-  const workData = {
+/* ================= EXPORTAR TOTES LES DADES ================= */
+function exportAllData() {
+  const exportData = {
+    type: 'full_backup',
     version: APP_VERSION,
     exportDate: new Date().toISOString(),
-    client: client,
-    userName: userName
+    userName,
+    state,
+    license: state.license
   };
-  const blob = new Blob([JSON.stringify(workData, null, 2)], { type: 'application/json' });
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+    type: 'application/json'
+  });
+
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `treball_${client.name.replace(/[^a-z0-9]/gi, '_')}_${todayKey()}.focowork`;
+  a.download = `focowork_backup_${todayKey()}.json`;
   a.click();
-  showAlert('Treball desat', 'Arxiu descarregat', '💾');
+
+  showAlert('Còpia creada', 'Backup complet descarregat', '📦');
 }
 
-function importWork() {
+/* ================= IMPORTAR BACKUP COMPLET ================= */
+function handleBackupFile(data) {
+  if (!data.state) {
+    showAlert('Error', 'Backup invàlid', '❌');
+    return;
+  }
+
+  state = data.state;
+  userName = data.userName || userName;
+
+  save();
+  updateUI();
+
+  closeModal('modalImportBackup');
+  showAlert('Restauració completa', 'Dades restaurades correctament', '✅');
+
+  setTimeout(() => location.reload(), 1200);
+}
+
+function confirmImportBackup() {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = '.focowork,.json';
+  input.accept = '.json';
+
   input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     try {
       const text = await file.text();
-      const fileData = JSON.parse(text);
-      if (fileData.type === 'full_backup') {
-        handleBackupFile(fileData);
+      const data = JSON.parse(text);
+
+      if (data.type !== 'full_backup') {
+        showAlert('Error', 'No és una còpia completa', '⚠️');
         return;
       }
-      if (!fileData.client) {
-        showAlert('Arxiu invàlid', 'Format incorrecte', '❌');
-        return;
-      }
-      const newId = uid();
-      state.clients[newId] = { ...fileData.client, id: newId, active: true };
-      state.currentClientId = newId;
-      state.currentActivity = ACTIVITIES.WORK;
-      state.sessionElapsed = 0;
-      state.lastTick = Date.now();
-      isWorkpadInitialized = false;
-      areTasksInitialized = false;
-      save();
-      updateUI();
-      showAlert('Treball importat', 'Client recuperat correctament', '✅');
-    } catch (err) {
-      showAlert('Error', 'No s\'ha pogut llegir', '❌');
+
+      handleBackupFile(data);
+    } catch {
+      showAlert('Error', 'No s’ha pogut restaurar', '❌');
     }
   };
+
   input.click();
 }
 
-function exportAllData() {
-  const exportData = {
+/* ================= CONFIG BACKUP ================= */
+function openBackupConfig() {
+  if ($('autoDriveBackupCheckbox')) {
+    $('autoDriveBackupCheckbox').checked = state.autoDriveBackup || false;
+  }
+  openModal('modalBackupConfig');
+}
+
+function saveBackupConfig() {
+  state.autoDriveBackup = $('autoDriveBackupCheckbox')?.checked || false;
+  save();
+  closeModal('modalBackupConfig');
+  showAlert('Configuració desada', 'Opcions de còpia actualitzades', '⚙️');
+}
+
+/* ================= AUTO-BACKUP LOCAL ================= */
+let autoBackupTimeout = null;
+
+function scheduleAutoBackup() {
+  clearTimeout(autoBackupTimeout);
+  autoBackupTimeout = setTimeout(() => {
+    if (state.currentClientId && state.clients[state.currentClientId]) {
+      performAutoBackup();
+    }
+  }, 300000); // 5 minuts
+}
+
+function performAutoBackup() {
+  const client = state.clients[state.currentClientId];
+  if (!client) return;
+
+  const backup = {
     version: APP_VERSION,
-    exportDate: new Date().toISOString(),
-    userName: userName,
-    state: state,
-    license: state.license,
-    type: 'full_backup'
+    timestamp: new Date().toISOString(),
+    client
   };
 
+  try {
+    localStorage.setItem(
+      `focowork_autobackup_${client.id}`,
+      JSON.stringify(backup)
+    );
+  } catch (e) {
+    console.warn('Auto-backup fallit', e);
+  }
+}
+
+/* ================= EVENT LISTENERS ================= */
+document.addEventListener('DOMContentLoaded', () => {
+  updateUI();
+
+  $('newClientBtn')?.addEventListener('click', newClient);
+  $('changeClient')?.addEventListener('click', changeClient);
+  $('closeClient')?.addEventListener('click', closeClient);
+  $('deleteClientBtn')?.addEventListener('click', deleteCurrentClient);
+
+  $('cameraBtn')?.addEventListener('click', addPhotoToClient);
+  $('historyBtn')?.addEventListener('click', showHistory);
+
+  $('focusBtn')?.addEventListener('click', showFocus);
+  $('scheduleBtn')?.addEventListener('click', openScheduleModal);
+  $('todayBtn')?.addEventListener('click', exportTodayCSV);
+
+  $('addExtraHoursBtn')?.addEventListener('click', addExtraHours);
+  $('viewExtraHoursBtn')?.addEventListener('click', showExtraHours);
+  $('generateReportBtn')?.addEventListener('click', generateReport);
+
+  $('exportWorkBtn')?.addEventListener('click', exportCurrentWork);
+  $('importWorkBtn')?.addEventListener('click', importWork);
+  $('exportAllBtn')?.addEventListener('click', exportAllData);
+
+  $('loadLicenseBtn')?.addEventListener('click', loadLicenseFile);
+  $('requestLicenseBtn')?.addEventListener('click', requestLicense);
+
+  $('exitClientFloating')?.addEventListener('click', exitClient);
+});
