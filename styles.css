@@ -148,6 +148,55 @@ html, body {
 .exit-client-btn.hidden {
   display: none !important;
 }
+
+/* BOTÓ FLOTANT SORTIR CLIENT */
+#exitClientFloating {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  
+  font-size: 24px;
+  cursor: pointer;
+  
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  
+  transition: all 0.3s ease;
+}
+
+#exitClientFloating:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+}
+
+#exitClientFloating:active {
+  transform: scale(0.95);
+}
+
+#exitClientFloating.hidden {
+  display: none;
+}
+
+/* Assegurar que el botó sempre estigui visible */
+#exitClientFloating {
+  pointer-events: auto;
+}
+#exitClientFloating {
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
+}
+
+#exitClientFloating:hover {
+  transform: translateX(-50%) scale(1.1);
+}
 /* ===============================
    BLOQUES / PANELS
    =============================== */
