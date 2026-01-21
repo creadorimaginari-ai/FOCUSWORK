@@ -100,8 +100,6 @@ let state = JSON.parse(localStorage.getItem("focowork_state")) || {
   
 };
 /* ================= RELLOTGE VISUAL ================= */
-let visualSeconds = 0;
-
 
 function save() {
   localStorage.setItem("focowork_state", JSON.stringify(state));
@@ -427,53 +425,23 @@ function tick() {
   resetDayIfNeeded();
 
   const client = state.clients[state.currentClientId];
-  if (!client || !client.active || !state.currentActivity) {
-    state.lastTick = Date.now();
-    return;
-  }
+  if (!client || !client.active || !state.currentActivity) return;
 
-  const now = Date.now();
-  if (!state.lastTick) {
-    state.lastTick = now;
-    return;
-  }
-
-  const elapsed = Math.floor((now - state.lastTick) / 1000);
-  if (elapsed <= 0) return;
-
-  state.lastTick = now;
-
-  // ⏱️ TEMPS REAL (DADES)
-  state.sessionElapsed += elapsed;
-  client.total += elapsed;
+  state.sessionElapsed += 1;
+  client.total += 1;
   client.activities[state.currentActivity] =
-    (client.activities[state.currentActivity] || 0) + elapsed;
+    (client.activities[state.currentActivity] || 0) + 1;
 
-  if (state.focusSchedule.enabled) {
-    if (isWithinFocusSchedule()) {
-      client.billableTime = (client.billableTime || 0) + elapsed;
-      state.focus[state.currentActivity] =
-        (state.focus[state.currentActivity] || 0) + elapsed;
-    }
-  } else {
-    client.billableTime = (client.billableTime || 0) + elapsed;
+  if (!state.focusSchedule.enabled || isWithinFocusSchedule()) {
+    client.billableTime = (client.billableTime || 0) + 1;
     state.focus[state.currentActivity] =
-      (state.focus[state.currentActivity] || 0) + elapsed;
+      (state.focus[state.currentActivity] || 0) + 1;
   }
 
-  save();
   updateUI();
 }
 
 
-setInterval(() => {
-  const client = state.clients[state.currentClientId];
-
-  if (client && client.active && state.currentActivity) {
-    visualSeconds++;
-    $("timer").textContent = formatTime(visualSeconds);
-  }
-}, 1000);
 
 setInterval(tick, 1000);
 
@@ -484,12 +452,15 @@ function setActivity(activity) {
     showAlert('Sense client', 'Primer selecciona un client actiu', '⚠️');
     return;
   }
+
   state.currentActivity = activity;
   state.sessionElapsed = 0;
-  state.lastTick = Date.now();
+  state.lastTick = null;   // 👈 reinici net
+
   save();
   updateUI();
 }
+
 
 /* ================= WORKPAD ================= */
 let workpadTimeout = null;
