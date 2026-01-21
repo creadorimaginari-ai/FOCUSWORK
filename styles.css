@@ -1276,10 +1276,10 @@ button.secondary:hover,
   transform: translateX(-50%);
 
   width: 64px;
-  height: 64px;
+  height: 24px;
   border-radius: 50%;
 
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, #d49c02, #dc7226);
   color: white;
   font-size: 26px;
   border: none;
