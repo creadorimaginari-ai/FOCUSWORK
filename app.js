@@ -694,7 +694,7 @@ function saveScheduleConfig() {
 }
 
 /* ================= INIT ================= */
-.document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
 
   const bind = (id, fn) => {
     const el = document.getElementById(id);
