@@ -413,27 +413,39 @@ function resetTodayFocus() {
   save();
   showAlert('Enfocament reiniciat', 'Les dades d\'enfocament d\'avui han estat reiniciades.\n\nAra només comptabilitzarà temps dins l\'horari configurat.', '✅');
 }
-/* ================= MOTOR DE TEMPS ================= */
+/* ================= MOTOR DE TEMPS V6 ================= */
 function tick() {
   resetDayIfNeeded();
   const client = state.clients[state.currentClientId];
-  if (!client || !client.active || !state.currentActivity || !state.lastTick) {
+  
+  // Si no hi ha client actiu, només actualitzar lastTick i sortir
+  if (!client || !client.active || !state.currentActivity) {
     state.lastTick = Date.now();
     return;
   }
+  
+  // Si és el primer tick després d'iniciar, només inicialitzar
+  if (!state.lastTick) {
+    state.lastTick = Date.now();
+    return;
+  }
+  
   const now = Date.now();
   const elapsed = Math.floor((now - state.lastTick) / 1000);
-  if (elapsed <= 0) return;
   
-  // Només incrementar exactament 1 segon, independentment del temps real transcorregut
+  // Si no ha passat almenys 1 segon, no fer res
+  if (elapsed < 1) return;
+  
+  // Actualitzar lastTick al temps actual
+  state.lastTick = now;
+  
+  // Incrementar sempre exactament 1 segon als comptadors
   const increment = 1;
   
-  // Actualitzar lastTick basant-nos en el temps real transcorregut
-  // però només aplicar 1 segon als comptadors
-  state.lastTick = now;
   state.sessionElapsed += increment;
   client.total += increment;
   client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + increment;
+  
   if (state.focusSchedule.enabled) {
     if (isWithinFocusSchedule()) {
       client.billableTime = (client.billableTime || 0) + increment;
@@ -443,6 +455,7 @@ function tick() {
     client.billableTime = (client.billableTime || 0) + increment;
     state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + increment;
   }
+  
   save();
   updateUI();
 }
