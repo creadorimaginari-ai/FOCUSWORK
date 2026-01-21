@@ -1,30 +1,10 @@
 /*************************************************
- * FOCUSWORK – app.js
- * RECONSTRUCCIÓ COMPLETA
- * PART 1 / 4
+ * FOCUSWORK – app.js (V3.1 COMPLET)
  *************************************************/
 
 /* ================= CONFIG ================= */
 const WHATSAPP_PHONE = "34649383847";
 const APP_VERSION = "3.1";
-
-/* ================= HELPERS ================= */
-const $ = (id) => document.getElementById(id);
-
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
-function formatTime(sec = 0) {
-  const h = String(Math.floor(sec / 3600)).padStart(2, "0");
-  const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
-  const s = String(sec % 60).padStart(2, "0");
-  return `${h}:${m}:${s}`;
-}
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /* ================= ACTIVITATS ================= */
 const ACTIVITIES = {
@@ -36,14 +16,64 @@ const ACTIVITIES = {
 };
 
 function activityLabel(act) {
-  return {
+  const labels = {
     work: "Feina",
     phone: "Trucades",
     client: "Reunions",
     visit: "Visitant",
     other: "Altres"
-  }[act] || act;
+  };
+  return labels[act] || act;
 }
+
+/* ================= HELPERS ================= */
+const $ = (id) => document.getElementById(id);
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function formatTime(sec) {
+  const h = String(Math.floor(sec / 3600)).padStart(2, "0");
+  const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
+  const s = String(sec % 60).padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isWithinFocusSchedule(date = new Date()) {
+  if (!state.focusSchedule || !state.focusSchedule.enabled) return true;
+  const [sh, sm] = state.focusSchedule.start.split(":").map(Number);
+  const [eh, em] = state.focusSchedule.end.split(":").map(Number);
+  const minutesNow = date.getHours() * 60 + date.getMinutes();
+  const minutesStart = sh * 60 + sm;
+  const minutesEnd = eh * 60 + em;
+  return minutesNow >= minutesStart && minutesNow <= minutesEnd;
+}
+
+/* ================= MODALS ================= */
+function openModal(id) {
+  const modal = $(id);
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeModal(id) {
+  const modal = $(id);
+  if (modal) modal.classList.add('hidden');
+}
+
+function showAlert(title, message, icon = 'ℹ️') {
+  if ($('alertTitle')) $('alertTitle').textContent = title;
+  if ($('alertText')) $('alertText').textContent = message;
+  if ($('alertIcon')) $('alertIcon').textContent = icon;
+  openModal('modalAlert');
+}
+
+/* ================= USUARI ================= */
+let userName = localStorage.getItem("focowork_user_name") || "Usuari";
 
 /* ================= ESTAT ================= */
 let state = JSON.parse(localStorage.getItem("focowork_state")) || {
@@ -56,51 +86,12 @@ let state = JSON.parse(localStorage.getItem("focowork_state")) || {
   sessionElapsed: 0,
   clients: {},
   focus: {},
-  focusSchedule: {
-    enabled: false,
-    start: "09:00",
-    end: "17:00"
-  }
+  focusSchedule: { enabled: false, start: "09:00", end: "17:00" }
 };
 
 function save() {
   localStorage.setItem("focowork_state", JSON.stringify(state));
 }
-
-/* ================= HORARI AVANÇAT ================= */
-function isWithinFocusSchedule(date = new Date()) {
-  if (!state.focusSchedule.enabled) return true;
-
-  const [sh, sm] = state.focusSchedule.start.split(":").map(Number);
-  const [eh, em] = state.focusSchedule.end.split(":").map(Number);
-
-  const now = date.getHours() * 60 + date.getMinutes();
-  const start = sh * 60 + sm;
-  const end = eh * 60 + em;
-
-  return now >= start && now < end;
-}
-
-/* ================= MODALS BÀSICS ================= */
-function openModal(id) {
-  $(id)?.classList.remove("hidden");
-}
-
-function closeModal(id) {
-  $(id)?.classList.add("hidden");
-}
-
-function showAlert(title, text, icon = "ℹ️") {
-  $("alertTitle").textContent = title;
-  $("alertText").textContent = text;
-  $("alertIcon").textContent = icon;
-  openModal("modalAlert");
-}
-
-/* ===== FI PART 1 ===== *//*************************************************
- * PART 2 / 4
- * MOTOR DE TEMPS + UI + WORKPAD
- *************************************************/
 
 /* ================= RESET DIARI ================= */
 function resetDayIfNeeded() {
@@ -111,143 +102,100 @@ function resetDayIfNeeded() {
   }
 }
 
+/* ================= LLICÈNCIES ================= */
+async function loadLicenseFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.focowork,.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const license = JSON.parse(text);
+      state.isFull = true;
+      state.license = license;
+      save();
+      updateUI();
+      showAlert('Llicència activada!', 'FocusWork complet activat!', '🎉');
+    } catch (err) {
+      showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
+    }
+  };
+  input.click();
+}
+
+function requestLicense() {
+  const deviceId = "FW-" + Date.now().toString(36);
+  const message = encodeURIComponent(`Hola! Voldria activar FocusWork.\n\nDevice ID: ${deviceId}`);
+  window.location.href = `https://wa.me/${WHATSAPP_PHONE}?text=${message}`;
+}
+
 /* ================= MOTOR DE TEMPS ================= */
 function tick() {
   resetDayIfNeeded();
-
   const client = state.clients[state.currentClientId];
+  
   if (!client || !client.active || !state.currentActivity) {
     state.lastTick = Date.now();
     return;
   }
-
+  
   if (!state.lastTick) {
     state.lastTick = Date.now();
     return;
   }
-
+  
   const now = Date.now();
-  const diff = Math.floor((now - state.lastTick) / 1000);
-  if (diff < 1) return;
-
+  const elapsed = Math.floor((now - state.lastTick) / 1000);
+  if (elapsed < 1) return;
+  
   state.lastTick = now;
-
-  // ⏱️ Temps total (sempre)
-  state.sessionElapsed += diff;
-  client.total += diff;
-
-  client.activities[state.currentActivity] =
-    (client.activities[state.currentActivity] || 0) + diff;
-
-  // 💰 Facturable / 🎯 Focus (només dins horari)
-  if (isWithinFocusSchedule()) {
-    client.billableTime = (client.billableTime || 0) + diff;
-    state.focus[state.currentActivity] =
-      (state.focus[state.currentActivity] || 0) + diff;
+  state.sessionElapsed += 1;
+  client.total += 1;
+  client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + 1;
+  
+  if (state.focusSchedule.enabled) {
+    if (isWithinFocusSchedule()) {
+      client.billableTime = (client.billableTime || 0) + 1;
+      state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + 1;
+    }
+  } else {
+    client.billableTime = (client.billableTime || 0) + 1;
+    state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + 1;
   }
-
+  
   save();
   updateUI();
 }
 
 setInterval(tick, 1000);
 
-/* ================= WORKPAD (NOTES) ================= */
+/* ================= WORKPAD ================= */
 let workpadTimeout = null;
 let isWorkpadInitialized = false;
 
 function updateWorkpad() {
-  const area = $("clientWorkpad");
+  const workpadArea = $('clientWorkpad');
   const client = state.clients[state.currentClientId];
-
-  if (!area || !client) {
+  if (!workpadArea || !client) {
     isWorkpadInitialized = false;
-    if (area) area.style.display = "none";
     return;
   }
-
-  area.style.display = "block";
-
+  const savedNote = client.notes || '';
+  if (workpadArea.value !== savedNote && !isWorkpadInitialized) {
+    workpadArea.value = savedNote;
+  }
   if (!isWorkpadInitialized) {
-    area.value = client.notes || "";
-
-    area.oninput = (e) => {
+    workpadArea.oninput = (e) => {
+      if (!client) return;
       client.notes = e.target.value;
       clearTimeout(workpadTimeout);
       workpadTimeout = setTimeout(save, 1000);
     };
-
     isWorkpadInitialized = true;
   }
 }
-
-/* ================= UI ================= */
-function updateUI() {
-  const exitBtn = document.getElementById("exitClientFloating");
-if (exitBtn) {
-  exitBtn.classList.toggle("hidden", !state.currentClientId);
-      }
-  const client = state.clients[state.currentClientId] || null;
-
-  if ($("clientName")) {
-    $("clientName").textContent = client
-      ? `Client: ${client.name}${client.active ? "" : " (tancat)"}`
-      : "Sense client actiu";
-  }
-
-  if ($("activityName")) {
-    $("activityName").textContent = state.currentActivity
-      ? activityLabel(state.currentActivity)
-      : "—";
-  }
-
-  if ($("timer")) {
-    $("timer").textContent =
-      client && client.active
-        ? formatTime(state.sessionElapsed)
-        : "00:00:00";
-  }
-
-  if ($("clientTotal")) {
-    $("clientTotal").textContent = client
-      ? `Total client: ${formatTime(client.total)}`
-      : "";
-  }
-
-  // 💰 Facturable
-  const billableBox = $("billableTimeBox");
-  if (billableBox) {
-    if (client && state.focusSchedule.enabled) {
-      billableBox.textContent =
-        `💰 Facturable: ${formatTime(client.billableTime || 0)}`;
-      billableBox.style.display = "block";
-    } else {
-      billableBox.style.display = "none";
-    }
-  }
-
-  // ⏳ Fora d'horari
-  const status = $("focusScheduleStatus");
-  if (status) {
-    if (
-      client &&
-      state.focusSchedule.enabled &&
-      !isWithinFocusSchedule()
-    ) {
-      status.textContent = "⏳ Fora d’horari d’enfocament";
-      status.style.display = "block";
-    } else {
-      status.style.display = "none";
-    }
-  }
-
-  updateWorkpad();
-}
-
-/* ===== FI PART 2 ===== *//*************************************************
- * PART 3 / 4
- * TASQUES + DATA LLIURAMENT + FOTOS
- *************************************************/
 
 /* ================= TASQUES ================= */
 let taskTimeouts = { urgent: null, important: null, later: null };
@@ -255,77 +203,267 @@ let areTasksInitialized = false;
 
 function updateTasks() {
   const client = state.clients[state.currentClientId];
-  const urgent = $("taskUrgent");
-  const important = $("taskImportant");
-  const later = $("taskLater");
-
-  if (!client || !urgent || !important || !later) {
+  const urgentArea = $('taskUrgent');
+  const importantArea = $('taskImportant');
+  const laterArea = $('taskLater');
+  if (!urgentArea || !importantArea || !laterArea || !client) {
     areTasksInitialized = false;
-    if (urgent) urgent.style.display = "none";
-    if (important) important.style.display = "none";
-    if (later) later.style.display = "none";
     return;
   }
-
-  urgent.style.display = "block";
-  important.style.display = "block";
-  later.style.display = "block";
-
   if (!client.tasks) {
     client.tasks = { urgent: "", important: "", later: "" };
   }
-
   if (!areTasksInitialized) {
-    urgent.value = client.tasks.urgent || "";
-    important.value = client.tasks.important || "";
-    later.value = client.tasks.later || "";
-
-    urgent.oninput = (e) => handleTaskInput("urgent", e);
-    important.oninput = (e) => handleTaskInput("important", e);
-    later.oninput = (e) => handleTaskInput("later", e);
-
+    urgentArea.value = client.tasks.urgent || '';
+    importantArea.value = client.tasks.important || '';
+    laterArea.value = client.tasks.later || '';
+    
+    const handleTaskInput = (taskType, e) => {
+      if (!client.tasks) return;
+      client.tasks[taskType] = e.target.value;
+      clearTimeout(taskTimeouts[taskType]);
+      taskTimeouts[taskType] = setTimeout(save, 1000);
+    };
+    
+    urgentArea.oninput = (e) => handleTaskInput('urgent', e);
+    importantArea.oninput = (e) => handleTaskInput('important', e);
+    laterArea.oninput = (e) => handleTaskInput('later', e);
     areTasksInitialized = true;
   }
 }
 
-function handleTaskInput(type, e) {
-  const client = state.clients[state.currentClientId];
-  if (!client || !client.tasks) return;
-
-  client.tasks[type] = e.target.value;
-  clearTimeout(taskTimeouts[type]);
-  taskTimeouts[type] = setTimeout(save, 1000);
-}
-
-/* ================= DATA DE LLIURAMENT ================= */
 function setDeliveryDate() {
   const client = state.clients[state.currentClientId];
   if (!client) {
-    showAlert("Sense client", "Selecciona un client primer", "⚠️");
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
-
-  $("inputDeliveryDate").value = client.deliveryDate || "";
-  openModal("modalDeliveryDate");
+  const currentDate = client.deliveryDate ? new Date(client.deliveryDate).toISOString().split('T')[0] : '';
+  if ($('inputDeliveryDate')) $('inputDeliveryDate').value = currentDate;
+  openModal('modalDeliveryDate');
 }
 
 function saveDeliveryDate() {
   const client = state.clients[state.currentClientId];
   if (!client) return;
-
-  const value = $("inputDeliveryDate").value;
-  client.deliveryDate = value || null;
-
+  const dateValue = $('inputDeliveryDate').value;
+  client.deliveryDate = dateValue || null;
   areTasksInitialized = false;
   save();
   updateUI();
-  closeModal("modalDeliveryDate");
+  closeModal('modalDeliveryDate');
+  showAlert('Data desada', dateValue ? 'Data establerta' : 'Data eliminada', '✅');
+}
 
-  showAlert(
-    "Data desada",
-    value ? "Data de lliurament establerta" : "Data eliminada",
-    "✅"
-  );
+/* ================= UI ================= */
+function updateUI() {
+  const client = state.currentClientId ? state.clients[state.currentClientId] : null;
+  
+  if ($("clientName")) {
+    $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Sense client actiu";
+  }
+  if ($("activityName")) {
+    $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
+  }
+  if ($("timer")) {
+    $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
+  }
+  if ($("clientTotal")) {
+    $("clientTotal").textContent = client ? `Total client: ${formatTime(client.total)}` : "";
+  }
+  
+  if ($("billableTimeBox")) {
+    if (client && state.focusSchedule.enabled) {
+      $("billableTimeBox").textContent = `💰 Facturable: ${formatTime(client.billableTime || 0)}`;
+      $("billableTimeBox").style.display = "block";
+    } else {
+      $("billableTimeBox").style.display = "none";
+    }
+  }
+  
+  if ($("versionBox")) {
+    $("versionBox").style.display = state.isFull ? "none" : "block";
+  }
+  
+  const exitBtn = $("exitClientFloating");
+  if (exitBtn) {
+    exitBtn.classList.toggle('hidden', !client);
+  }
+  
+  const deletePanel = $("deleteClientPanel");
+  if (deletePanel) {
+    deletePanel.style.display = (client && !client.active) ? "block" : "none";
+  }
+  
+  updateWorkpad();
+  updateTasks();
+  renderPhotoGallery();
+}
+
+/* ================= CLIENTS ================= */
+function newClient() {
+  const activeClients = Object.values(state.clients).filter(c => c.active);
+  if (!state.isFull && activeClients.length >= 2) {
+    showAlert('Versió demo', 'Màxim 2 clients actius.\n\nActiva la versió completa!', '🔒');
+    return;
+  }
+  if ($('newClientInput')) $('newClientInput').value = '';
+  openModal('modalNewClient');
+}
+
+function confirmNewClient() {
+  const name = $('newClientInput').value.trim();
+  if (!name) return;
+  const id = uid();
+  state.clients[id] = {
+    id, name,
+    createdAt: Date.now(),
+    active: true,
+    total: 0,
+    billableTime: 0,
+    activities: {},
+    photos: [],
+    notes: "",
+    deliveryDate: null,
+    extraHours: [],
+    tasks: { urgent: "", important: "", later: "" }
+  };
+  state.currentClientId = id;
+  state.currentActivity = ACTIVITIES.WORK;
+  state.sessionElapsed = 0;
+  state.lastTick = Date.now();
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
+  save();
+  updateUI();
+  closeModal('modalNewClient');
+}
+
+function changeClient() {
+  const actives = Object.values(state.clients).filter(c => c.active);
+  if (!actives.length) {
+    showAlert('Sense clients', 'No hi ha clients actius', '⚠️');
+    return;
+  }
+  const list = $('activeClientsList');
+  if (!list) return;
+  list.innerHTML = '';
+  actives.forEach(client => {
+    const item = document.createElement('div');
+    item.className = 'client-item';
+    item.innerHTML = `
+      <div class="client-name">${client.name}</div>
+      <div class="client-time">Total: ${formatTime(client.total)}</div>
+    `;
+    item.onclick = () => selectClient(client.id);
+    list.appendChild(item);
+  });
+  openModal('modalChangeClient');
+}
+
+function selectClient(clientId) {
+  state.currentClientId = clientId;
+  if (!state.currentActivity) {
+    state.currentActivity = ACTIVITIES.WORK;
+    state.sessionElapsed = 0;
+    state.lastTick = Date.now();
+  }
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
+  save();
+  updateUI();
+  closeModal('modalChangeClient');
+}
+
+function closeClient() {
+  const client = state.clients[state.currentClientId];
+  if (!client) return;
+  if ($('closeClientText')) {
+    $('closeClientText').textContent = `Client: ${client.name}\nTemps total: ${formatTime(client.total)}`;
+  }
+  openModal('modalCloseClient');
+}
+
+function confirmCloseClient() {
+  const client = state.clients[state.currentClientId];
+  if (!client) return;
+  client.active = false;
+  state.currentClientId = null;
+  state.currentActivity = null;
+  state.lastTick = null;
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
+  save();
+  updateUI();
+  closeModal('modalCloseClient');
+  closeModal('modalExportBeforeClose');
+  showAlert('Client tancat', `${client.name}\nTemps: ${formatTime(client.total)}`, '✅');
+}
+
+function exitClient() {
+  state.currentClientId = null;
+  state.currentActivity = null;
+  state.lastTick = null;
+  save();
+  updateUI();
+}
+
+/* ================= HISTÒRIC ================= */
+function showHistory() {
+  const closed = Object.values(state.clients).filter(c => !c.active);
+  if (!closed.length) {
+    showAlert('Sense històric', 'No hi ha clients tancats', 'ℹ️');
+    return;
+  }
+  const list = $('historyClientsList');
+  if (!list) return;
+  list.innerHTML = '';
+  closed.forEach(client => {
+    const item = document.createElement('div');
+    item.className = 'client-item';
+    item.innerHTML = `
+      <div class="client-name">${client.name}</div>
+      <div class="client-time">Total: ${formatTime(client.total)} • ${client.photos.length} fotos</div>
+    `;
+    item.onclick = () => {
+      state.currentClientId = client.id;
+      state.currentActivity = null;
+      state.sessionElapsed = 0;
+      state.lastTick = null;
+      isWorkpadInitialized = false;
+      areTasksInitialized = false;
+      updateUI();
+      closeModal('modalHistory');
+    };
+    list.appendChild(item);
+  });
+  openModal('modalHistory');
+}
+
+/* ================= ESBORRAR CLIENT ================= */
+function deleteCurrentClient() {
+  const client = state.clients[state.currentClientId];
+  if (!client || client.active) return;
+  if ($('deleteClientText')) {
+    $('deleteClientText').textContent = `Client: ${client.name}\nTemps: ${formatTime(client.total)}\n\nAquesta acció no es pot desfer.`;
+  }
+  if ($('inputDeleteConfirm')) $('inputDeleteConfirm').value = '';
+  openModal('modalDeleteClient');
+}
+
+function confirmDeleteClient() {
+  const confirm = $('inputDeleteConfirm').value.trim().toUpperCase();
+  if (confirm !== 'ESBORRAR') {
+    showAlert('Error', 'Has d\'escriure ESBORRAR', '⚠️');
+    return;
+  }
+  delete state.clients[state.currentClientId];
+  state.currentClientId = null;
+  state.currentActivity = null;
+  save();
+  updateUI();
+  closeModal('modalDeleteClient');
+  showAlert('Client eliminat', 'Eliminat definitivament', '🗑️');
 }
 
 /* ================= FOTOS ================= */
@@ -334,40 +472,32 @@ let photoToDelete = null;
 function addPhotoToClient() {
   const client = state.clients[state.currentClientId];
   if (!client) return;
-
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/*";
   input.capture = "environment";
-
   input.onchange = () => {
     const file = input.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
         const MAX = 1024;
         let { width, height } = img;
-
         if (width > MAX) {
           height *= MAX / width;
           width = MAX;
         }
-
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-
-        client.photos = client.photos || [];
         client.photos.push({
           id: uid(),
           date: new Date().toISOString(),
           data: canvas.toDataURL("image/jpeg", 0.7)
         });
-
         save();
         renderPhotoGallery();
       };
@@ -375,387 +505,457 @@ function addPhotoToClient() {
     };
     reader.readAsDataURL(file);
   };
-
   input.click();
 }
 
 function renderPhotoGallery() {
   const gallery = $("photoGallery");
-  const client = state.clients[state.currentClientId];
-
-  if (!gallery || !client || !client.photos || !client.photos.length) {
-    if (gallery) gallery.innerHTML = "";
-    return;
-  }
-
+  if (!gallery) return;
   gallery.innerHTML = "";
-
-  [...client.photos]
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .forEach(p => {
-      const img = document.createElement("img");
-      img.src = p.data;
-      img.className = "photo-thumb";
-
-      img.onclick = () => {
-        const w = window.open();
-        if (w) {
-          w.document.write(
-            `<img src="${p.data}" style="width:100%;background:#000">`
-          );
-        }
-      };
-
-      img.oncontextmenu = (e) => {
-        e.preventDefault();
-        photoToDelete = p.id;
-        openModal("modalDeletePhoto");
-      };
-
-      gallery.appendChild(img);
-    });
+  const client = state.clients[state.currentClientId];
+  if (!client || !client.photos.length) return;
+  [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(p => {
+    const img = document.createElement("img");
+    img.src = p.data;
+    img.className = "photo-thumb";
+    img.onclick = () => {
+      const w = window.open();
+      if (w) w.document.write(`<img src="${p.data}" style="width:100%;background:#000">`);
+    };
+    img.oncontextmenu = (e) => {
+      e.preventDefault();
+      photoToDelete = p.id;
+      openModal('modalDeletePhoto');
+    };
+    gallery.appendChild(img);
+  });
 }
 
 function confirmDeletePhoto() {
-  const client = state.clients[state.currentClientId];
-  if (!client || !photoToDelete) return;
-
-  client.photos = client.photos.filter(p => p.id !== photoToDelete);
-  photoToDelete = null;
-
-  save();
-  renderPhotoGallery();
-  closeModal("modalDeletePhoto");
-}
-
-/* ===== FI PART 3 ===== *//*************************************************
- * PART 4 / 4
- * CLIENTS · HISTÒRIC · INFORMES · EXPORTS · INIT
- *************************************************/
-
-/* ================= CLIENTS ================= */
-function newClient() {
-  $("inputNewClient").value = "";
-  openModal("modalNewClient");
-}
-
-function confirmNewClient() {
-  const name = $("inputNewClient").value.trim();
-  if (!name) return;
-
-  const id = uid();
-  state.clients[id] = {
-    id,
-    name,
-    active: true,
-    total: 0,
-    billableTime: 0,
-    activities: {},
-    photos: [],
-    notes: "",
-    deliveryDate: null,
-    tasks: { urgent: "", important: "", later: "" },
-    extraHours: []
-  };
-
-  state.currentClientId = id;
-  state.currentActivity = ACTIVITIES.WORK;
-  state.sessionElapsed = 0;
-  state.lastTick = Date.now();
-  isWorkpadInitialized = false;
-  areTasksInitialized = false;
-
-  save();
-  updateUI();
-  closeModal("modalNewClient");
-}
-
-function changeClient() {
-  const list = $("activeClientsList");
-  list.innerHTML = "";
-
-  Object.values(state.clients)
-    .filter(c => c.active)
-    .forEach(client => {
-      const item = document.createElement("div");
-      item.className = "client-item";
-      item.innerHTML = `
-        <div class="client-name">${client.name}</div>
-        <div class="client-time">Total: ${formatTime(client.total)}</div>
-      `;
-      item.onclick = () => selectClient(client.id);
-      list.appendChild(item);
-    });
-
-  openModal("modalChangeClient");
-}
-
-function selectClient(id) {
-  state.currentClientId = id;
-  state.currentActivity = ACTIVITIES.WORK;
-  state.sessionElapsed = 0;
-  state.lastTick = Date.now();
-  isWorkpadInitialized = false;
-  areTasksInitialized = false;
-
-  save();
-  updateUI();
-  closeModal("modalChangeClient");
-}
-
-function closeClient() {
+  if (!photoToDelete) return;
   const client = state.clients[state.currentClientId];
   if (!client) return;
-
-  client.active = false;
-  state.currentClientId = null;
-  state.currentActivity = null;
-  state.lastTick = null;
-
+  client.photos = client.photos.filter(f => f.id !== photoToDelete);
+  photoToDelete = null;
   save();
-  updateUI();
-  showAlert("Client tancat", `${client.name} tancat`, "✅");
+  renderPhotoGallery();
+  closeModal('modalDeletePhoto');
 }
 
-/* ================= HISTÒRIC ================= */
-function showHistory() {
-  const list = $("historyClientsList");
-  list.innerHTML = "";
-
-  Object.values(state.clients)
-    .filter(c => !c.active)
-    .forEach(client => {
-      const item = document.createElement("div");
-      item.className = "client-item";
+/* ================= ENFOCAMENT ================= */
+function showFocus() {
+  const total = Object.values(state.focus).reduce((a, b) => a + b, 0);
+  if (!total) {
+    showAlert('Sense dades', 'Encara no hi ha dades d\'enfocament avui', 'ℹ️');
+    return;
+  }
+  if ($('modalUserName')) $('modalUserName').textContent = userName;
+  if ($('modalTotalTime')) $('modalTotalTime').textContent = formatTime(total);
+  const list = $('modalActivityList');
+  if (list) {
+    list.innerHTML = '';
+    for (const act in state.focus) {
+      const seconds = state.focus[act];
+      const actPct = Math.round((seconds / total) * 100);
+      const item = document.createElement('div');
+      item.className = 'activity-item';
       item.innerHTML = `
-        <div class="client-name">${client.name}</div>
-        <div class="client-time">
-          ${formatTime(client.total)} · ${client.photos.length} fotos
+        <span class="activity-name">${activityLabel(act)}</span>
+        <div class="activity-stats">
+          <span class="activity-time">${formatTime(seconds)}</span>
+          <span class="activity-percent">${actPct}%</span>
         </div>
       `;
-      item.onclick = () => {
-        state.currentClientId = client.id;
-        updateUI();
-        closeModal("modalHistory");
-      };
       list.appendChild(item);
-    });
+    }
+  }
+  openModal('modalEnfoque');
+}
 
-  openModal("modalHistory");
+/* ================= HORARI ================= */
+function openScheduleModal() {
+  const checkbox = $('scheduleEnabled');
+  const config = $('scheduleConfig');
+  if (checkbox) {
+    checkbox.checked = state.focusSchedule.enabled;
+    checkbox.onchange = () => {
+      if (config) config.style.display = checkbox.checked ? 'block' : 'none';
+    };
+  }
+  if ($('scheduleStart')) $('scheduleStart').value = state.focusSchedule.start;
+  if ($('scheduleEnd')) $('scheduleEnd').value = state.focusSchedule.end;
+  if (config) config.style.display = state.focusSchedule.enabled ? 'block' : 'none';
+  openModal('modalSchedule');
+}
+
+function applyPreset(start, end) {
+  if ($('scheduleStart')) $('scheduleStart').value = start;
+  if ($('scheduleEnd')) $('scheduleEnd').value = end;
+}
+
+function saveScheduleConfig() {
+  const enabled = $('scheduleEnabled')?.checked || false;
+  const start = $('scheduleStart')?.value || "09:00";
+  const end = $('scheduleEnd')?.value || "17:00";
+  state.focusSchedule = { enabled, start, end };
+  save();
+  closeModal('modalSchedule');
+  showAlert('Configuració desada', enabled ? `Horari: ${start} - ${end}` : 'Horari desactivat', '✅');
+}
+
+/* ================= CSV ================= */
+function exportTodayCSV() {
+  let csv = "Usuari,Client,Temps,Notes\n";
+  Object.values(state.clients).forEach(c => {
+    const notes = (c.notes || '').replace(/[\n\r]/g, ' ').replace(/"/g, '""');
+    csv += `${userName},"${c.name}",${formatTime(c.total)},"${notes}"\n`;
+  });
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `focowork_${todayKey()}.csv`;
+  a.click();
+  showAlert('CSV exportat', 'Arxiu descarregat', '📄');
 }
 
 /* ================= HORES EXTRES ================= */
 function addExtraHours() {
-  openModal("modalExtraHours");
+  const client = state.clients[state.currentClientId];
+  if (!client) {
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
+    return;
+  }
+  if ($('inputExtraHours')) $('inputExtraHours').value = '';
+  if ($('inputExtraDescription')) $('inputExtraDescription').value = '';
+  openModal('modalExtraHours');
 }
 
 function saveExtraHours() {
   const client = state.clients[state.currentClientId];
   if (!client) return;
-
-  const hours = parseFloat($("inputExtraHours").value);
-  const desc = $("inputExtraDescription").value.trim();
-
+  const hours = parseFloat($('inputExtraHours').value);
+  const description = $('inputExtraDescription').value.trim();
   if (!hours || hours <= 0) {
-    showAlert("Error", "Hores incorrectes", "⚠️");
+    showAlert('Error', 'Introdueix hores vàlides', '⚠️');
     return;
   }
-
-  client.extraHours.push({
+  if (!client.extraHours) client.extraHours = [];
+  const extraEntry = {
     id: uid(),
     date: new Date().toISOString(),
-    hours,
+    hours: hours,
     seconds: Math.round(hours * 3600),
-    description: desc || "Hores extres"
-  });
-
-  client.billableTime += Math.round(hours * 3600);
-
+    description: description || 'Hores extres'
+  };
+  client.extraHours.push(extraEntry);
+  client.billableTime = (client.billableTime || 0) + extraEntry.seconds;
   save();
-  closeModal("modalExtraHours");
-  showAlert("Hores afegides", `${hours}h afegides`, "✅");
+  closeModal('modalExtraHours');
+  showAlert('Hores afegides', `${hours}h afegides`, '✅');
 }
 
 function showExtraHours() {
   const client = state.clients[state.currentClientId];
-  const list = $("extraHoursList");
-  list.innerHTML = "";
-
-  let total = 0;
-  client.extraHours.forEach(e => {
-    total += e.seconds;
-    const div = document.createElement("div");
-    div.textContent = `${e.hours}h – ${e.description}`;
-    list.appendChild(div);
+  if (!client || !client.extraHours?.length) {
+    showAlert('Sense hores extres', 'No hi ha hores registrades', 'ℹ️');
+    return;
+  }
+  const list = $('extraHoursList');
+  if (!list) return;
+  list.innerHTML = '';
+  let totalExtra = 0;
+  client.extraHours.forEach(entry => {
+    totalExtra += entry.seconds;
+    const item = document.createElement('div');
+    item.className = 'extra-hour-item';
+    item.innerHTML = `
+      <div>${entry.hours}h - ${entry.description}</div>
+      <small>${new Date(entry.date).toLocaleDateString('ca-ES')}</small>
+    `;
+    list.appendChild(item);
   });
-
-  $("extraHoursTotal").textContent = formatTime(total);
-  openModal("modalViewExtraHours");
+  if ($('extraHoursTotal')) $('extraHoursTotal').textContent = formatTime(totalExtra);
+  openModal('modalViewExtraHours');
 }
 
 /* ================= INFORME ================= */
 function generateReport() {
   const client = state.clients[state.currentClientId];
-  if (!client) return;
-
-  const text =
-`📋 INFORME DE PROJECTE
-
-Client: ${client.name}
-Data: ${new Date().toLocaleDateString("ca-ES")}
-
-Temps total: ${formatTime(client.total)}
-Temps facturable: ${formatTime(client.billableTime)}
-
-Fotos: ${client.photos.length}
-
-Notes:
-${client.notes || "-"}
-
-Generat amb FocusWork v${APP_VERSION}`;
-
-  $("reportContent").textContent = text;
-  openModal("modalReport");
+  if (!client) {
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
+    return;
+  }
+  const reportText = 
+    `📋 INFORME DE PROJECTE\n\n` +
+    `👤 CLIENT: ${client.name}\n` +
+    `📅 Data: ${new Date().toLocaleDateString('ca-ES')}\n` +
+    `⏱️ TEMPS TOTAL: ${formatTime(client.total)}\n` +
+    `💰 FACTURABLE: ${formatTime(client.billableTime || 0)}\n` +
+    `📷 FOTOS: ${client.photos.length}\n` +
+    (client.notes ? `\n📝 NOTES:\n${client.notes}\n` : '') +
+    `\nGenerat amb FocoWork v${APP_VERSION}`;
+  
+  if ($('reportContent')) $('reportContent').textContent = reportText;
+  openModal('modalReport');
 }
 
 function copyReport() {
-  navigator.clipboard.writeText($("reportContent").textContent);
-  showAlert("Copiat", "Informe copiat", "✅");
+  const reportText = $('reportContent').textContent;
+  navigator.clipboard.writeText(reportText).then(() => {
+    showAlert('Copiat', 'Informe copiat', '✅');
+  }).catch(() => {
+    showAlert('Error', 'No s\'ha pogut copiar', '⚠️');
+  });
 }
 
-/* ================= EXPORT / IMPORT ================= */
+async function shareReport() {
+  const reportText = $('reportContent').textContent;
+  if (navigator.share) {
+    try {
+      await navigator.share({ text: reportText });
+    } catch (err) {
+      copyReport();
+    }
+  } else {
+    copyReport();
+  }
+}
+
+/* ================= EXPORTAR/IMPORTAR ================= */
 function exportCurrentWork() {
   const client = state.clients[state.currentClientId];
-  if (!client) return;
-
-  const data = {
+  if (!client) {
+    showAlert('Sense client', 'Selecciona un client', '⚠️');
+    return;
+  }
+  const workData = {
     version: APP_VERSION,
-    client
+    exportDate: new Date().toISOString(),
+    client: client,
+    userName: userName
   };
-
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: "application/json"
-  });
-
-  const a = document.createElement("a");
+  const blob = new Blob([JSON.stringify(workData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `focuswork_${client.name}.json`;
+  a.download = `treball_${client.name.replace(/[^a-z0-9]/gi, '_')}_${todayKey()}.focowork`;
   a.click();
+  URL.revokeObjectURL(a.href);
+  showAlert('Treball desat', 'Arxiu descarregat', '💾');
 }
 
 function importWork() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".json";
-
-  input.onchange = async () => {
-    const file = input.files[0];
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.focowork,.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
     if (!file) return;
-
-    const text = await file.text();
-    const data = JSON.parse(text);
-
-    const id = uid();
-    state.clients[id] = { ...data.client, id, active: true };
-    state.currentClientId = id;
-
-    save();
-    updateUI();
-    showAlert("Importat", "Client importat", "✅");
+    try {
+      const text = await file.text();
+      const fileData = JSON.parse(text);
+      if (fileData.type === 'full_backup') {
+        handleBackupFile(fileData);
+        return;
+      }
+      if (!fileData.client) {
+        showAlert('Arxiu invàlid', 'Format incorrecte', '❌');
+        return;
+      }
+      const newId = uid();
+      state.clients[newId] = { ...fileData.client, id: newId, active: true };
+      state.currentClientId = newId;
+      state.currentActivity = ACTIVITIES.WORK;
+      state.sessionElapsed = 0;
+      state.lastTick = Date.now();
+      isWorkpadInitialized = false;
+      areTasksInitialized = false;
+      save();
+      updateUI();
+      showAlert('Treball importat', 'Client recuperat correctament', '✅');
+    } catch (err) {
+      showAlert('Error', 'No s\'ha pogut llegir', '❌');
+    }
   };
-
   input.click();
 }
 
-/* ================= HORARI ================= */
-function openScheduleModal() {
-  $("scheduleEnabled").checked = state.focusSchedule.enabled;
-  $("scheduleStart").value = state.focusSchedule.start;
-  $("scheduleEnd").value = state.focusSchedule.end;
-  $("scheduleConfig").style.display =
-    state.focusSchedule.enabled ? "block" : "none";
-
-  $("scheduleEnabled").onchange = e => {
-    $("scheduleConfig").style.display =
-      e.target.checked ? "block" : "none";
+function exportAllData() {
+  const exportData = {
+    version: APP_VERSION,
+    exportDate: new Date().toISOString(),
+    userName: userName,
+    state: state,
+    license: state.license,
+    type: 'full_backup'
   };
-
-  openModal("modalSchedule");
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `focowork_complet_${todayKey()}.focowork`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showAlert('Backup complet', 'Totes les dades exportades', '💾');
 }
 
-function saveScheduleConfig() {
-  state.focusSchedule.enabled = $("scheduleEnabled").checked;
-  state.focusSchedule.start = $("scheduleStart").value;
-  state.focusSchedule.end = $("scheduleEnd").value;
+function handleBackupFile(backupData) {
+  if (!backupData.state) {
+    showAlert('Arxiu invàlid', 'Backup corromput', '❌');
+    return;
+  }
+  const clientCount = Object.keys(backupData.state.clients).length;
+  const activeCount = Object.values(backupData.state.clients).filter(c => c.active).length;
+  if ($('importBackupClients')) $('importBackupClients').textContent = clientCount;
+  if ($('importBackupActive')) $('importBackupActive').textContent = activeCount;
+  if ($('importBackupDate')) $('importBackupDate').textContent = new Date(backupData.exportDate).toLocaleDateString();
+  if ($('importBackupLicense')) $('importBackupLicense').textContent = backupData.license ? '✔ Sí' : '– No';
+  window.pendingBackup = backupData;
+  openModal('modalImportBackup');
+}
 
+function confirmImportBackup() {
+  if (!window.pendingBackup) return;
+  const backupData = window.pendingBackup;
+  if (backupData.state) state = backupData.state;
+  if (backupData.userName) {
+    userName = backupData.userName;
+    localStorage.setItem("focowork_user_name", userName);
+  }
+  if (backupData.license) {
+    state.license = backupData.license;
+    state.isFull = true;
+  }
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
   save();
-  closeModal("modalSchedule");
-  showAlert("Horari desat", "Configuració actualitzada", "✅");
+  updateUI();
+  closeModal('modalImportBackup');
+  showAlert('Backup restaurat', 'Dades recuperades correctament', '🎉');
+  window.pendingBackup = null;
+  setTimeout(() => location.reload(), 2000);
 }
 
-/* ================= INIT ================= */
-document.addEventListener("DOMContentLoaded", () => {
+function confirmImport() {
+  if (!window.pendingImport) return;
+  const workData = window.pendingImport;
+  const newId = uid();
+  state.clients[newId] = { ...workData.client, id: newId, active: true };
+  state.currentClientId = newId;
+  state.currentActivity = ACTIVITIES.WORK;
+  state.sessionElapsed = 0;
+  state.lastTick = Date.now();
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
+  save();
+  updateUI();
+  closeModal('modalImportWork');
+  showAlert('Treball importat', `Client "${workData.client.name}" importat correctament`, '✅');
+  window.pendingImport = null;
+}
 
-  const bind = (id, fn) => {
-    const el = document.getElementById(id);
-    if (el) el.onclick = fn;
-  };
+function exportAndClose() {
+  exportCurrentWork();
+  setTimeout(confirmCloseClient, 500);
+}
 
-  /* CLIENTS */
-  bind("newClientBtn", newClient);
-  bind("changeClient", changeClient);
-  bind("historyBtn", showHistory);
-
-  bind("closeClient", () => {
-    const client = state.clients[state.currentClientId];
-    if (!client) return;
-
-    document.getElementById("closeClientText").textContent =
-      `Client: ${client.name}\nTemps total: ${formatTime(client.total)}`;
-
-    openModal("modalCloseClient");
+/* ================= EVENT LISTENERS ================= */
+document.addEventListener('DOMContentLoaded', () => {
+  // BOTONS PRINCIPALS
+  if ($('focusPriorityBtn')) $('focusPriorityBtn').onclick = changeClient;
+  if ($('newClientBtn')) $('newClientBtn').onclick = newClient;
+  if ($('changeClient')) $('changeClient').onclick = changeClient;
+  if ($('historyBtn')) $('historyBtn').onclick = showHistory;
+  if ($('closeClient')) $('closeClient').onclick = closeClient;
+  if ($('exitClientFloating')) $('exitClientFloating').onclick = exitClient;
+  if ($('setDeliveryDateBtn')) $('setDeliveryDateBtn').onclick = setDeliveryDate;
+  if ($('addExtraHoursBtn')) $('addExtraHoursBtn').onclick = addExtraHours;
+  if ($('viewExtraHoursBtn')) $('viewExtraHoursBtn').onclick = showExtraHours;
+  if ($('generateReportBtn')) $('generateReportBtn').onclick = generateReport;
+  if ($('cameraBtn')) $('cameraBtn').onclick = addPhotoToClient;
+  if ($('deleteClientBtn')) $('deleteClientBtn').onclick = deleteCurrentClient;
+  if ($('exportWorkBtn')) $('exportWorkBtn').onclick = exportCurrentWork;
+  if ($('importWorkBtn')) $('importWorkBtn').onclick = importWork;
+  if ($('exportAllBtn')) $('exportAllBtn').onclick = exportAllData;
+  if ($('loadLicenseBtn')) $('loadLicenseBtn').onclick = loadLicenseFile;
+  if ($('requestLicenseBtn')) $('requestLicenseBtn').onclick = requestLicense;
+  if ($('focusBtn')) $('focusBtn').onclick = showFocus;
+  if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
+  if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
+  
+  // TANCAR MODALS CLICANT FORA
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal(overlay.id);
+    });
   });
-
-  bind("deleteClientBtn", deleteCurrentClient);
-
-  /* SORTIR CLIENT (floating) */
-  bind("exitClientFloating", () => {
-    state.currentClientId = null;
-    state.currentActivity = null;
-    state.lastTick = null;
-    updateUI();
-  });
-
-  /* FOCUS */
-  bind("focusBtn", showFocus);
-  bind("focusPriorityBtn", () => {
-    showAlert(
-      "Focus prioritaris",
-      "Funció en construcció: servirà per enfocar clients urgents 🔧",
-      "🎯"
-    );
-  });
-
-  /* ALTRES */
-  bind("cameraBtn", addPhotoToClient);
-  bind("setDeliveryDateBtn", setDeliveryDate);
-  bind("addExtraHoursBtn", addExtraHours);
-  bind("viewExtraHoursBtn", showExtraHours);
-  bind("generateReportBtn", generateReport);
-  bind("exportWorkBtn", exportCurrentWork);
-  bind("importWorkBtn", importWork);
-  bind("scheduleBtn", openScheduleModal);
-  bind("todayBtn", exportTodayCSV);
-
-  /* ACTIVITATS */
-  document.querySelectorAll(".activity").forEach(btn => {
-    btn.onclick = () => {
-      state.currentActivity = btn.dataset.activity;
-      updateUI();
-    };
-  });
-
+  
+  // INPUT NOU CLIENT
+  if ($('newClientInput')) {
+    $('newClientInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') confirmNewClient();
+    });
+  }
+  
+  // INPUT ESBORRAR CLIENT
+  if ($('inputDeleteConfirm')) {
+    $('inputDeleteConfirm').addEventListener('keypress', e => {
+      if (e.key === 'Enter') confirmDeleteClient();
+    });
+  }
+  
+  // CERCA A L'HISTÒRIC
+  if ($('searchHistory')) {
+    $('searchHistory').addEventListener('input', e => {
+      const query = e.target.value.toLowerCase();
+      const closed = Object.values(state.clients).filter(c => !c.active);
+      const filtered = closed.filter(c =>
+        c.name.toLowerCase().includes(query) ||
+        (c.notes || '').toLowerCase().includes(query)
+      );
+      const list = $('historyClientsList');
+      if (!list) return;
+      list.innerHTML = '';
+      if (!filtered.length) {
+        list.innerHTML = '<p class="modal-text" style="opacity: 0.6; text-align: center;">Sense resultats</p>';
+        return;
+      }
+      filtered.forEach(client => {
+        const item = document.createElement('div');
+        item.className = 'client-item';
+        item.innerHTML = `
+          <div class="client-name">${client.name}</div>
+          <div class="client-time">Total: ${formatTime(client.total)} • ${client.photos.length} fotos</div>
+        `;
+        item.onclick = () => {
+          state.currentClientId = client.id;
+          state.currentActivity = null;
+          state.sessionElapsed = 0;
+          state.lastTick = null;
+          isWorkpadInitialized = false;
+          areTasksInitialized = false;
+          updateUI();
+          closeModal('modalHistory');
+        };
+        list.appendChild(item);
+      });
+    });
+  }
+  
+  // ACTUALITZAR UI INICIAL
   updateUI();
 });
 
-/* ===== FI PART 4 ===== */
+/* ================= FUNCIONS GLOBALS PER ALS MODALS ================= */
+window.closeModal = closeModal;
+window.confirmNewClient = confirmNewClient;
+window.saveDeliveryDate = saveDeliveryDate;
+window.saveExtraHours = saveExtraHours;
+window.copyReport = copyReport;
+window.shareReport = shareReport;
+window.confirmCloseClient = confirmCloseClient;
+window.confirmImport = confirmImport;
+window.confirmImportBackup = confirmImportBackup;
+window.confirmDeleteClient = confirmDeleteClient;
+window.confirmDeletePhoto = confirmDeletePhoto;
+window.applyPreset = applyPreset;
+window.saveScheduleConfig = saveScheduleConfig;
+window.exportAndClose = exportAndClose;
