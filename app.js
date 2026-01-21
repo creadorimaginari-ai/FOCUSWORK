@@ -425,11 +425,12 @@ function tick() {
   const elapsed = Math.floor((now - state.lastTick) / 1000);
   if (elapsed <= 0) return;
   
-  // IMPORTANT: Només incrementar exactament 1 segon per evitar salts
-  // El temps "perdut" es recuperarà en el següent tick
+  // Només incrementar exactament 1 segon, independentment del temps real transcorregut
   const increment = 1;
   
-  state.lastTick += 1000; // Incrementar exactament 1 segon
+  // Actualitzar lastTick basant-nos en el temps real transcorregut
+  // però només aplicar 1 segon als comptadors
+  state.lastTick = now;
   state.sessionElapsed += increment;
   client.total += increment;
   client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + increment;
@@ -445,8 +446,6 @@ function tick() {
   save();
   updateUI();
 }
-
-setInterval(tick, 1000);
 
 setInterval(tick, 1000);
 
