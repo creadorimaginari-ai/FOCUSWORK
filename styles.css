@@ -117,7 +117,37 @@ html, body {
   opacity: 0.6;
   letter-spacing: 0.3px;
 }
+.exit-client-btn {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px 28px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #0f172a;
+  border: 2px solid #fbbf24;
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 8px 24px rgba(251, 191, 36, 0.6),
+    0 0 0 3px rgba(251, 191, 36, 0.3);
+  z-index: 9999;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
 
+.exit-client-btn:hover {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow:
+    0 12px 32px rgba(251, 191, 36, 0.8),
+    0 0 0 3px rgba(251, 191, 36, 0.5);
+}
+
+.exit-client-btn.hidden {
+  display: none !important;
+}
 /* ===============================
    BLOQUES / PANELS
    =============================== */
