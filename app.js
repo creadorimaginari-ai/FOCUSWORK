@@ -624,7 +624,10 @@ function updateUI() {
   }
   $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Sense client actiu";
   $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
-  $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
+ $("timer").textContent = client && client.active
+  ? formatTime(visualSeconds)
+  : "00:00:00";
+
   if ($("clientTotal")) {
     $("clientTotal").textContent = client ? `Total client: ${formatTime(client.total)}` : "";
   }
