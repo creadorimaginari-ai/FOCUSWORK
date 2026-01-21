@@ -77,10 +77,6 @@ function showAlert(title, message, icon = 'ℹ️') {
   openModal('modalAlert');
 }
 
-const EXIT_BUTTON_DELAY = 4000; // 4 segons
-let exitButtonTimeout = null;
-
-
 /* ================= USUARI ================= */
 let userName = localStorage.getItem("focowork_user_name") || "Usuari";
 
@@ -97,9 +93,7 @@ let state = JSON.parse(localStorage.getItem("focowork_state")) || {
   focus: {},
   focusSchedule: { enabled: false, start: "09:00", end: "17:00" },
   autoDriveBackup: false
-  
 };
-/* ================= RELLOTGE VISUAL ================= */
 
 function save() {
   localStorage.setItem("focowork_state", JSON.stringify(state));
@@ -423,25 +417,30 @@ function resetTodayFocus() {
 /* ================= MOTOR DE TEMPS ================= */
 function tick() {
   resetDayIfNeeded();
-
   const client = state.clients[state.currentClientId];
-  if (!client || !client.active || !state.currentActivity) return;
-
-  state.sessionElapsed += 1;
-  client.total += 1;
-  client.activities[state.currentActivity] =
-    (client.activities[state.currentActivity] || 0) + 1;
-
-  if (!state.focusSchedule.enabled || isWithinFocusSchedule()) {
-    client.billableTime = (client.billableTime || 0) + 1;
-    state.focus[state.currentActivity] =
-      (state.focus[state.currentActivity] || 0) + 1;
+  if (!client || !client.active || !state.currentActivity || !state.lastTick) {
+    state.lastTick = Date.now();
+    return;
   }
-
+  const now = Date.now();
+  const elapsed = Math.floor((now - state.lastTick) / 1000);
+  if (elapsed <= 0) return;
+  state.lastTick = now;
+  state.sessionElapsed += elapsed;
+  client.total += elapsed;
+  client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + elapsed;
+  if (state.focusSchedule.enabled) {
+    if (isWithinFocusSchedule()) {
+      client.billableTime = (client.billableTime || 0) + elapsed;
+      state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
+    }
+  } else {
+    client.billableTime = (client.billableTime || 0) + elapsed;
+    state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
+  }
+  save();
   updateUI();
 }
-
-
 
 setInterval(tick, 1000);
 
@@ -452,15 +451,12 @@ function setActivity(activity) {
     showAlert('Sense client', 'Primer selecciona un client actiu', '⚠️');
     return;
   }
-
   state.currentActivity = activity;
   state.sessionElapsed = 0;
-  state.lastTick = null;   // 👈 reinici net
-
+  state.lastTick = Date.now();
   save();
   updateUI();
 }
-
 
 /* ================= WORKPAD ================= */
 let workpadTimeout = null;
@@ -599,10 +595,7 @@ function updateUI() {
   }
   $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Sense client actiu";
   $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
- $("timer").textContent = client && client.active
-  ? formatTime(visualSeconds)
-  : "00:00:00";
-
+  $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
   if ($("clientTotal")) {
     $("clientTotal").textContent = client ? `Total client: ${formatTime(client.total)}` : "";
   }
@@ -705,24 +698,6 @@ function updateFocusScheduleStatus() {
     statusEl.style.display = "none";
   }
 }
-function scheduleExitButton(clientId) {
-  const btn = document.getElementById("exitClientFloating");
-  if (!btn || !clientId) return;
-
-  btn.classList.add("hidden");
-  clearTimeout(exitButtonTimeout);
-
-  exitButtonTimeout = setTimeout(() => {
-    if (state.currentClientId === clientId) {
-      btn.classList.remove("hidden");
-    }
-  }, EXIT_BUTTON_DELAY);
-}
-
-function hideExitButton() {
-  const btn = document.getElementById("exitClientFloating");
-  if (btn) btn.classList.add("hidden");
-}
 
 /* ================= CLIENTS ================= */
 function newClient() {
@@ -763,7 +738,6 @@ function confirmNewClient() {
   save();
   updateUI();
   closeModal('modalNewClient');
-  scheduleExitButton(state.currentClientId);
 }
 
 function changeClient() {
@@ -843,7 +817,6 @@ function selectClient(clientId) {
   save();
   updateUI();
   closeModal('modalChangeClient');
-  scheduleExitButton(state.currentClientId);
 }
 
 function closeClient() {
@@ -875,7 +848,6 @@ function confirmCloseClient() {
   closeModal('modalExportBeforeClose');
   showAlert('Client tancat', `${client.name}\nTemps total: ${formatTime(client.total)}`, '✅');
   window.clientToClose = null;
-  hideExitButton();
 }
 
 function exportAndClose() {
@@ -889,7 +861,6 @@ function exitClient() {
   state.lastTick = null;
   save();
   updateUI();
-  hideExitButton();
 }
 
 /* ================= HISTÒRIC ================= */
@@ -1377,13 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('focusBtn')) $('focusBtn').onclick = showFocus;
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
-
-  // FA DESAPAREIXER BOTO SORTIR CLIENT
-  const exitBtn = document.getElementById("exitClientFloating");
-if (exitBtn) {
-  exitBtn.onclick = () => exitClient();
-}
-
+  
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
