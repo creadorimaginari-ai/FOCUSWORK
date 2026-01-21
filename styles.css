@@ -1258,16 +1258,26 @@ button.secondary:hover,
     padding-bottom: calc(180px + env(safe-area-inset-bottom));
   }
 }
-#exitClientFloating {
+/* CAPA LLIURE (ANTÍDOT GALERIA) */
+#floating-layer {
   position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999999;
+}
+
+/* BOTÓ REAL */
+#exitClientFloating {
+  pointer-events: auto;
+  position: fixed;
+
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 99999;
 
   width: 64px;
   height: 64px;
-  border-radius: 20%;
+  border-radius: 50%;
 
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
@@ -1289,5 +1299,6 @@ button.secondary:hover,
 #exitClientFloating.hidden {
   display: none;
 }
+
 
 
