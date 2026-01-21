@@ -413,7 +413,6 @@ function resetTodayFocus() {
   save();
   showAlert('Enfocament reiniciat', 'Les dades d\'enfocament d\'avui han estat reiniciades.\n\nAra només comptabilitzarà temps dins l\'horari configurat.', '✅');
 }
-
 /* ================= MOTOR DE TEMPS ================= */
 function tick() {
   resetDayIfNeeded();
@@ -425,22 +424,29 @@ function tick() {
   const now = Date.now();
   const elapsed = Math.floor((now - state.lastTick) / 1000);
   if (elapsed <= 0) return;
-  state.lastTick = now;
-  state.sessionElapsed += elapsed;
-  client.total += elapsed;
-  client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + elapsed;
+  
+  // IMPORTANT: Només incrementar exactament 1 segon per evitar salts
+  // El temps "perdut" es recuperarà en el següent tick
+  const increment = 1;
+  
+  state.lastTick += 1000; // Incrementar exactament 1 segon
+  state.sessionElapsed += increment;
+  client.total += increment;
+  client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + increment;
   if (state.focusSchedule.enabled) {
     if (isWithinFocusSchedule()) {
-      client.billableTime = (client.billableTime || 0) + elapsed;
-      state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
+      client.billableTime = (client.billableTime || 0) + increment;
+      state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + increment;
     }
   } else {
-    client.billableTime = (client.billableTime || 0) + elapsed;
-    state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
+    client.billableTime = (client.billableTime || 0) + increment;
+    state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + increment;
   }
   save();
   updateUI();
 }
+
+setInterval(tick, 1000);
 
 setInterval(tick, 1000);
 
