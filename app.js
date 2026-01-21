@@ -443,7 +443,7 @@ function tick() {
 
   state.lastTick = now;
 
-  // ⏱️ TEMPS REAL (NO TOCAR)
+  // ⏱️ TEMPS REAL (DADES)
   state.sessionElapsed += elapsed;
   client.total += elapsed;
   client.activities[state.currentActivity] =
@@ -461,15 +461,19 @@ function tick() {
       (state.focus[state.currentActivity] || 0) + elapsed;
   }
 
-  // 👀 RELLOTGE VISUAL (CLAU)
-  for (let i = 0; i < elapsed; i++) {
-    visualSeconds += 1;
-  }
-
   save();
   updateUI();
 }
 
+
+setInterval(() => {
+  const client = state.clients[state.currentClientId];
+
+  if (client && client.active && state.currentActivity) {
+    visualSeconds++;
+    $("timer").textContent = formatTime(visualSeconds);
+  }
+}, 1000);
 
 setInterval(tick, 1000);
 
