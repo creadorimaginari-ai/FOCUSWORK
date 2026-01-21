@@ -1,5 +1,5 @@
 /* ===============================
-   RESET BÀSICO
+   RESET BÃSICO
    =============================== */
 
 * {
@@ -27,7 +27,7 @@ html, body {
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
 }
-
+/* Grid centrada (per botons únics com Informe o Històric) */
 .grid.centered {
   grid-template-columns: 1fr;
   justify-items: center;
@@ -37,6 +37,7 @@ html, body {
   width: 100%;
 }
 
+/* Separació entre botons i blocs de workpad */
 .panel .grid + .workpad-container {
   margin-top: 16px;
 }
@@ -142,6 +143,16 @@ html, body {
 }
 
 /* ===============================
+   GRID DE BOTONES
+   =============================== */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+/* ===============================
    BOTONES BASE (TODOS)
    =============================== */
 
@@ -197,7 +208,8 @@ button:hover,
   border-color: rgba(148, 163, 184, 0.2);
 }
 
-#newClientBtn {
+/* Botón Nou – reborde neón verde */
+#newClient {
   border: 1px solid rgba(16, 185, 129, 0.6);
   box-shadow:
     0 0 8px rgba(16, 185, 129, 0.4),
@@ -213,16 +225,18 @@ button:hover,
   }
 }
 
-#newClientBtn {
+#newClient {
   animation: neonPulseGreen 2.5s ease-in-out infinite;
 }
 
-#newClientBtn:hover {
+
+#newClient:hover {
   border-color: rgba(16, 185, 129, 0.9);
   box-shadow:
     0 0 14px rgba(16, 185, 129, 0.7),
     inset 0 0 8px rgba(16, 185, 129, 0.3);
 }
+
 
 /* ===============================
    BOTONES ACTIVOS
@@ -250,7 +264,7 @@ button:hover,
 }
 
 /* ===============================
-   BOTÓN ANCHO COMPLETO
+   BOTÃ"N ANCHO COMPLETO
    =============================== */
 
 .full-width {
@@ -258,31 +272,49 @@ button:hover,
 }
 
 /* ===============================
-   BOTÓN PRIMARY
+   BOTÃ"N PRIMARY (CÃ¡mara, etc)
    =============================== */
 
 #cameraBtn,
 #setDeliveryDateBtn,
-#generateReportBtn,
-#focusPriorityBtn {
+#activateFull {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.6), rgba(30, 64, 175, 0.6)) !important;
   backdrop-filter: blur(10px);
   border-color: rgba(59, 130, 246, 0.3);
+  grid-column: span 2;
+  margin-top: 12px;
 }
 
 #cameraBtn:hover,
 #setDeliveryDateBtn:hover,
-#generateReportBtn:hover,
-#focusPriorityBtn:hover {
+#activateFull:hover {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(30, 64, 175, 0.8)) !important;
 }
 
+#cameraBtn.active,
+#setDeliveryDateBtn.active {
+  background: linear-gradient(135deg, #3b82f6, #1e40af) !important;
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.2),
+    0 8px 24px rgba(30, 64, 175, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
 /* ===============================
-   BOTÓN DANGER (Tancar)
+   BOTÃ"N DANGER (Cerrar)
    =============================== */
 
+.danger {
+  grid-column: span 2;
+}
+
+/* Tancar NO ocupa dos columnas */
 #closeClient {
   grid-column: auto;
+}
+
+/* Botón Tancar – verde degradado permanente */
+#closeClient {
   background: linear-gradient(135deg, #10b981, #059669);
   border-color: rgba(16, 185, 129, 0.4);
   color: #ffffff;
@@ -291,13 +323,31 @@ button:hover,
     0 8px 24px rgba(5, 150, 105, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
-
 #closeClient:hover {
   background: linear-gradient(135deg, #059669, #047857);
   box-shadow:
     0 0 0 3px rgba(16, 185, 129, 0.25),
     0 12px 32px rgba(5, 150, 105, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.danger.active,
+#closeClient.active {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow:
+    0 0 0 3px rgba(16, 185, 129, 0.2),
+    0 8px 24px rgba(5, 150, 105, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ===============================
+   ACCIONES (Nuevo, Cambiar, Cerrar)
+   =============================== */
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
 }
 
 /* ===============================
@@ -409,10 +459,29 @@ button:hover,
   font-style: italic;
 }
 
+.workpad-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.workpad-area::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 3px;
+}
+
+.workpad-area::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.workpad-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
 /* ===============================
-   TAREAS POR URGENCIA
+   FEINES PER URGÃˆNCIA (TAREAS)
    =============================== */
 
+/* Textarea Urgent (Rojo) */
 .workpad-area.urgent {
   min-height: 90px;
   max-height: 150px;
@@ -428,6 +497,11 @@ button:hover,
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
 
+.workpad-area.urgent::placeholder {
+  color: rgba(239, 68, 68, 0.5);
+}
+
+/* Textarea Important (Naranja) */
 .workpad-area.important {
   min-height: 90px;
   max-height: 150px;
@@ -443,6 +517,11 @@ button:hover,
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
 }
 
+.workpad-area.important::placeholder {
+  color: rgba(245, 158, 11, 0.5);
+}
+
+/* Textarea Later (Verde) */
 .workpad-area.later {
   min-height: 90px;
   max-height: 150px;
@@ -458,8 +537,12 @@ button:hover,
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 
+.workpad-area.later::placeholder {
+  color: rgba(16, 185, 129, 0.5);
+}
+
 /* ===============================
-   GALERÍA DE FOTOS
+   GALERÃA DE FOTOS
    =============================== */
 
 .photo-gallery {
@@ -486,6 +569,11 @@ button:hover,
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
+.photo-gallery img:active,
+.photo-thumb:active {
+  transform: scale(0.98);
+}
+
 /* ===============================
    FOOTER
    =============================== */
@@ -503,7 +591,7 @@ button:hover,
 }
 
 /* ===============================
-   VERSION BOX
+   BLOQUE VERSIÓ / ACTIVACIÓ
    =============================== */
 
 .version-box {
@@ -511,6 +599,7 @@ button:hover,
   bottom: 0;
   left: 0;
   right: 0;
+
   padding: 16px 12px;
   background: linear-gradient(
     180deg,
@@ -518,11 +607,14 @@ button:hover,
     rgba(15, 23, 42, 0.95) 100%
   );
   backdrop-filter: blur(20px);
+
   border-top: 1px solid rgba(148, 163, 184, 0.1);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+
   z-index: 10000;
 }
 
+/* Text superior */
 .version-box .lock {
   font-size: 13px;
   font-weight: 500;
@@ -533,6 +625,10 @@ button:hover,
   letter-spacing: 0.2px;
 }
 
+/* ===============================
+   CONTENIDOR DELS BOTONS
+   =============================== */
+
 .version-actions {
   display: flex;
   justify-content: center;
@@ -540,26 +636,37 @@ button:hover,
   flex-wrap: wrap;
 }
 
+/* ===============================
+   BOTONS (ALÇADA BAIXA, ESTIL PILL)
+   =============================== */
+
 .version-box button {
   width: auto;
   min-width: 220px;
   max-width: 360px;
+
   padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
+
   border: none;
   border-radius: 999px;
+
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: #ffffff;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+
   cursor: pointer;
+
   box-shadow:
     0 2px 8px rgba(37, 99, 235, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
+
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
@@ -568,39 +675,72 @@ button:hover,
   transform: translateY(-1px);
 }
 
+.version-box button:active {
+  transform: translateY(0);
+}
+
 /* ===============================
-   BOTÓN FLOTANTE SALIR
+   INPUT (SI N’HI HA)
    =============================== */
 
-.exit-client-btn {
-  position: fixed;
-  bottom: 90px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 14px 28px;
-  border-radius: 999px;
-  font-size: 16px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #0f172a;
-  border: 2px solid #fbbf24;
-  backdrop-filter: blur(10px);
-  box-shadow:
-    0 8px 24px rgba(251, 191, 36, 0.6),
-    0 0 0 3px rgba(251, 191, 36, 0.3);
-  z-index: 9999;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.version-box input {
+  width: 100%;
+  max-width: 360px;
+  padding: 12px 14px;
+  margin: 8px auto 0;
+
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+
+  background: rgba(30, 41, 59, 0.6);
+  color: #f8fafc;
+  font-size: 14px;
+
+  display: block;
 }
 
-.exit-client-btn:hover {
-  transform: translateX(-50%) translateY(-2px);
-  box-shadow:
-    0 12px 32px rgba(251, 191, 36, 0.8),
-    0 0 0 3px rgba(251, 191, 36, 0.5);
+.version-box input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(30, 41, 59, 0.8);
 }
 
-.exit-client-btn.hidden {
+.version-box input::placeholder {
+  color: rgba(248, 250, 252, 0.4);
+}
+
+/* ===============================
+   RESPONSIVE (MÒBIL PETIT)
+   =============================== */
+
+@media (max-width: 420px) {
+  .version-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .version-box button {
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+/* ===============================
+   SAFE AREA (iOS)
+   =============================== */
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .version-box {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
+
+/* ===============================
+   UTILIDADES
+   =============================== */
+
+.hidden {
   display: none !important;
 }
 
@@ -608,6 +748,7 @@ button:hover,
    MODALES
    =============================== */
 
+/* Overlay */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -625,10 +766,15 @@ button:hover,
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
+/* Modal */
 .modal {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
   backdrop-filter: blur(20px);
@@ -655,6 +801,7 @@ button:hover,
   }
 }
 
+/* Modal Header */
 .modal-header {
   padding: 24px 24px 16px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.15);
@@ -677,6 +824,13 @@ button:hover,
   background-clip: text;
 }
 
+.modal-subtitle {
+  font-size: 14px;
+  opacity: 0.7;
+  margin: 4px 0 0;
+}
+
+/* Modal Body */
 .modal-body {
   padding: 24px;
 }
@@ -718,6 +872,11 @@ button:hover,
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.modal-input::placeholder {
+  color: rgba(248, 250, 252, 0.3);
+}
+
+/* Modal Footer */
 .modal-footer {
   padding: 16px 24px 24px;
   display: flex;
@@ -781,10 +940,7 @@ button:hover,
   box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
 }
 
-/* ===============================
-   CLIENTS LIST
-   =============================== */
-
+/* Clientes List */
 .clients-list {
   max-height: 400px;
   overflow-y: auto;
@@ -817,8 +973,90 @@ button:hover,
   opacity: 0.7;
 }
 
+/* Activity List (Enfoque Modal) */
+.activity-list {
+  margin-bottom: 20px;
+}
+
+.activity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px;
+  background: rgba(51, 65, 85, 0.4);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.activity-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.activity-stats {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.activity-time {
+  font-size: 14px;
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.activity-percent {
+  font-size: 13px;
+  opacity: 0.7;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Total Stats */
+.total-stats {
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  margin-bottom: 20px;
+}
+
+.total-time {
+  font-size: 15px;
+  text-align: center;
+}
+
+.total-time strong {
+  color: #60a5fa;
+  font-size: 18px;
+  margin-left: 8px;
+}
+
+/* Focus State */
+.focus-state {
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.focus-state.enfocado {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 2px solid rgba(16, 185, 129, 0.3);
+}
+
+.focus-state.no-enfocado {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 2px solid rgba(239, 68, 68, 0.3);
+}
+
 /* ===============================
-   TIEMPO FACTURABLE
+   TIEMPO FACTURABLE BOX
    =============================== */
 
 .billable-time-box {
@@ -836,12 +1074,8 @@ button:hover,
 }
 
 /* ===============================
-   UTILIDADES
+   BOTONES SECONDARY
    =============================== */
-
-.hidden {
-  display: none !important;
-}
 
 button.secondary,
 .secondary {
@@ -854,3 +1088,143 @@ button.secondary:hover,
 .secondary:hover {
   background: rgba(51, 65, 85, 0.8) !important;
 }
+
+/* ===============================
+   EXTRA HOURS LIST
+   =============================== */
+
+.extra-hours-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.extra-hour-item {
+  padding: 14px;
+  background: rgba(51, 65, 85, 0.4);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  transition: all 0.3s ease;
+}
+
+.extra-hour-item:hover {
+  background: rgba(51, 65, 85, 0.6);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.extra-hour-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.extra-hour-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.extra-hour-date {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.extra-hour-description {
+  font-size: 14px;
+  margin-bottom: 10px;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.btn-danger-small {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.btn-danger-small:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+}
+
+/* ===============================
+   REPORT CONTENT
+   =============================== */
+
+.report-content {
+  background: rgba(15, 23, 42, 0.6);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e2e8f0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.report-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.report-content::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 4px;
+}
+
+.report-content::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+
+.report-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* ===============================
+   RESPONSIVE ADJUSTMENTS
+   =============================== */
+
+@media (max-width: 480px) {
+  .report-content {
+    font-size: 11px;
+    padding: 14px;
+  }
+  
+  .extra-hour-item {
+    padding: 12px;
+  }
+  
+  .extra-hour-amount {
+    font-size: 14px;
+  }
+}
+
+/* ===============================
+   PWA AJUSTOS
+   =============================== */
+
+@media (display-mode: standalone) {
+  .version-box {
+    position: static;
+  }
+
+  .app {
+    padding-bottom: calc(180px + env(safe-area-inset-bottom));
+  }
+}
+
+
