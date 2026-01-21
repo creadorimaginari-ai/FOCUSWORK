@@ -859,6 +859,13 @@ function exitClient() {
   state.currentClientId = null;
   state.currentActivity = null;
   state.lastTick = null;
+
+  // Mostrar/ocultar botó flotant
+  const exitBtn = $("exitClientFloating");
+  if (exitBtn) {
+    exitBtn.classList.toggle('hidden', !client);
+  }
+  
   save();
   updateUI();
 }
@@ -1348,7 +1355,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('focusBtn')) $('focusBtn').onclick = showFocus;
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
-  
+  if ($('exitClientFloating')) $('exitClientFloating').onclick = exitClient;
   // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
