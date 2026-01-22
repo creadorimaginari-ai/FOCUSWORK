@@ -1275,30 +1275,31 @@ button.secondary:hover,
   left: 50%;
   transform: translateX(-50%);
 
-  width: 140px;              /* 👈 MÉS AMPLE */
-  height: 36px;              /* 👈 UNA MICA MÉS ALT */
-  padding: 0 18px;           /* 👈 AIRE ALS COSTATS */
-  border-radius: 999px;      /* 👈 pastilla allargada */
+  width: 220px;              /* 👈 MOLT MÉS AMPLE */
+  height: 42px;              /* 👈 còmode per dit */
+  padding: 0 24px;
+  border-radius: 999px;      /* pastilla */
 
   background: linear-gradient(135deg, #f59e0b, #ea580c);
-  color: white;
-  font-size: 14px;           /* 👈 text llegible, no gegant */
+  color: #ffffff;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
 
   border: none;
   cursor: pointer;
 
   box-shadow:
-    0 6px 16px rgba(234, 88, 12, 0.45),   /* ombra principal */
-    inset 0 1px 0 rgba(255, 255, 255, 0.25); /* brillantor suau */
+    0 8px 20px rgba(234, 88, 12, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #exitClientFloating:hover {
   transform: translateX(-50%) scale(1.05);
-  box-shadow:
-    0 8px 22px rgba(234, 88, 12, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 #exitClientFloating:active {
