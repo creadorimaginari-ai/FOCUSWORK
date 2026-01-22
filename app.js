@@ -101,21 +101,6 @@ function save() {
 }
 
 /* ================= RECORDATORI DE BACKUP ================= */
-let state = JSON.parse(localStorage.getItem("focowork_state")) || {
-  isFull: false,
-  license: null,
-  day: todayKey(),
-  currentClientId: null,
-  currentActivity: null,
-  lastTick: null,
-  sessionElapsed: 0,
-  clients: {},
-  focus: {},
-  focusSchedule: { enabled: false, start: "09:00", end: "17:00" },
-  autoDriveBackup: false,
-  lastBackupDate: null   // ✅ AQUÍ I NOMÉS AQUÍ
-};
-
 function updateBackupReminder() {
   const reminderEl = document.createElement('div');
   reminderEl.id = 'backupReminder';
@@ -134,7 +119,7 @@ function updateBackupReminder() {
   
   if (!state.lastBackupDate) {
     // Mai s'ha fet backup
-  lastBackupDate: null,
+
     
    reminderEl.style.background = 'rgba(251, 191, 36, 0.15)';
     reminderEl.style.color = '#fbbf24';
@@ -169,15 +154,6 @@ function markBackupDone() {
   state.lastBackupDate = new Date().toISOString();
   save();
   updateBackupReminder();
-}
-
-/* ================= RESET DIARI ================= */
-function resetDayIfNeeded() {
-  if (state.day !== todayKey()) {
-    state.day = todayKey();
-    state.focus = {};
-    save();
-  }
 }
 
 
