@@ -82,6 +82,12 @@ let userName = localStorage.getItem("focowork_user_name") || "Usuari";
 
 /* ================= ESTAT ================= */
 let state = JSON.parse(localStorage.getItem("focowork_state")) || {
+ // 🔧 MIGRACIÓ D'ESTAT (OBLIGATÒRIA)
+if (!('lastBackupDate' in state)) {
+  state.lastBackupDate = null;
+  save();
+}
+
   isFull: false,
   license: null,
   day: todayKey(),
