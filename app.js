@@ -214,6 +214,28 @@ async function loadLicenseFile() {
       state.license = license;
       save();
       updateUI();
+      // BOTONS D'ACCIONS DEL CLIENT
+const clientActionButtons = [
+  'setDeliveryDateBtn',
+  'addExtraHoursBtn', 
+  'viewExtraHoursBtn',
+  'generateReportBtn',
+  'cameraBtn'
+  // 'addFileBtn' // Futur
+];
+
+clientActionButtons.forEach(btnId => {
+  const btn = $(btnId);
+  if (btn) {
+    if (client && client.active) {
+      btn.style.display = 'block';
+      btn.classList.remove('hidden');
+    } else {
+      btn.style.display = 'none';
+      btn.classList.add('hidden');
+    }
+  }
+});
       const expiryText = license.expiryDate
         ? `Vàlida fins: ${new Date(license.expiryDate).toLocaleDateString()}`
         : 'Sense límit de temps';
