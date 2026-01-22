@@ -214,29 +214,23 @@ async function loadLicenseFile() {
       state.license = license;
       save();
       updateUI();
-      // BOTONS D'ACCIONS DEL CLIENT
-const clientActionButtons = [
-  'setDeliveryDateBtn',
-  'addExtraHoursBtn', 
-  'viewExtraHoursBtn',
-  'generateReportBtn',
-  'cameraBtn'
-  // 'addFileBtn' // Futur
-];
+   const deletePanel = $("deleteClientPanel");
+if (deletePanel) {
+  deletePanel.style.display = (client && !client.active) ? "block" : "none";
+}
 
-clientActionButtons.forEach(btnId => {
-  const btn = $(btnId);
-  if (btn) {
-    if (client && client.active) {
-      btn.style.display = 'block';
-      btn.classList.remove('hidden');
-    } else {
-      btn.style.display = 'none';
-      btn.classList.add('hidden');
-    }
+// PANEL D'ACCIONS DEL CLIENT (NOU CODI)
+const clientActionsPanel = $("clientActionsPanel");
+if (clientActionsPanel) {
+  if (client && client.active) {
+    clientActionsPanel.classList.remove('hidden');
+    clientActionsPanel.style.display = 'block';
+  } else {
+    clientActionsPanel.classList.add('hidden');
+    clientActionsPanel.style.display = 'none';
   }
-});
-      const expiryText = license.expiryDate
+}
+     const expiryText = license.expiryDate
         ? `Vàlida fins: ${new Date(license.expiryDate).toLocaleDateString()}`
         : 'Sense límit de temps';
       showAlert('Llicència activada!', `FocusWork complet activat\n\nClient: ${license.clientName}\n${expiryText}\n\nGaudeix de clients il·limitats!`, '🎉');
