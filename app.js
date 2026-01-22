@@ -214,27 +214,8 @@ async function loadLicenseFile() {
       state.license = license;
       save();
       updateUI();
-    const expiryText = license.expiryDate
-        ? `Vàlida fins: ${new Date(license.expiryDate).toLocaleDateString()}`
-        : 'Sense límit de temps';
-      showAlert('Llicència activada!', `FocusWork complet activat\n\nClient: ${license.clientName}\n${expiryText}\n\nGaudeix de clients il·limitats!`, '🎉');
-    } catch (err) {
-      showAlert('Error', 'No s\'ha pogut llegir l\'arxiu de llicència', '❌');
-    }
-  };
-  input.click();
-}
-
-// PANEL D'ACCIONS DEL CLIENT
-  const clientActionsPanel = $("clientActionsPanel");
-  if (clientActionsPanel) {
-    if (client && client.active) {
-      clientActionsPanel.style.display = 'block';
-    } else {
-      clientActionsPanel.style.display = 'none';
-    }
-  }
-     const expiryText = license.expiryDate
+      
+      const expiryText = license.expiryDate
         ? `Vàlida fins: ${new Date(license.expiryDate).toLocaleDateString()}`
         : 'Sense límit de temps';
       showAlert('Llicència activada!', `FocusWork complet activat\n\nClient: ${license.clientName}\n${expiryText}\n\nGaudeix de clients il·limitats!`, '🎉');
@@ -676,6 +657,15 @@ function updateUI() {
   const deletePanel = $("deleteClientPanel");
   if (deletePanel) {
     deletePanel.style.display = (client && !client.active) ? "block" : "none";
+  }
+// PANEL D'ACCIONS DEL CLIENT
+  const clientActionsPanel = $("clientActionsPanel");
+  if (clientActionsPanel) {
+    if (client && client.active) {
+      clientActionsPanel.style.display = 'block';
+    } else {
+      clientActionsPanel.style.display = 'none';
+    }
   }
 }
 
