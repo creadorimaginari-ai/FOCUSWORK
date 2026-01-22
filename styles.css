@@ -1310,44 +1310,10 @@ button.secondary:hover,
   display: none;
 }
 /* PANEL D'ACCIONS DEL CLIENT */
-.client-actions-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 15px;
-  padding: 15px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+#clientActionsPanel {
+  display: block;
 }
 
-.client-actions-panel.hidden {
-  display: none !important;
+#clientActionsPanel.hidden {
+  display: none;
 }
-
-.client-actions-panel button {
-  flex: 1 1 calc(50% - 5px);
-  min-width: 150px;
-  padding: 12px;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.client-actions-panel button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-}
-
-@media (max-width: 768px) {
-  .client-actions-panel button {
-    flex: 1 1 100%;
-  }
-}
-
-
-
