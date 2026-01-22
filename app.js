@@ -101,6 +101,21 @@ function save() {
 }
 
 /* ================= RECORDATORI DE BACKUP ================= */
+let state = JSON.parse(localStorage.getItem("focowork_state")) || {
+  isFull: false,
+  license: null,
+  day: todayKey(),
+  currentClientId: null,
+  currentActivity: null,
+  lastTick: null,
+  sessionElapsed: 0,
+  clients: {},
+  focus: {},
+  focusSchedule: { enabled: false, start: "09:00", end: "17:00" },
+  autoDriveBackup: false,
+  lastBackupDate: null   // ✅ AQUÍ I NOMÉS AQUÍ
+};
+
 function updateBackupReminder() {
   const reminderEl = document.createElement('div');
   reminderEl.id = 'backupReminder';
@@ -119,7 +134,9 @@ function updateBackupReminder() {
   
   if (!state.lastBackupDate) {
     // Mai s'ha fet backup
-    reminderEl.style.background = 'rgba(251, 191, 36, 0.15)';
+  lastBackupDate: null,
+    
+   reminderEl.style.background = 'rgba(251, 191, 36, 0.15)';
     reminderEl.style.color = '#fbbf24';
     reminderEl.style.border = '1px solid rgba(251, 191, 36, 0.3)';
     reminderEl.innerHTML = '⚠️ No s\'ha fet mai còpia de seguretat';
@@ -1416,12 +1433,19 @@ function saveScheduleConfig() {
 }
 
 /* ================= EVENT LISTENERS ================= */
+
 document.addEventListener('DOMContentLoaded', () => {
+   // 🔔 MOSTRAR ESTAT DE BACKUP EN OBRIR L'APP
+  updateBackupReminder();
+
+  // 🎨 ACTUALITZAR TOTA LA UI
+  updateUI();
   // BOTONS PRINCIPALS
   if ($('focusPriorityBtn')) {
     $('focusPriorityBtn').onclick = () => {
       // SEMPRE obre el selector de clients
       changeClient();
+      
     };
   }
   if ($('newClientBtn')) $('newClientBtn').onclick = newClient;
