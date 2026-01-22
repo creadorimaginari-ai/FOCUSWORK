@@ -100,6 +100,70 @@ function save() {
   if (state.currentClientId) scheduleAutoBackup();
 }
 
+/* ================= RECORDATORI DE BACKUP ================= */
+function updateBackupReminder() {
+  const reminderEl = document.createElement('div');
+  reminderEl.id = 'backupReminder';
+  reminderEl.style.cssText = `
+    font-size: 12px;
+    text-align: center;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  `;
+  
+  const now = Date.now();
+  const lastBackup = state.lastBackupDate ? new Date(state.lastBackupDate).getTime() : 0;
+  const hoursSinceBackup = (now - lastBackup) / (1000 * 60 * 60);
+  
+  if (!state.lastBackupDate) {
+    // Mai s'ha fet backup
+    reminderEl.style.background = 'rgba(251, 191, 36, 0.15)';
+    reminderEl.style.color = '#fbbf24';
+    reminderEl.style.border = '1px solid rgba(251, 191, 36, 0.3)';
+    reminderEl.innerHTML = '⚠️ No s\'ha fet mai còpia de seguretat';
+  } else if (hoursSinceBackup >= 24) {
+    // Fa més de 24h
+    const daysSince = Math.floor(hoursSinceBackup / 24);
+    reminderEl.style.background = 'rgba(239, 68, 68, 0.15)';
+    reminderEl.style.color = '#ef4444';
+    reminderEl.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+    reminderEl.innerHTML = `🔴 Última còpia fa ${daysSince} ${daysSince === 1 ? 'dia' : 'dies'}`;
+  } else {
+    // Menys de 24h
+    const hoursLeft = Math.ceil(24 - hoursSinceBackup);
+    reminderEl.style.background = 'rgba(16, 185, 129, 0.15)';
+    reminderEl.style.color = '#10b981';
+    reminderEl.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+    reminderEl.innerHTML = `✅ Última còpia fa ${Math.floor(hoursSinceBackup)}h`;
+  }
+  
+  // Inserir abans dels botons d'acció
+  const versionBox = document.querySelector('.version-box');
+  if (versionBox) {
+    const existingReminder = document.getElementById('backupReminder');
+    if (existingReminder) existingReminder.remove();
+    versionBox.insertBefore(reminderEl, versionBox.firstChild);
+  }
+}
+
+function markBackupDone() {
+  state.lastBackupDate = new Date().toISOString();
+  save();
+  updateBackupReminder();
+}
+
+/* ================= RESET DIARI ================= */
+function resetDayIfNeeded() {
+  if (state.day !== todayKey()) {
+    state.day = todayKey();
+    state.focus = {};
+    save();
+  }
+}
+
+
 /* ================= AUTO-BACKUP ================= */
 let autoBackupTimeout = null;
 let lastAutoBackupTime = 0;
