@@ -82,12 +82,6 @@ let userName = localStorage.getItem("focowork_user_name") || "Usuari";
 
 /* ================= ESTAT ================= */
 let state = JSON.parse(localStorage.getItem("focowork_state")) || {
- // 🔧 MIGRACIÓ D'ESTAT (OBLIGATÒRIA)
-if (!('lastBackupDate' in state)) {
-  state.lastBackupDate = null;
-  save();
-}
-
   isFull: false,
   license: null,
   day: todayKey(),
@@ -98,7 +92,15 @@ if (!('lastBackupDate' in state)) {
   clients: {},
   focus: {},
   focusSchedule: { enabled: false, start: "09:00", end: "17:00" },
-  autoDriveBackup: false
+  autoDriveBackup: false,
+  lastBackupDate: null   // 👈 AFEGIT AQUÍ
+};
+// 🔧 MIGRACIÓ D'ESTAT (SEGURA)
+if (!('lastBackupDate' in state)) {
+  state.lastBackupDate = null;
+  localStorage.setItem("focowork_state", JSON.stringify(state));
+}
+
 };
 
 function save() {
