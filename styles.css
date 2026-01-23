@@ -1309,7 +1309,11 @@ button.secondary:hover,
 #exitClientFloating.hidden {
   display: none;
 }
+/* PANEL D'ACCIONS DEL CLIENT */
+#clientActionsPanel {
+  display: block;
+}
 
-
-
-
+#clientActionsPanel.hidden {
+  display: none;
+}

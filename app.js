@@ -214,6 +214,7 @@ async function loadLicenseFile() {
       state.license = license;
       save();
       updateUI();
+      
       const expiryText = license.expiryDate
         ? `Vàlida fins: ${new Date(license.expiryDate).toLocaleDateString()}`
         : 'Sense límit de temps';
@@ -656,6 +657,15 @@ function updateUI() {
   const deletePanel = $("deleteClientPanel");
   if (deletePanel) {
     deletePanel.style.display = (client && !client.active) ? "block" : "none";
+  }
+// PANEL D'ACCIONS DEL CLIENT
+  const clientActionsPanel = $("clientActionsPanel");
+  if (clientActionsPanel) {
+    if (client && client.active) {
+      clientActionsPanel.style.display = 'block';
+    } else {
+      clientActionsPanel.style.display = 'none';
+    }
   }
 }
 
