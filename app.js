@@ -92,7 +92,8 @@ let state = JSON.parse(localStorage.getItem("focowork_state")) || {
   clients: {},
   focus: {},
   focusSchedule: { enabled: false, start: "09:00", end: "17:00" },
-  autoDriveBackup: false
+  autoDriveBackup: false,
+lastBackupDate: null  // ← AFEGIR AQUESTA LÍNIA
 };
 
 function save() {
@@ -161,6 +162,61 @@ function scheduleFullAutoBackup() {
   const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
   setTimeout(performFullAutoBackup, nextMidnight - now);
 }
+
+/* ================= RECORDATORI DE BACKUP ================= */
+function updateBackupButtonStatus() {
+  const exportAllBtn = $('exportAllBtn');
+  if (!exportAllBtn) return;
+  
+  const now = Date.now();
+  const lastBackup = state.lastBackupDate ? new Date(state.lastBackupDate).getTime() : 0;
+  const hoursSinceBackup = (now - lastBackup) / (1000 * 60 * 60);
+  
+  let statusText = '';
+  let buttonColor = '';
+  
+  if (!state.lastBackupDate) {
+    statusText = 'Mai s\'ha fet còpia';
+    buttonColor = 'background: linear-gradient(135deg, #ef4444, #dc2626) !important;';
+  } else if (hoursSinceBackup < 6) {
+    const hours = Math.floor(hoursSinceBackup);
+    const minutes = Math.floor((hoursSinceBackup - hours) * 60);
+    statusText = hours > 0 ? `Còpia feta fa ${hours}h` : `Còpia feta fa ${minutes}m`;
+    buttonColor = 'background: linear-gradient(135deg, #10b981, #059669) !important;';
+  } else if (hoursSinceBackup < 24) {
+    const hours = Math.floor(hoursSinceBackup);
+    statusText = `Còpia feta fa ${hours}h`;
+    buttonColor = 'background: linear-gradient(135deg, #f59e0b, #d97706) !important;';
+  } else {
+    const days = Math.floor(hoursSinceBackup / 24);
+    statusText = `Còpia feta fa ${days} ${days === 1 ? 'dia' : 'dies'}`;
+    buttonColor = 'background: linear-gradient(135deg, #ef4444, #dc2626) !important;';
+  }
+  
+  exportAllBtn.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+      <span style="font-size: 16px; font-weight: 600;">📦 Còpia de seguretat</span>
+      <span style="font-size: 11px; opacity: 0.85; font-weight: 500;">${statusText}</span>
+    </div>
+  `;
+  
+  exportAllBtn.style.cssText = buttonColor + `
+    border-radius: 20px;
+    padding: 14px 16px;
+    color: #ffffff;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  `;
+}
+
+function markBackupDone() {
+  state.lastBackupDate = new Date().toISOString();
+  save();
+  updateBackupButtonStatus();  // ← CANVIAR AQUESTA LÍNIA
+}
+
 
 /* ================= CONFIGURACIÓ DE BACKUPS ================= */
 function openBackupConfigModal() {
@@ -340,6 +396,9 @@ function exportAllData() {
   a.download = `focowork_complet_${todayKey()}.focowork`;
   a.click();
   URL.revokeObjectURL(url);
+  
+  markBackupDone();  // ← AFEGIR
+  
   showAlert('Backup complet', `Totes les teves dades han estat exportades.\n\nMida: ${dataSize}\n\nGuarda aquest arxiu en un lloc segur!`, '💾');
 }
 
@@ -1457,4 +1516,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // ACTUALITZAR UI INICIAL
   updateUI();
+  // Actualitzar estat del botó de backup
+updateBackupButtonStatus();
+
+// Actualitzar cada 5 minuts
+setInterval(updateBackupButtonStatus, 5 * 60 * 1000);
 });
