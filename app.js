@@ -1080,7 +1080,6 @@ function confirmDeleteClient() {
   closeModal('modalDeleteClient');
   showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
 }
-
 /* ================= FOTOS - VERSIÓ CORREGIDA ================= */
 let photoToDelete = null;
 
