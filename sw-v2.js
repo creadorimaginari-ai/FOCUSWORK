@@ -7,8 +7,6 @@ const CORE_ASSETS = [
   `${BASE_PATH}/styles.css`,
   `${BASE_PATH}/app-core.js`,
   `${BASE_PATH}/app-ui.js`,
-  `${BASE_PATH}/storage.js`,
-  `${BASE_PATH}/timeEngine.js`,
   `${BASE_PATH}/manifest.json`,
   `${BASE_PATH}/icons/icon-192.png`,
   `${BASE_PATH}/icons/icon-512.png`,
