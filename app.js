@@ -1081,16 +1081,12 @@ function confirmDeleteClient() {
   showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
 }
 /* ================= FOTOS - VERSIÓ CORREGIDA ================= */
+/* ================= FOTOS ================= */
 let photoToDelete = null;
 
 function addPhotoToClient() {
-  console.log('🎬 addPhotoToClient: INICI');
   const client = state.clients[state.currentClientId];
-  if (!client) {
-    console.log('❌ addPhotoToClient: No hi ha client');
-    return;
-  }
-  console.log('✅ addPhotoToClient: Client OK:', client.name);
+  if (!client) return;
   
   const input = document.createElement("input");
   input.type = "file";
@@ -1098,29 +1094,19 @@ function addPhotoToClient() {
   input.capture = "environment";
   
   input.onchange = () => {
-    console.log('📸 Input onchange: Arxiu seleccionat');
     const file = input.files[0];
-    if (!file) {
-      console.log('❌ Input onchange: No hi ha arxiu');
-      return;
-    }
-    console.log('✅ Input onchange: Arxiu OK:', file.name, file.size, 'bytes');
+    if (!file) return;
     
     const reader = new FileReader();
     reader.onload = () => {
-      console.log('📖 Reader onload: Arxiu llegit');
       const img = new Image();
       img.onload = () => {
-        console.log('🖼️ Image onload: Imatge carregada', img.width, 'x', img.height);
-        
-        // ✅ COMPROVACIÓ D'ESPAI ABANS DE PROCESSAR
+        // Comprovació d'espai abans de processar
         const percent = getStoragePercentage();
         const sizeStr = getStorageSize();
-        console.log('📊 Espai: ' + percent + '% (' + sizeStr + ')');
         
-        // 🔴 CRÍTIC: No permet afegir
+        // Crític: No permet afegir
         if (percent >= STORAGE_CRITICAL_PERCENT) {
-          console.log('🔴 CRÍTIC: Espai ple, no es pot afegir');
           showAlert(
             'Emmagatzematge ple', 
             `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\nNo pots afegir més fotos.\n\nExporta i esborra clients tancats per alliberar espai.`, 
@@ -1129,23 +1115,23 @@ function addPhotoToClient() {
           return;
         }
         
-     // 🟡 ADVERTÈNCIA: Espai alt (només informatiu, NO bloqueja)
-if (percent >= STORAGE_WARNING_PERCENT) {
-  console.log('🟡 WARNING: Espai alt, mostrant avís informatiu');
-  showAlert(
-    'Espai limitat',
-    `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\n` +
-    `La foto s'afegirà correctament, però recomanem fer una còpia de seguretat i esborrar clients tancats aviat.`,
-    '⚠️'
-  );
-}
-
+        // Advertència: Demana confirmació
+        if (percent >= STORAGE_WARNING_PERCENT) {
+          const userConfirmed = confirm(
+            `⚠️ ATENCIÓ: Espai utilitzat ${percent}%\n\n` +
+            `Mida actual: ${sizeStr} de ${STORAGE_LIMIT_MB}MB\n\n` +
+            `Vols continuar afegint la foto?\n\n` +
+            `Recomanem fer una còpia de seguretat i esborrar clients tancats.`
+          );
+          
+          if (!userConfirmed) return;
+        }
         
-        console.log('✅ Comprovacions OK, processant imatge...');
-        
-        // ✅ TOT OK - PROCESSA I GUARDA LA FOTO
+        // Processa i guarda la foto
         const MAX = 1024;
-        let { width, height } = img;
+        let width = img.width;
+        let height = img.height;
+        
         if (width > MAX) {
           height *= MAX / width;
           width = MAX;
@@ -1154,23 +1140,21 @@ if (percent >= STORAGE_WARNING_PERCENT) {
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
         
-        // 💾 GUARDA LA FOTO
+        const dataURL = canvas.toDataURL("image/jpeg", 0.7);
+        
         client.photos.push({
           id: uid(),
           date: new Date().toISOString(),
-          data: canvas.toDataURL("image/jpeg", 0.7)
+          data: dataURL
         });
         
         save();
         renderPhotoGallery();
         
-        // 📊 LOG D'ESTAT
-        const storageStatus = showStorageStatus();
-        console.log('📊 Emmagatzematge:', storageStatus);
-        
-        // 💡 AVÍS INFORMATIU (només si encara està en zona warning)
+        // Avís informatiu si és necessari
         const newPercent = getStoragePercentage();
         if (newPercent >= STORAGE_WARNING_PERCENT && newPercent < STORAGE_CRITICAL_PERCENT) {
           setTimeout(() => {
@@ -1182,12 +1166,24 @@ if (percent >= STORAGE_WARNING_PERCENT) {
           }, 500);
         }
       };
+      
+      img.onerror = () => {
+        showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
+      };
+      
       img.src = reader.result;
     };
+    
+    reader.onerror = () => {
+      showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
+    };
+    
     reader.readAsDataURL(file);
   };
+  
   input.click();
 }
+
 function renderPhotoGallery() {
   const gallery = $("photoGallery");
   if (!gallery) return;
