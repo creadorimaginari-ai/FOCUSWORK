@@ -7,10 +7,10 @@ const WHATSAPP_PHONE = "34649383847";
 const APP_VERSION = "3.1";
 const LICENSE_SECRET = "FW2025-SECURE-KEY-X7Y9Z";
 const GOOGLE_CLIENT_ID = '339892728740-ghh878p6g57relsi79cprbti5vac1hd4.apps.googleusercontent.com';
-// Límits d'emmagatzematge
 const STORAGE_LIMIT_MB = 25;
-const STORAGE_WARNING_PERCENT = 75; // Avisa al 75%
-const STORAGE_CRITICAL_PERCENT = 90; // Bloqueja al 90%
+const STORAGE_WARNING_PERCENT = 75;
+const STORAGE_CRITICAL_PERCENT = 90;
+
 /* ================= ACTIVITATS ================= */
 const ACTIVITIES = {
   WORK: "work",
@@ -51,14 +51,11 @@ function todayKey() {
 
 function isWithinFocusSchedule(date = new Date()) {
   if (!state.focusSchedule || !state.focusSchedule.enabled) return true;
-
   const [sh, sm] = state.focusSchedule.start.split(":").map(Number);
   const [eh, em] = state.focusSchedule.end.split(":").map(Number);
-
   const minutesNow = date.getHours() * 60 + date.getMinutes();
   const minutesStart = sh * 60 + sm;
   const minutesEnd = eh * 60 + em;
-
   return minutesNow >= minutesStart && minutesNow <= minutesEnd;
 }
 
@@ -96,7 +93,7 @@ let state = JSON.parse(localStorage.getItem("focowork_state")) || {
   focus: {},
   focusSchedule: { enabled: false, start: "09:00", end: "17:00" },
   autoDriveBackup: false,
-lastBackupDate: null,  // ← AFEGIR AQUESTA LÍNIA
+  lastBackupDate: null,
 };
 
 function save() {
@@ -107,7 +104,6 @@ function save() {
 /* ================= AUTO-BACKUP ================= */
 let autoBackupTimeout = null;
 let lastAutoBackupTime = 0;
-
 const AUTO_BACKUP_INTERVAL = 5 * 60 * 1000;
 const AUTO_BACKUP_DELAY = 60 * 1000;
 
@@ -217,9 +213,8 @@ function updateBackupButtonStatus() {
 function markBackupDone() {
   state.lastBackupDate = new Date().toISOString();
   save();
-  updateBackupButtonStatus();  // ← CANVIAR AQUESTA LÍNIA
+  updateBackupButtonStatus();
 }
-
 
 /* ================= CONFIGURACIÓ DE BACKUPS ================= */
 function openBackupConfigModal() {
@@ -299,7 +294,6 @@ function requestLicense() {
   const message = encodeURIComponent(
     `Hola! Estic utilitzant FocusWork (versió de mostra) i voldria activar la llicència.\n\nDevice ID: ${deviceId}`
   );
-
   window.location.href = `https://wa.me/${WHATSAPP_PHONE}?text=${message}`;
 }
 
@@ -380,8 +374,6 @@ function confirmImport() {
   window.pendingImport = null;
 }
 
-// ← AFEGIR AQUESTES FUNCIONS AQUÍ:
-
 function handleBackupFile(backupData) {
   if (!backupData.state || !backupData.version) {
     showAlert('Arxiu invàlid', 'Aquest arxiu de backup està corromput', '❌');
@@ -391,7 +383,7 @@ function handleBackupFile(backupData) {
   const activeCount = Object.values(backupData.state.clients).filter(c => c.active).length;
   $('importBackupClients').textContent = clientCount;
   $('importBackupActive').textContent = activeCount;
-  $('importBackupDate').textContent = new Date(backupData.exportDate).toLocaleDateString();
+  $('importBackupDate').textContent = new Date(backupData.timestamp).toLocaleDateString();
   $('importBackupLicense').textContent = backupData.license ? '✔ Sí' : '— No';
   window.pendingBackup = backupData;
   openModal('modalImportBackup');
@@ -420,7 +412,6 @@ function confirmImportBackup() {
   setTimeout(() => location.reload(), 2000);
 }
 
-/* ================= UTILITATS D'EMMAGATZEMATGE ================= */
 /* ================= UTILITATS D'EMMAGATZEMATGE ================= */
 function getStorageSize() {
   let total = 0;
@@ -539,6 +530,7 @@ function exportAllData() {
   const exportData = {
     version: APP_VERSION,
     exportDate: new Date().toISOString(),
+    timestamp: new Date().toISOString(),
     userName: userName,
     state: state,
     license: state.license,
@@ -557,6 +549,7 @@ function exportAllData() {
   
   showAlert('Backup complet', `Totes les teves dades han estat exportades.\n\nMida: ${dataSize}\n\nGuarda aquest arxiu en un lloc segur!`, '💾');
 }
+
 /* ================= MOTOR DE TEMPS ================= */
 function tick() {
   resetDayIfNeeded();
@@ -738,7 +731,7 @@ function updateUI() {
     activitiesPanel?.classList.remove('single-activity');
   }
   
-  $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Sense client actiu";
+  $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Cap encàrrec actiu";
   $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
   $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
   
@@ -789,7 +782,6 @@ function updateUI() {
     exitContainer.style.display = client ? "block" : "none";
   }
   
-  // BOTÓ FLOTANT SORTIR
   const exitFloating = $("exitClientFloating");
   if (exitFloating) {
     if (client && client.active) {
@@ -803,7 +795,7 @@ function updateUI() {
   if (deletePanel) {
     deletePanel.style.display = (client && !client.active) ? "block" : "none";
   }
-// PANEL D'ACCIONS DEL CLIENT
+
   const clientActionsPanel = $("clientActionsPanel");
   if (clientActionsPanel) {
     if (client && client.active) {
@@ -919,17 +911,11 @@ function changeClient() {
     .sort((a, b) => {
       const aHasDate = !!a.deliveryDate;
       const bHasDate = !!b.deliveryDate;
-
-      // 1️⃣ Clients amb data d'entrega primer
       if (aHasDate && !bHasDate) return -1;
       if (!aHasDate && bHasDate) return 1;
-
-      // 2️⃣ Tots dos amb data → la més propera primer
       if (aHasDate && bHasDate) {
         return new Date(a.deliveryDate) - new Date(b.deliveryDate);
       }
-
-      // 3️⃣ Cap té data → el més antic primer
       return (a.createdAt || 0) - (b.createdAt || 0);
     });
     
@@ -972,18 +958,13 @@ function changeClient() {
 
 function selectClient(clientId) {
   const previousClient = state.currentClientId;
-  
   state.currentClientId = clientId;
   
-  // Si ja hi havia un client actiu, NO reiniciem el temps de sessió
-  // només canviem de client i continuem comptant
   if (!previousClient) {
-    // Només si venim de "sense client" iniciem nova sessió
     state.currentActivity = ACTIVITIES.WORK;
     state.sessionElapsed = 0;
     state.lastTick = Date.now();
   }
-  // Si ja hi havia client, el tick() continuarà comptant automàticament
   
   isWorkpadInitialized = false;
   areTasksInitialized = false;
@@ -1113,10 +1094,9 @@ function confirmDeleteClient() {
 let photoToDelete = null;
 
 function addPhotoToClient() {
- const client = state.clients[state.currentClientId];
+  const client = state.clients[state.currentClientId];
   if (!client) return;
   
-  // Comprovar espai disponible ABANS d'obrir la càmera
   if (!checkStorageBeforePhoto()) {
     return;
   }
@@ -1143,19 +1123,16 @@ function addPhotoToClient() {
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
         client.photos.push({
-    client.photos.push({
-  id: uid(),
-  date: new Date().toISOString(),
-  data: canvas.toDataURL("image/jpeg", 0.7)
-});
+          id: uid(),
+          date: new Date().toISOString(),
+          data: canvas.toDataURL("image/jpeg", 0.7)
+        });
         save();
         renderPhotoGallery();
         
-        // Mostrar estat d'emmagatzematge
         const storageStatus = showStorageStatus();
         console.log('📊 Emmagatzematge:', storageStatus);
         
-        // Alertar si estem prop del límit
         const percent = getStoragePercentage();
         if (percent >= STORAGE_WARNING_PERCENT && percent < STORAGE_CRITICAL_PERCENT) {
           setTimeout(() => {
@@ -1521,10 +1498,8 @@ function saveScheduleConfig() {
 
 /* ================= EVENT LISTENERS ================= */
 document.addEventListener('DOMContentLoaded', () => {
-  // BOTONS PRINCIPALS
   if ($('focusPriorityBtn')) {
     $('focusPriorityBtn').onclick = () => {
-      // SEMPRE obre el selector de clients
       changeClient();
     };
   }
@@ -1549,33 +1524,28 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
   if ($('exitClientFloating')) $('exitClientFloating').onclick = exitClient;
   
-  // ACTIVITATS
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
   });
   
-  // TANCAR MODALS CLICANT FORA
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeModal(overlay.id);
     });
   });
   
-  // INPUT NOU CLIENT
   if ($('newClientInput')) {
     $('newClientInput').addEventListener('keypress', e => {
       if (e.key === 'Enter') confirmNewClient();
     });
   }
   
-  // INPUT ESBORRAR CLIENT
   if ($('inputDeleteConfirm')) {
     $('inputDeleteConfirm').addEventListener('keypress', e => {
       if (e.key === 'Enter') confirmDeleteClient();
     });
   }
   
-  // CERCA A L'HISTÒRIC
   if ($('searchHistory')) {
     $('searchHistory').addEventListener('input', e => {
       const query = e.target.value.toLowerCase();
@@ -1588,7 +1558,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  // LONG PRESS EN BOTÓ FOCUS
   let focusLongPressTimer;
   if ($('focusBtn')) {
     $('focusBtn').addEventListener('mousedown', () => {
@@ -1609,7 +1578,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('focusBtn').addEventListener('touchend', () => clearTimeout(focusLongPressTimer));
   }
   
-  // VERIFICAR LLICÈNCIA CADUCADA
   if (state.license && state.license.expiryDate) {
     const expiry = new Date(state.license.expiryDate);
     if (expiry < new Date()) {
@@ -1620,19 +1588,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // PROGRAMAR BACKUP AUTOMÀTIC
   scheduleFullAutoBackup();
-  
-  // ACTUALITZAR UI INICIAL
   updateUI();
-  // Actualitzar estat del botó de backup
   updateBackupButtonStatus();
-
-  // Actualitzar cada 5 minuts
   setInterval(updateBackupButtonStatus, 5 * 60 * 1000);
 });
 
-// ← AFEGIR AQUESTES FUNCIONS GLOBALS AQUÍ:
 window.closeModal = closeModal;
 window.confirmNewClient = confirmNewClient;
 window.saveDeliveryDate = saveDeliveryDate;
