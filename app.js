@@ -380,6 +380,47 @@ function confirmImport() {
   window.pendingImport = null;
 }
 
+// ← AFEGIR AQUESTES FUNCIONS AQUÍ:
+
+function handleBackupFile(backupData) {
+  if (!backupData.state || !backupData.version) {
+    showAlert('Arxiu invàlid', 'Aquest arxiu de backup està corromput', '❌');
+    return;
+  }
+  const clientCount = Object.keys(backupData.state.clients).length;
+  const activeCount = Object.values(backupData.state.clients).filter(c => c.active).length;
+  $('importBackupClients').textContent = clientCount;
+  $('importBackupActive').textContent = activeCount;
+  $('importBackupDate').textContent = new Date(backupData.exportDate).toLocaleDateString();
+  $('importBackupLicense').textContent = backupData.license ? '✔ Sí' : '— No';
+  window.pendingBackup = backupData;
+  openModal('modalImportBackup');
+}
+
+function confirmImportBackup() {
+  if (!window.pendingBackup) return;
+  const backupData = window.pendingBackup;
+  if (backupData.state) state = backupData.state;
+  if (backupData.userName) {
+    userName = backupData.userName;
+    localStorage.setItem("focowork_user_name", userName);
+  }
+  if (backupData.license) {
+    state.license = backupData.license;
+    state.isFull = true;
+  }
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
+  save();
+  updateUI();
+  closeModal('modalImportBackup');
+  const clientCount = Object.keys(state.clients).length;
+  showAlert('Backup restaurat', `✅ Backup complet restaurat correctament\n\n${clientCount} clients recuperats\nLlicència: ${state.license ? 'Activada' : 'No inclosa'}`, '🎉');
+  window.pendingBackup = null;
+  setTimeout(() => location.reload(), 2000);
+}
+
+/* ================= UTILITATS D'EMMAGATZEMATGE ================= */
 /* ================= UTILITATS D'EMMAGATZEMATGE ================= */
 function getStorageSize() {
   let total = 0;
@@ -1585,8 +1626,25 @@ document.addEventListener('DOMContentLoaded', () => {
   // ACTUALITZAR UI INICIAL
   updateUI();
   // Actualitzar estat del botó de backup
-updateBackupButtonStatus();
+  updateBackupButtonStatus();
 
-// Actualitzar cada 5 minuts
-setInterval(updateBackupButtonStatus, 5 * 60 * 1000);
+  // Actualitzar cada 5 minuts
+  setInterval(updateBackupButtonStatus, 5 * 60 * 1000);
 });
+
+// ← AFEGIR AQUESTES FUNCIONS GLOBALS AQUÍ:
+window.closeModal = closeModal;
+window.confirmNewClient = confirmNewClient;
+window.saveDeliveryDate = saveDeliveryDate;
+window.saveExtraHours = saveExtraHours;
+window.copyReport = copyReport;
+window.shareReport = shareReport;
+window.confirmCloseClient = confirmCloseClient;
+window.confirmImport = confirmImport;
+window.confirmImportBackup = confirmImportBackup;
+window.confirmDeleteClient = confirmDeleteClient;
+window.confirmDeletePhoto = confirmDeletePhoto;
+window.applyPreset = applyPreset;
+window.saveScheduleConfig = saveScheduleConfig;
+window.exportAndClose = exportAndClose;
+window.deleteExtraHour = deleteExtraHour;
