@@ -1,11 +1,12 @@
-const CACHE_NAME = "focowork-cache-v3";
+const CACHE_NAME = "focowork-cache-v4";
 const BASE_PATH = "/FOCUSWORK";
 
 const CORE_ASSETS = [
   `${BASE_PATH}/`,
   `${BASE_PATH}/index.html`,
   `${BASE_PATH}/styles.css`,
-  `${BASE_PATH}/app.js`,
+  `${BASE_PATH}/app-core.js`,
+  `${BASE_PATH}/app-ui.js`,
   `${BASE_PATH}/storage.js`,
   `${BASE_PATH}/timeEngine.js`,
   `${BASE_PATH}/manifest.json`,
