@@ -8,8 +8,8 @@ const APP_VERSION = "3.1";
 const LICENSE_SECRET = "FW2025-SECURE-KEY-X7Y9Z";
 const GOOGLE_CLIENT_ID = '339892728740-ghh878p6g57relsi79cprbti5vac1hd4.apps.googleusercontent.com';
 const STORAGE_LIMIT_MB = 25;
-const STORAGE_WARNING_PERCENT = 75;
-const STORAGE_CRITICAL_PERCENT = 90;
+const STORAGE_WARNING_PERCENT = 60;
+const STORAGE_CRITICAL_PERCENT = 75;
 
 /* ================= ACTIVITATS ================= */
 const ACTIVITIES = {
@@ -97,8 +97,23 @@ let state = JSON.parse(localStorage.getItem("focowork_state")) || {
 };
 
 function save() {
-  localStorage.setItem("focowork_state", JSON.stringify(state));
-  if (state.currentClientId) scheduleAutoBackup();
+  try {
+    localStorage.setItem("focowork_state", JSON.stringify(state));
+    if (state.currentClientId) scheduleAutoBackup();
+    return true;
+  } catch (e) {
+    if (e.name === 'QuotaExceededError') {
+      showAlert(
+        'Emmagatzematge ple',
+        'El dispositiu ha arribat al límit d\'emmagatzematge.\n\n' +
+        '👉 Exporta dades o esborra fotos/clients abans de continuar.',
+        '🔴'
+      );
+    } else {
+      showAlert('Error', 'No s\'han pogut guardar les dades', '❌');
+    }
+    return false;
+  }
 }
 
 /* ================= AUTO-BACKUP ================= */
@@ -542,6 +557,7 @@ function exportAllData() {
 }
 
 /* ================= MOTOR DE TEMPS ================= */
+let lastSaveTime = 0;
 function tick() {
   resetDayIfNeeded();
   const client = state.clients[state.currentClientId];
@@ -565,8 +581,11 @@ function tick() {
     client.billableTime = (client.billableTime || 0) + elapsed;
     state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
   }
+  if (Date.now() - lastSaveTime > 5000) {
   save();
-  updateUI();
+  lastSaveTime = Date.now();
+}
+updateUI();
 }
 
 setInterval(tick, 1000);
