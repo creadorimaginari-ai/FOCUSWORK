@@ -455,35 +455,7 @@ function getStoragePercentage() {
   return Math.round((bytes / limitBytes) * 100);
 }
 
-function checkStorageBeforePhoto() {
-  try {
-    const percent = getStoragePercentage();
-    const sizeStr = getStorageSize();
-    
-    if (percent >= STORAGE_CRITICAL_PERCENT) {
-      showAlert(
-        'Emmagatzematge ple', 
-        `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\nNo pots afegir més fotos.\n\nExporta i esborra clients tancats per alliberar espai.`, 
-        '🔴'
-      );
-      return false;
-    }
-    
-    if (percent >= STORAGE_WARNING_PERCENT) {
-      return confirm(
-        `⚠️ ATENCIÓ: Espai utilitzat ${percent}%\n\n` +
-        `Mida actual: ${sizeStr} de ${STORAGE_LIMIT_MB}MB\n\n` +
-        `Vols continuar afegint la foto?\n\n` +
-        `Recomanem fer una còpia de seguretat i esborrar clients tancats.`
-      );
-    }
-    
-    return true;
-  } catch (e) {
-    console.error('Error comprovant espai:', e);
-    return true; // Permet continuar si hi ha error
-  }
-}
+
 
 function showStorageStatus() {
   const percent = getStoragePercentage();
@@ -1109,7 +1081,7 @@ function confirmDeleteClient() {
   showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
 }
 
-/* ================= FOTOS ================= */
+/* ================= FOTOS - VERSIÓ CORREGIDA ================= */
 let photoToDelete = null;
 
 function addPhotoToClient() {
@@ -1123,40 +1095,73 @@ function addPhotoToClient() {
   input.onchange = () => {
     const file = input.files[0];
     if (!file) return;
+    
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        if (!checkStorageBeforePhoto()) {
-          return;
+        // ✅ COMPROVACIÓ D'ESPAI ABANS DE PROCESSAR
+        const percent = getStoragePercentage();
+        const sizeStr = getStorageSize();
+        
+        // 🔴 CRÍTIC: No permet afegir
+        if (percent >= STORAGE_CRITICAL_PERCENT) {
+          showAlert(
+            'Emmagatzematge ple', 
+            `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\nNo pots afegir més fotos.\n\nExporta i esborra clients tancats per alliberar espai.`, 
+            '🔴'
+          );
+          return; // ❌ Atura aquí
         }
+        
+        // 🟡 ADVERTÈNCIA: Demana confirmació
+        if (percent >= STORAGE_WARNING_PERCENT) {
+          const userConfirmed = confirm(
+            `⚠️ ATENCIÓ: Espai utilitzat ${percent}%\n\n` +
+            `Mida actual: ${sizeStr} de ${STORAGE_LIMIT_MB}MB\n\n` +
+            `Vols continuar afegint la foto?\n\n` +
+            `Recomanem fer una còpia de seguretat i esborrar clients tancats.`
+          );
+          
+          if (!userConfirmed) {
+            return; // ❌ Usuari ha dit NO
+          }
+        }
+        
+        // ✅ TOT OK - PROCESSA I GUARDA LA FOTO
         const MAX = 1024;
         let { width, height } = img;
         if (width > MAX) {
           height *= MAX / width;
           width = MAX;
         }
+        
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        
+        // 💾 GUARDA LA FOTO
         client.photos.push({
           id: uid(),
           date: new Date().toISOString(),
           data: canvas.toDataURL("image/jpeg", 0.7)
         });
+        
         save();
         renderPhotoGallery();
         
+        // 📊 LOG D'ESTAT
         const storageStatus = showStorageStatus();
         console.log('📊 Emmagatzematge:', storageStatus);
         
-        const percent = getStoragePercentage();
-        if (percent >= STORAGE_WARNING_PERCENT && percent < STORAGE_CRITICAL_PERCENT) {
+        // 💡 AVÍS INFORMATIU (només si encara està en zona warning)
+        const newPercent = getStoragePercentage();
+        if (newPercent >= STORAGE_WARNING_PERCENT && newPercent < STORAGE_CRITICAL_PERCENT) {
           setTimeout(() => {
             showAlert(
               'Espai limitat', 
-              `${storageStatus}\n\nRecomanem fer una còpia de seguretat i esborrar clients tancats.`, 
+              `${showStorageStatus()}\n\nRecomanem fer una còpia de seguretat i esborrar clients tancats.`, 
               '⚠️'
             );
           }, 500);
