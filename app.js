@@ -415,10 +415,17 @@ function confirmImportBackup() {
 /* ================= UTILITATS D'EMMAGATZEMATGE ================= */
 function getStorageSize() {
   let total = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      total += localStorage[key].length + key.length;
+  try {
+    for (let key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        const item = localStorage.getItem(key);
+        if (item) {
+          total += item.length + key.length;
+        }
+      }
     }
+  } catch (e) {
+    console.error('Error calculant mida:', e);
   }
   if (total < 1024) return total + ' bytes';
   if (total < 1024 * 1024) return (total / 1024).toFixed(2) + ' KB';
@@ -427,10 +434,17 @@ function getStorageSize() {
 
 function getStorageSizeBytes() {
   let total = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      total += localStorage[key].length + key.length;
+  try {
+    for (let key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        const item = localStorage.getItem(key);
+        if (item) {
+          total += item.length + key.length;
+        }
+      }
     }
+  } catch (e) {
+    console.error('Error calculant bytes:', e);
   }
   return total;
 }
@@ -442,28 +456,33 @@ function getStoragePercentage() {
 }
 
 function checkStorageBeforePhoto() {
-  const percent = getStoragePercentage();
-  const sizeStr = getStorageSize();
-  
-  if (percent >= STORAGE_CRITICAL_PERCENT) {
-    showAlert(
-      'Emmagatzematge ple', 
-      `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\nNo pots afegir més fotos.\n\nExporta i esborra clients tancats per alliberar espai.`, 
-      '🔴'
-    );
-    return false;
+  try {
+    const percent = getStoragePercentage();
+    const sizeStr = getStorageSize();
+    
+    if (percent >= STORAGE_CRITICAL_PERCENT) {
+      showAlert(
+        'Emmagatzematge ple', 
+        `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\nNo pots afegir més fotos.\n\nExporta i esborra clients tancats per alliberar espai.`, 
+        '🔴'
+      );
+      return false;
+    }
+    
+    if (percent >= STORAGE_WARNING_PERCENT) {
+      return confirm(
+        `⚠️ ATENCIÓ: Espai utilitzat ${percent}%\n\n` +
+        `Mida actual: ${sizeStr} de ${STORAGE_LIMIT_MB}MB\n\n` +
+        `Vols continuar afegint la foto?\n\n` +
+        `Recomanem fer una còpia de seguretat i esborrar clients tancats.`
+      );
+    }
+    
+    return true;
+  } catch (e) {
+    console.error('Error comprovant espai:', e);
+    return true; // Permet continuar si hi ha error
   }
-  
-  if (percent >= STORAGE_WARNING_PERCENT) {
-    return confirm(
-      `⚠️ ATENCIÓ: Espai utilitzat ${percent}%\n\n` +
-      `Mida actual: ${sizeStr} de ${STORAGE_LIMIT_MB}MB\n\n` +
-      `Vols continuar afegint la foto?\n\n` +
-      `Recomanem fer una còpia de seguretat i esborrar clients tancats.`
-    );
-  }
-  
-  return true;
 }
 
 function showStorageStatus() {
