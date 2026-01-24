@@ -1129,22 +1129,17 @@ function addPhotoToClient() {
           return;
         }
         
-        // 🟡 ADVERTÈNCIA: Demana confirmació
-        if (percent >= STORAGE_WARNING_PERCENT) {
-          console.log('🟡 WARNING: Demanant confirmació a usuari');
-          const userConfirmed = confirm(
-            `⚠️ ATENCIÓ: Espai utilitzat ${percent}%\n\n` +
-            `Mida actual: ${sizeStr} de ${STORAGE_LIMIT_MB}MB\n\n` +
-            `Vols continuar afegint la foto?\n\n` +
-            `Recomanem fer una còpia de seguretat i esborrar clients tancats.`
-          );
-          console.log('🟡 Resposta usuari:', userConfirmed ? 'SÍ' : 'NO');
-          
-          if (!userConfirmed) {
-            console.log('❌ Usuari ha cancel·lat');
-            return;
-          }
-        }
+     // 🟡 ADVERTÈNCIA: Espai alt (només informatiu, NO bloqueja)
+if (percent >= STORAGE_WARNING_PERCENT) {
+  console.log('🟡 WARNING: Espai alt, mostrant avís informatiu');
+  showAlert(
+    'Espai limitat',
+    `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\n` +
+    `La foto s'afegirà correctament, però recomanem fer una còpia de seguretat i esborrar clients tancats aviat.`,
+    '⚠️'
+  );
+}
+
         
         console.log('✅ Comprovacions OK, processant imatge...');
         
