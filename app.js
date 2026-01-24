@@ -7,7 +7,10 @@ const WHATSAPP_PHONE = "34649383847";
 const APP_VERSION = "3.1";
 const LICENSE_SECRET = "FW2025-SECURE-KEY-X7Y9Z";
 const GOOGLE_CLIENT_ID = '339892728740-ghh878p6g57relsi79cprbti5vac1hd4.apps.googleusercontent.com';
-
+// Límits d'emmagatzematge
+const STORAGE_LIMIT_MB = 25;
+const STORAGE_WARNING_PERCENT = 75; // Avisa al 75%
+const STORAGE_CRITICAL_PERCENT = 90; // Bloqueja al 90%
 /* ================= ACTIVITATS ================= */
 const ACTIVITIES = {
   WORK: "work",
@@ -93,7 +96,7 @@ let state = JSON.parse(localStorage.getItem("focowork_state")) || {
   focus: {},
   focusSchedule: { enabled: false, start: "09:00", end: "17:00" },
   autoDriveBackup: false,
-lastBackupDate: null  // ← AFEGIR AQUESTA LÍNIA
+lastBackupDate: null,  // ← AFEGIR AQUESTA LÍNIA
 };
 
 function save() {
@@ -377,6 +380,118 @@ function confirmImport() {
   window.pendingImport = null;
 }
 
+/* ================= UTILITATS D'EMMAGATZEMATGE ================= */
+function getStorageSize() {
+  let total = 0;
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      total += localStorage[key].length + key.length;
+    }
+  }
+  if (total < 1024) return total + ' bytes';
+  if (total < 1024 * 1024) return (total / 1024).toFixed(2) + ' KB';
+  return (total / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function getStorageSizeBytes() {
+  let total = 0;
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      total += localStorage[key].length + key.length;
+    }
+  }
+  return total;
+}
+
+function getStoragePercentage() {
+  const bytes = getStorageSizeBytes();
+  const limitBytes = STORAGE_LIMIT_MB * 1024 * 1024;
+  return Math.round((bytes / limitBytes) * 100);
+}
+
+function checkStorageBeforePhoto() {
+  const percent = getStoragePercentage();
+  const sizeStr = getStorageSize();
+  
+  if (percent >= STORAGE_CRITICAL_PERCENT) {
+    showAlert(
+      'Emmagatzematge ple', 
+      `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\nNo pots afegir més fotos.\n\nExporta i esborra clients tancats per alliberar espai.`, 
+      '🔴'
+    );
+    return false;
+  }
+  
+  if (percent >= STORAGE_WARNING_PERCENT) {
+    return confirm(
+      `⚠️ ATENCIÓ: Espai utilitzat ${percent}%\n\n` +
+      `Mida actual: ${sizeStr} de ${STORAGE_LIMIT_MB}MB\n\n` +
+      `Vols continuar afegint la foto?\n\n` +
+      `Recomanem fer una còpia de seguretat i esborrar clients tancats.`
+    );
+  }
+  
+  return true;
+}
+
+function showStorageStatus() {
+  const percent = getStoragePercentage();
+  const sizeStr = getStorageSize();
+  let icon = '🟢';
+  let status = 'Espai disponible';
+  
+  if (percent >= STORAGE_CRITICAL_PERCENT) {
+    icon = '🔴';
+    status = 'Emmagatzematge crític';
+  } else if (percent >= STORAGE_WARNING_PERCENT) {
+    icon = '🟡';
+    status = 'Poc espai disponible';
+  }
+  
+  return `${icon} ${sizeStr} (${percent}%)`;
+}
+
+function showStorageInfo() {
+  const size = getStorageSize();
+  const percent = getStoragePercentage();
+  const clientCount = Object.keys(state.clients).length;
+  const activeCount = Object.values(state.clients).filter(c => c.active).length;
+  const closedCount = clientCount - activeCount;
+  let totalPhotos = 0;
+  Object.values(state.clients).forEach(c => totalPhotos += c.photos.length);
+  const avgPhotoSize = totalPhotos > 0 ? '~' + (parseFloat(size) / totalPhotos).toFixed(0) + ' KB/foto' : 'N/A';
+  
+  let statusIcon = '🟢';
+  let statusText = 'Espai disponible';
+  if (percent >= STORAGE_CRITICAL_PERCENT) {
+    statusIcon = '🔴';
+    statusText = 'CRÍTIC - Esborra contingut';
+  } else if (percent >= STORAGE_WARNING_PERCENT) {
+    statusIcon = '🟡';
+    statusText = 'ADVERTÈNCIA - Poc espai';
+  }
+  
+  showAlert(
+    'Ús d\'emmagatzematge', 
+    `${statusIcon} ${statusText}\n\n` +
+    `📊 Espai usat: ${size} de ${STORAGE_LIMIT_MB}MB (${percent}%)\n\n` +
+    `👥 Clients totals: ${clientCount}\n` +
+    `   • Actius: ${activeCount}\n` +
+    `   • Tancats: ${closedCount}\n\n` +
+    `📷 Fotos totals: ${totalPhotos}\n` +
+    `   ${avgPhotoSize}\n\n` +
+    `💡 Consell: Exporta i esborra clients tancats per alliberar espai`, 
+    '📊'
+  );
+}
+
+function resetTodayFocus() {
+  state.focus = {};
+  state.day = todayKey();
+  save();
+  showAlert('Enfocament reiniciat', 'Les dades d\'enfocament d\'avui han estat reiniciades.\n\nAra només comptabilitzarà temps dins l\'horari configurat.', '✅');
+}
+
 /* ================= BACKUP COMPLET ================= */
 function exportAllData() {
   const dataSize = getStorageSize();
@@ -397,80 +512,10 @@ function exportAllData() {
   a.click();
   URL.revokeObjectURL(url);
   
-  markBackupDone();  // ← AFEGIR
+  markBackupDone();
   
   showAlert('Backup complet', `Totes les teves dades han estat exportades.\n\nMida: ${dataSize}\n\nGuarda aquest arxiu en un lloc segur!`, '💾');
 }
-
-function handleBackupFile(backupData) {
-  if (!backupData.state || !backupData.version) {
-    showAlert('Arxiu invàlid', 'Aquest arxiu de backup està corromput', '❌');
-    return;
-  }
-  const clientCount = Object.keys(backupData.state.clients).length;
-  const activeCount = Object.values(backupData.state.clients).filter(c => c.active).length;
-  $('importBackupClients').textContent = clientCount;
-  $('importBackupActive').textContent = activeCount;
-  $('importBackupDate').textContent = new Date(backupData.exportDate).toLocaleDateString();
-  $('importBackupLicense').textContent = backupData.license ? '✔ Sí' : '— No';
-  window.pendingBackup = backupData;
-  openModal('modalImportBackup');
-}
-
-function confirmImportBackup() {
-  if (!window.pendingBackup) return;
-  const backupData = window.pendingBackup;
-  if (backupData.state) state = backupData.state;
-  if (backupData.userName) {
-    userName = backupData.userName;
-    localStorage.setItem("focowork_user_name", userName);
-  }
-  if (backupData.license) {
-    state.license = backupData.license;
-    state.isFull = true;
-  }
-  isWorkpadInitialized = false;
-  areTasksInitialized = false;
-  save();
-  updateUI();
-  closeModal('modalImportBackup');
-  const clientCount = Object.keys(state.clients).length;
-  showAlert('Backup restaurat', `✅ Backup complet restaurat correctament\n\n${clientCount} clients recuperats\nLlicència: ${state.license ? 'Activada' : 'No inclosa'}`, '🎉');
-  window.pendingBackup = null;
-  setTimeout(() => location.reload(), 2000);
-}
-
-/* ================= UTILITATS D'EMMAGATZEMATGE ================= */
-function getStorageSize() {
-  let total = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      total += localStorage[key].length + key.length;
-    }
-  }
-  if (total < 1024) return total + ' bytes';
-  if (total < 1024 * 1024) return (total / 1024).toFixed(2) + ' KB';
-  return (total / (1024 * 1024)).toFixed(2) + ' MB';
-}
-
-function showStorageInfo() {
-  const size = getStorageSize();
-  const clientCount = Object.keys(state.clients).length;
-  const activeCount = Object.values(state.clients).filter(c => c.active).length;
-  const closedCount = clientCount - activeCount;
-  let totalPhotos = 0;
-  Object.values(state.clients).forEach(c => totalPhotos += c.photos.length);
-  const avgPhotoSize = totalPhotos > 0 ? '~' + (parseFloat(size) / totalPhotos).toFixed(0) + ' KB/foto' : 'N/A';
-  showAlert('Ús d\'emmagatzematge', `📊 Espai usat: ${size}\n\n👥 Clients totals: ${clientCount}\n   • Actius: ${activeCount}\n   • Tancats: ${closedCount}\n\n📷 Fotos totals: ${totalPhotos}\n   ${avgPhotoSize}\n\n💡 Consell: Exporta i esborra clients tancats per alliberar espai`, '📊');
-}
-
-function resetTodayFocus() {
-  state.focus = {};
-  state.day = todayKey();
-  save();
-  showAlert('Enfocament reiniciat', 'Les dades d\'enfocament d\'avui han estat reiniciades.\n\nAra només comptabilitzarà temps dins l\'horari configurat.', '✅');
-}
-
 /* ================= MOTOR DE TEMPS ================= */
 function tick() {
   resetDayIfNeeded();
@@ -1027,8 +1072,14 @@ function confirmDeleteClient() {
 let photoToDelete = null;
 
 function addPhotoToClient() {
-  const client = state.clients[state.currentClientId];
+ const client = state.clients[state.currentClientId];
   if (!client) return;
+  
+  // Comprovar espai disponible ABANS d'obrir la càmera
+  if (!checkStorageBeforePhoto()) {
+    return;
+  }
+  
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/*";
@@ -1051,12 +1102,29 @@ function addPhotoToClient() {
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
         client.photos.push({
-          id: uid(),
-          date: new Date().toISOString(),
-          data: canvas.toDataURL("image/jpeg", 0.7)
-        });
+    client.photos.push({
+  id: uid(),
+  date: new Date().toISOString(),
+  data: canvas.toDataURL("image/jpeg", 0.7)
+});
         save();
         renderPhotoGallery();
+        
+        // Mostrar estat d'emmagatzematge
+        const storageStatus = showStorageStatus();
+        console.log('📊 Emmagatzematge:', storageStatus);
+        
+        // Alertar si estem prop del límit
+        const percent = getStoragePercentage();
+        if (percent >= STORAGE_WARNING_PERCENT && percent < STORAGE_CRITICAL_PERCENT) {
+          setTimeout(() => {
+            showAlert(
+              'Espai limitat', 
+              `${storageStatus}\n\nRecomanem fer una còpia de seguretat i esborrar clients tancats.`, 
+              '⚠️'
+            );
+          }, 500);
+        }
       };
       img.src = reader.result;
     };
