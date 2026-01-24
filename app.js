@@ -1194,7 +1194,6 @@ function addPhotoToClient() {
   };
   input.click();
 }
-
 function renderPhotoGallery() {
   const gallery = $("photoGallery");
   if (!gallery) return;
