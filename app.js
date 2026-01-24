@@ -1081,12 +1081,28 @@ function confirmDeleteClient() {
   showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
 }
 /* ================= FOTOS - VERSIÓ CORREGIDA ================= */
-/* ================= FOTOS ================= */
+
+/* ================= FOTOS - VERSIÓ CORREGIDA DEFINITIVA ================= */
 let photoToDelete = null;
 
 function addPhotoToClient() {
-  const client = state.clients[state.currentClientId];
-  if (!client) return;
+  console.log('🎬 [1] addPhotoToClient: INICI');
+  
+  // ✅ VERIFICACIÓ INICIAL
+  if (!state.currentClientId) {
+    console.error('❌ No hi ha currentClientId');
+    showAlert('Error', 'Selecciona un client primer', '⚠️');
+    return;
+  }
+  
+  if (!state.clients[state.currentClientId]) {
+    console.error('❌ Client no existeix a state.clients');
+    showAlert('Error', 'Client no trobat', '⚠️');
+    return;
+  }
+  
+  console.log('✅ [2] Client ID:', state.currentClientId);
+  console.log('✅ [3] Client name:', state.clients[state.currentClientId].name);
   
   const input = document.createElement("input");
   input.type = "file";
@@ -1094,40 +1110,61 @@ function addPhotoToClient() {
   input.capture = "environment";
   
   input.onchange = () => {
+    console.log('📸 [4] Input onchange ACTIVAT!');
+    
     const file = input.files[0];
-    if (!file) return;
+    if (!file) {
+      console.error('❌ [5] No hi ha arxiu');
+      return;
+    }
+    
+    console.log('✅ [6] Arxiu:', file.name, file.size, 'bytes');
     
     const reader = new FileReader();
     reader.onload = () => {
+      console.log('✅ [7] Reader.onload ACTIVAT!');
+      
       const img = new Image();
       img.onload = () => {
-        // Comprovació d'espai abans de processar
+        console.log('✅ [8] Image.onload ACTIVAT!', img.width, 'x', img.height);
+        
+        // ⚠️ VERIFICACIÓ CRÍTICA: Client encara existeix?
+        if (!state.clients[state.currentClientId]) {
+          console.error('❌ [9] Client ha desaparegut!');
+          showAlert('Error', 'S\'ha perdut la referència al client', '⚠️');
+          return;
+        }
+        
+        // Comprovació d'espai
         const percent = getStoragePercentage();
         const sizeStr = getStorageSize();
+        console.log('📊 [10] Espai:', percent + '%');
         
-        // Crític: No permet afegir
         if (percent >= STORAGE_CRITICAL_PERCENT) {
+          console.warn('🔴 [11] Espai crític!');
           showAlert(
             'Emmagatzematge ple', 
-            `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\nNo pots afegir més fotos.\n\nExporta i esborra clients tancats per alliberar espai.`, 
+            `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\nNo pots afegir més fotos.`, 
             '🔴'
           );
           return;
         }
         
-        // Advertència: Demana confirmació
         if (percent >= STORAGE_WARNING_PERCENT) {
+          console.warn('🟡 [12] Espai alt');
           const userConfirmed = confirm(
             `⚠️ ATENCIÓ: Espai utilitzat ${percent}%\n\n` +
-            `Mida actual: ${sizeStr} de ${STORAGE_LIMIT_MB}MB\n\n` +
-            `Vols continuar afegint la foto?\n\n` +
-            `Recomanem fer una còpia de seguretat i esborrar clients tancats.`
+            `Vols continuar?`
           );
-          
-          if (!userConfirmed) return;
+          if (!userConfirmed) {
+            console.log('❌ [13] Usuari cancel·lat');
+            return;
+          }
         }
         
-        // Processa i guarda la foto
+        console.log('✅ [14] Processant imatge...');
+        
+        // Processa imatge
         const MAX = 1024;
         let width = img.width;
         let height = img.height;
@@ -1137,44 +1174,68 @@ function addPhotoToClient() {
           width = MAX;
         }
         
+        console.log('📐 [15] Mida final:', width, 'x', height);
+        
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
         
-        const dataURL = canvas.toDataURL("image/jpeg", 0.7);
+        console.log('✅ [16] Canvas creat i dibuixat');
         
-        client.photos.push({
+        const dataURL = canvas.toDataURL("image/jpeg", 0.7);
+        console.log('✅ [17] DataURL generat:', Math.round(dataURL.length / 1024), 'KB');
+        
+        const photoObj = {
           id: uid(),
           date: new Date().toISOString(),
           data: dataURL
-        });
+        };
         
-        save();
+        console.log('💾 [18] Objecte foto creat:', photoObj.id);
+        
+        // ✅ CRÍTIC: Accés DIRECTE a state.clients
+        console.log('📷 [19] Fotos abans:', state.clients[state.currentClientId].photos.length);
+        
+        state.clients[state.currentClientId].photos.push(photoObj);
+        
+        console.log('✅ [20] Foto afegida! Total ara:', state.clients[state.currentClientId].photos.length);
+        
+        console.log('💾 [21] Guardant state...');
+        try {
+          save();
+          console.log('✅ [22] State guardat');
+        } catch (e) {
+          console.error('❌ [23] Error guardant:', e);
+          showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
+          return;
+        }
+        
+        console.log('🖼️ [24] Renderitzant galeria...');
         renderPhotoGallery();
         
-        // Avís informatiu si és necessari
+        console.log('🎉 [25] FINALITZAT AMB ÈXIT!');
+        
+        // Avís informatiu
         const newPercent = getStoragePercentage();
         if (newPercent >= STORAGE_WARNING_PERCENT && newPercent < STORAGE_CRITICAL_PERCENT) {
           setTimeout(() => {
-            showAlert(
-              'Espai limitat', 
-              `${showStorageStatus()}\n\nRecomanem fer una còpia de seguretat i esborrar clients tancats.`, 
-              '⚠️'
-            );
+            showAlert('Espai limitat', showStorageStatus(), '⚠️');
           }, 500);
         }
       };
       
-      img.onerror = () => {
+      img.onerror = (e) => {
+        console.error('❌ Error carregant imatge:', e);
         showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
       };
       
       img.src = reader.result;
     };
     
-    reader.onerror = () => {
+    reader.onerror = (e) => {
+      console.error('❌ Error llegint arxiu:', e);
       showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
     };
     
@@ -1182,15 +1243,31 @@ function addPhotoToClient() {
   };
   
   input.click();
+  console.log('✅ [26] Input clicat');
 }
 
 function renderPhotoGallery() {
+  console.log('🖼️ [GALLERY-1] Iniciant renderització galeria');
   const gallery = $("photoGallery");
-  if (!gallery) return;
+  if (!gallery) {
+    console.error('❌ [GALLERY-2] Element photoGallery no trobat!');
+    return;
+  }
+  console.log('✅ [GALLERY-3] Element gallery trobat');
+  
   gallery.innerHTML = "";
+  console.log('✅ [GALLERY-4] Gallery buidada');
+  
   const client = state.clients[state.currentClientId];
-  if (!client || !client.photos.length) return;
-  [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(p => {
+  if (!client || !client.photos.length) {
+    console.log('ℹ️ [GALLERY-5] No hi ha fotos per mostrar');
+    return;
+  }
+  
+  console.log('📷 [GALLERY-6] Renderitzant', client.photos.length, 'fotos');
+  
+  [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
+    console.log(`🖼️ [GALLERY-7.${index}] Creant thumbnail per foto`, p.id);
     const img = document.createElement("img");
     img.src = p.data;
     img.className = "photo-thumb";
@@ -1205,6 +1282,8 @@ function renderPhotoGallery() {
     };
     gallery.appendChild(img);
   });
+  
+  console.log('✅ [GALLERY-8] Galeria renderitzada completament');
 }
 
 function confirmDeletePhoto() {
@@ -1216,8 +1295,7 @@ function confirmDeletePhoto() {
   save();
   renderPhotoGallery();
   closeModal('modalDeletePhoto');
-}
-
+                         }
 /* ================= ENFOCAMENT ================= */
 function showFocus() {
   const total = Object.values(state.focus).reduce((a, b) => a + b, 0);
