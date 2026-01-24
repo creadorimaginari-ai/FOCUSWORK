@@ -1116,10 +1116,6 @@ function addPhotoToClient() {
   const client = state.clients[state.currentClientId];
   if (!client) return;
   
-  if (!checkStorageBeforePhoto()) {
-    return;
-  }
-  
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/*";
@@ -1131,9 +1127,9 @@ function addPhotoToClient() {
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-          if (!checkStorageBeforePhoto()) {
-    return;
-  }
+        if (!checkStorageBeforePhoto()) {
+          return;
+        }
         const MAX = 1024;
         let { width, height } = img;
         if (width > MAX) {
