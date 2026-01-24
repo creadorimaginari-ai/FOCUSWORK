@@ -1085,48 +1085,69 @@ function confirmDeleteClient() {
 let photoToDelete = null;
 
 function addPhotoToClient() {
+  console.log('🎬 addPhotoToClient: INICI');
   const client = state.clients[state.currentClientId];
-  if (!client) return;
+  if (!client) {
+    console.log('❌ addPhotoToClient: No hi ha client');
+    return;
+  }
+  console.log('✅ addPhotoToClient: Client OK:', client.name);
   
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/*";
   input.capture = "environment";
+  
   input.onchange = () => {
+    console.log('📸 Input onchange: Arxiu seleccionat');
     const file = input.files[0];
-    if (!file) return;
+    if (!file) {
+      console.log('❌ Input onchange: No hi ha arxiu');
+      return;
+    }
+    console.log('✅ Input onchange: Arxiu OK:', file.name, file.size, 'bytes');
     
     const reader = new FileReader();
     reader.onload = () => {
+      console.log('📖 Reader onload: Arxiu llegit');
       const img = new Image();
       img.onload = () => {
+        console.log('🖼️ Image onload: Imatge carregada', img.width, 'x', img.height);
+        
         // ✅ COMPROVACIÓ D'ESPAI ABANS DE PROCESSAR
         const percent = getStoragePercentage();
         const sizeStr = getStorageSize();
+        console.log('📊 Espai: ' + percent + '% (' + sizeStr + ')');
         
         // 🔴 CRÍTIC: No permet afegir
         if (percent >= STORAGE_CRITICAL_PERCENT) {
+          console.log('🔴 CRÍTIC: Espai ple, no es pot afegir');
           showAlert(
             'Emmagatzematge ple', 
             `⚠️ Espai utilitzat: ${sizeStr} (${percent}%)\n\nNo pots afegir més fotos.\n\nExporta i esborra clients tancats per alliberar espai.`, 
             '🔴'
           );
-          return; // ❌ Atura aquí
+          return;
         }
         
         // 🟡 ADVERTÈNCIA: Demana confirmació
         if (percent >= STORAGE_WARNING_PERCENT) {
+          console.log('🟡 WARNING: Demanant confirmació a usuari');
           const userConfirmed = confirm(
             `⚠️ ATENCIÓ: Espai utilitzat ${percent}%\n\n` +
             `Mida actual: ${sizeStr} de ${STORAGE_LIMIT_MB}MB\n\n` +
             `Vols continuar afegint la foto?\n\n` +
             `Recomanem fer una còpia de seguretat i esborrar clients tancats.`
           );
+          console.log('🟡 Resposta usuari:', userConfirmed ? 'SÍ' : 'NO');
           
           if (!userConfirmed) {
-            return; // ❌ Usuari ha dit NO
+            console.log('❌ Usuari ha cancel·lat');
+            return;
           }
         }
+        
+        console.log('✅ Comprovacions OK, processant imatge...');
         
         // ✅ TOT OK - PROCESSA I GUARDA LA FOTO
         const MAX = 1024;
