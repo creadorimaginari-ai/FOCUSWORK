@@ -1131,6 +1131,9 @@ function addPhotoToClient() {
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
+          if (!checkStorageBeforePhoto()) {
+    return;
+  }
         const MAX = 1024;
         let { width, height } = img;
         if (width > MAX) {
