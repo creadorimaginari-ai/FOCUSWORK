@@ -1,8 +1,3 @@
-
- * FOCUSWORK – app-core.js (V4.0 ARREGLAT)
- * IndexedDB + Cronòmetre suau + Optimitzacions
-
-
 /* ================= CONFIG ================= */
 const WHATSAPP_PHONE = "34649383847";
 const APP_VERSION = "4.0";
