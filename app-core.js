@@ -1,4 +1,4 @@
-un/*************************************************
+
  * FOCUSWORK – app-core.js (V4.0 ARREGLAT)
  * IndexedDB + Cronòmetre suau + Optimitzacions
  *************************************************/
