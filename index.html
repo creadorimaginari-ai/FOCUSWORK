@@ -632,6 +632,37 @@
      ↩ Sortir del client
   </button>
 </div>
+<!-- Lightbox per galeria de fotos -->
+<div class="lightbox-overlay" id="lightbox">
+  <div class="lightbox-header">
+    <div class="lightbox-info">
+      <div class="lightbox-counter" id="lightboxCounter">1 / 1</div>
+      <div class="lightbox-date" id="lightboxDate">—</div>
+    </div>
+    <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  </div>
+  
+  <div class="lightbox-image-container">
+    <button class="lightbox-nav lightbox-nav-prev" onclick="prevPhoto()">‹</button>
+    <img class="lightbox-image" id="lightboxImage" src="" alt="Foto">
+    <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
+  </div>
+  
+  <div class="lightbox-footer">
+    <button class="lightbox-btn" onclick="downloadCurrentPhoto()">
+      <span>⬇️</span>
+      <span>Descarregar</span>
+    </button>
+    <button class="lightbox-btn" onclick="shareCurrentPhoto()">
+      <span>📤</span>
+      <span>Compartir</span>
+    </button>
+    <button class="lightbox-btn danger" onclick="deleteCurrentPhoto()">
+      <span>🗑️</span>
+      <span>Esborrar</span>
+    </button>
+  </div>
+</div>
 </body>
 
 </html>
