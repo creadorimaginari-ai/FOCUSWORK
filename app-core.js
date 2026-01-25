@@ -1,4 +1,4 @@
-/*************************************************
+un/*************************************************
  * FOCUSWORK – app-core.js (V4.0 ARREGLAT)
  * IndexedDB + Cronòmetre suau + Optimitzacions
  *************************************************/
@@ -579,6 +579,29 @@ setInterval(tick, 1000);
 
 // Timer secundari: actualitzar total client cada 5 segons
 setInterval(updateClientTotal, 5000);
+
+// ... setInterval(tick, 1000);
+// ... setInterval(updateClientTotal, 5000);
+
+// 🔽 AQUÍ ÉS PERFECTE
+function smoothTimerRender() {
+  const timerEl = $("timer");
+  if (!timerEl) {
+    requestAnimationFrame(smoothTimerRender);
+    return;
+  }
+
+  if (state.currentClientId && state.currentActivity && state.lastTick) {
+    const now = Date.now();
+    const extra = Math.floor((now - state.lastTick) / 1000);
+    timerEl.textContent = formatTime(state.sessionElapsed + extra);
+  }
+
+  requestAnimationFrame(smoothTimerRender);
+}
+
+requestAnimationFrame(smoothTimerRender);
+
 
 async function setActivity(activity) {
   const client = await loadClient(state.currentClientId);
