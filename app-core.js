@@ -1,4 +1,3 @@
-/* ================= CONFIG ================= */
 const WHATSAPP_PHONE = "34649383847";
 const APP_VERSION = "4.0";
 const LICENSE_SECRET = "FW2025-SECURE-KEY-X7Y9Z";
