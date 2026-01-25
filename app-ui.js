@@ -763,31 +763,24 @@ async function renderPhotoGallery(preloadedClient = null) {
   
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
   
-  gallery.innerHTML = ""; // Limpiar primero
-  
-  if (!client || !client.photos || client.photos.length === 0) {
-    return;
-  }
+  // Guardar fotos globalment per al lightbox
+  window.currentClientPhotos = client && client.photos ? [...client.photos] : [];
   
   const fragment = document.createDocumentFragment();
   
-  [...client.photos]
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .forEach(p => {
-      const container = document.createElement("div");
-      container.style.position = "relative";
-      container.style.display = "inline-block";
-      
+  if (client && client.photos.length) {
+    [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
       const img = document.createElement("img");
       img.src = p.data;
       img.className = "photo-thumb";
-      
-      // Click para ver en grande
-      img.onclick = (e) => {
-        e.stopPropagation();
-        const w = window.open();
-        if (w) w.document.write(`<img src="${p.data}" style="width:100%;background:#000">`);
-      };
+      img.onclick = () => openLightbox(index);  // ⬅️ CANVIAT: Ara obre el lightbox
+      fragment.appendChild(img);
+    });
+  }
+  
+  gallery.innerHTML = "";
+  gallery.appendChild(fragment);
+}
       
       // 🔥 FIX: Botón de borrado visible (no contextmenu oculto)
       const deleteBtn = document.createElement("button");
@@ -1624,3 +1617,245 @@ window.exportAndClose = exportAndClose;
 window.showBulkDeleteModal = showBulkDeleteModal;
 window.confirmBulkDelete = confirmBulkDelete;
 window.deleteExtraHour = deleteExtraHour;
+/* ================= LIGHTBOX PER GALERIA ================= */
+let currentLightboxIndex = 0;
+
+function openLightbox(index) {
+  if (!window.currentClientPhotos || !window.currentClientPhotos.length) return;
+  
+  currentLightboxIndex = index;
+  updateLightboxDisplay();
+  
+  const lightbox = $('lightbox');
+  if (lightbox) {
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeLightbox() {
+  const lightbox = $('lightbox');
+  if (lightbox) {
+    lightbox.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  }
+}
+
+function updateLightboxDisplay() {
+  const photos = window.currentClientPhotos;
+  if (!photos || !photos.length) return;
+  
+  const photo = photos[currentLightboxIndex];
+  if (!photo) return;
+  
+  // Actualitzar imatge
+  const img = $('lightboxImage');
+  if (img) img.src = photo.data;
+  
+  // Actualitzar contador
+  const counter = $('lightboxCounter');
+  if (counter) {
+    counter.textContent = `${currentLightboxIndex + 1} / ${photos.length}`;
+  }
+  
+  // Actualitzar data
+  const dateEl = $('lightboxDate');
+  if (dateEl) {
+    const date = new Date(photo.date);
+    dateEl.textContent = date.toLocaleDateString('ca-ES', { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+  
+  // Actualitzar botons navegació
+  const prevBtn = document.querySelector('.lightbox-nav-prev');
+  const nextBtn = document.querySelector('.lightbox-nav-next');
+  
+  if (prevBtn) {
+    if (currentLightboxIndex === 0) {
+      prevBtn.classList.add('disabled');
+    } else {
+      prevBtn.classList.remove('disabled');
+    }
+  }
+  
+  if (nextBtn) {
+    if (currentLightboxIndex === photos.length - 1) {
+      nextBtn.classList.add('disabled');
+    } else {
+      nextBtn.classList.remove('disabled');
+    }
+  }
+}
+
+function prevPhoto() {
+  if (currentLightboxIndex > 0) {
+    currentLightboxIndex--;
+    updateLightboxDisplay();
+  }
+}
+
+function nextPhoto() {
+  const photos = window.currentClientPhotos;
+  if (photos && currentLightboxIndex < photos.length - 1) {
+    currentLightboxIndex++;
+    updateLightboxDisplay();
+  }
+}
+
+async function downloadCurrentPhoto() {
+  const photos = window.currentClientPhotos;
+  if (!photos || !photos[currentLightboxIndex]) return;
+  
+  const photo = photos[currentLightboxIndex];
+  const a = document.createElement('a');
+  a.href = photo.data;
+  
+  const client = await loadClient(state.currentClientId);
+  const fileName = client ? 
+    `${client.name.replace(/[^a-z0-9]/gi, '_')}_foto_${currentLightboxIndex + 1}.jpg` :
+    `foto_${currentLightboxIndex + 1}.jpg`;
+  
+  a.download = fileName;
+  a.click();
+  
+  showAlert('Foto descarregada', 'La foto s\'ha descarregat correctament', '📥');
+}
+
+async function shareCurrentPhoto() {
+  const photos = window.currentClientPhotos;
+  if (!photos || !photos[currentLightboxIndex]) return;
+  
+  const photo = photos[currentLightboxIndex];
+  
+  if (navigator.share && navigator.canShare) {
+    try {
+      const res = await fetch(photo.data);
+      const blob = await res.blob();
+      const file = new File([blob], `foto_${currentLightboxIndex + 1}.jpg`, { type: 'image/jpeg' });
+      
+      await navigator.share({
+        title: 'FocusWork - Foto',
+        files: [file]
+      });
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        showAlert('Error', 'No s\'ha pogut compartir la foto', '❌');
+      }
+    }
+  } else {
+    showAlert('No disponible', 'La compartició no està disponible en aquest navegador', 'ℹ️');
+  }
+}
+
+async function deleteCurrentPhoto() {
+  const photos = window.currentClientPhotos;
+  if (!photos || !photos[currentLightboxIndex]) return;
+  
+  const photo = photos[currentLightboxIndex];
+  
+  const confirmed = confirm(
+    `⚠️ Vols esborrar aquesta foto?\n\n` +
+    `Foto ${currentLightboxIndex + 1} de ${photos.length}\n\n` +
+    `Aquesta acció no es pot desfer.`
+  );
+  
+  if (!confirmed) return;
+  
+  try {
+    // Esborrar de IndexedDB
+    await dbDelete('photos', photo.id);
+    
+    // Actualitzar array global
+    window.currentClientPhotos.splice(currentLightboxIndex, 1);
+    
+    // Si no queden fotos, tancar lightbox
+    if (window.currentClientPhotos.length === 0) {
+      closeLightbox();
+      await renderPhotoGallery();
+      showAlert('Foto esborrada', 'No queden més fotos', '🗑️');
+      return;
+    }
+    
+    // Ajustar índex si és necessari
+    if (currentLightboxIndex >= window.currentClientPhotos.length) {
+      currentLightboxIndex = window.currentClientPhotos.length - 1;
+    }
+    
+    // Actualitzar lightbox
+    updateLightboxDisplay();
+    
+    // Re-renderitzar galeria en segon pla
+    renderPhotoGallery();
+    
+    showAlert('Foto esborrada', 'La foto s\'ha eliminat correctament', '✅');
+  } catch (e) {
+    console.error('Error esborrant foto:', e);
+    showAlert('Error', 'No s\'ha pogut esborrar la foto', '❌');
+  }
+}
+
+// Teclat shortcuts
+document.addEventListener('keydown', (e) => {
+  const lightbox = $('lightbox');
+  if (!lightbox || !lightbox.classList.contains('active')) return;
+  
+  switch(e.key) {
+    case 'Escape':
+      closeLightbox();
+      break;
+    case 'ArrowLeft':
+      prevPhoto();
+      break;
+    case 'ArrowRight':
+      nextPhoto();
+      break;
+    case 'Delete':
+      deleteCurrentPhoto();
+      break;
+  }
+});
+
+// Touch swipe per mòbil
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const lightbox = $('lightbox');
+  if (!lightbox) return;
+  
+  lightbox.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  
+  lightbox.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleLightboxSwipe();
+  });
+});
+
+function handleLightboxSwipe() {
+  const diff = touchStartX - touchEndX;
+  const threshold = 50;
+  
+  if (Math.abs(diff) < threshold) return;
+  
+  if (diff > 0) {
+    nextPhoto(); // Swipe left
+  } else {
+    prevPhoto(); // Swipe right
+  }
+}
+
+// Exportar funcions globals
+window.openLightbox = openLightbox;
+window.closeLightbox = closeLightbox;
+window.prevPhoto = prevPhoto;
+window.nextPhoto = nextPhoto;
+window.downloadCurrentPhoto = downloadCurrentPhoto;
+window.shareCurrentPhoto = shareCurrentPhoto;
+window.deleteCurrentPhoto = deleteCurrentPhoto;
