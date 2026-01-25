@@ -1254,10 +1254,7 @@ function saveScheduleConfig() {
   closeModal('modalSchedule');
   const message = enabled ? `Horari activat: ${start} - ${end}\n\nL'enfocament només comptabilitzarà temps dins d'aquest horari.` : 'Horari desactivat\n\nL\'enfocament comptabilitzarà tot el temps treballat.';
   showAlert('Configuració desada', message, '✅');
-  /*************************************************
- * FOCUSWORK – app-ui.js (V4.0 OPTIMIZADO) - PART 4/5
- * Event Listeners COMPLETO
- *************************************************/
+}
 
 /* ================= EVENT LISTENERS ================= */
 document.addEventListener('DOMContentLoaded', () => {
@@ -1351,11 +1348,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateBackupButtonStatus();
   setInterval(updateBackupButtonStatus, 5 * 60 * 1000);
 });
-}
-/*************************************************
- * FOCUSWORK – app-ui.js (V4.0 OPTIMIZADO) - PART 5/5
- * Exportar Funcions Globals
- *************************************************/
 
 /* ================= EXPORTAR FUNCIONS GLOBALS ================= */
 window.closeModal = closeModal;
