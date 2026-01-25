@@ -1,8 +1,8 @@
 
  * FOCUSWORK – app-core.js (V4.0 ARREGLAT)
  * IndexedDB + Cronòmetre suau + Optimitzacions
- *************************************************/
-alert("🔥 app-core.js CARREGAT");
+
+
 /* ================= CONFIG ================= */
 const WHATSAPP_PHONE = "34649383847";
 const APP_VERSION = "4.0";
@@ -583,6 +583,25 @@ setInterval(updateClientTotal, 5000);
 // ... setInterval(tick, 1000);
 // ... setInterval(updateClientTotal, 5000);
 
+// 🔽 AQUÍ ÉS PERFECTE
+function smoothTimerRender() {
+  const timerEl = $("timer");
+  if (!timerEl) {
+    requestAnimationFrame(smoothTimerRender);
+    return;
+  }
+
+  if (state.currentClientId && state.currentActivity && state.lastTick) {
+    const now = Date.now();
+    const extra = Math.floor((now - state.lastTick) / 1000);
+    timerEl.textContent = formatTime(state.sessionElapsed + extra);
+  }
+
+  requestAnimationFrame(smoothTimerRender);
+}
+
+requestAnimationFrame(smoothTimerRender);
+
 
 async function setActivity(activity) {
   const client = await loadClient(state.currentClientId);
@@ -635,18 +654,15 @@ async function initApp() {
     await initDB();
     await loadState();
     await migrateFromLocalStorage();
-
-    if (typeof updateUI === "function") {
-      updateUI();
-    } else {
-      console.error("❌ updateUI no està carregat");
-    }
-
+    
+    updateUI();
     scheduleFullAutoBackup();
+    
     console.log('✅ FocusWork V4.0 inicialitzat amb IndexedDB');
   } catch (e) {
     console.error('Error inicialitzant app:', e);
     showAlert('Error', 'No s\'ha pogut inicialitzar l\'aplicació', '❌');
   }
-                     }
+}
+
 document.addEventListener('DOMContentLoaded', initApp);
