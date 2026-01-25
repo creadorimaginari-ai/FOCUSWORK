@@ -552,6 +552,7 @@ async function confirmCloseClient() {
   if (!client) return;
   
   client.active = false;
+  client.closedAt = Date.now();
   await saveClient(client);
   
   state.currentClientId = null;
