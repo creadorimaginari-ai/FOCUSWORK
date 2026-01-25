@@ -773,14 +773,28 @@ async function renderPhotoGallery(preloadedClient = null) {
 
 async function confirmDeletePhoto() {
   if (!photoToDelete) return;
+  
   const client = await loadClient(state.currentClientId);
   if (!client) return;
   
+  // Filtrar la foto
   client.photos = client.photos.filter(f => f.id !== photoToDelete);
-  photoToDelete = null;
+  
+  // Guardar client
   await saveClient(client);
-  renderPhotoGallery(client);
+  
+  // Tancar modal
   closeModal('modalDeletePhoto');
+  
+  // Reset variable
+  const deletedId = photoToDelete;
+  photoToDelete = null;
+  
+  // Re-carregar client actualitzat i renderitzar
+  const updatedClient = await loadClient(state.currentClientId);
+  await renderPhotoGallery(updatedClient);
+  
+  showAlert('Foto eliminada', 'La foto s\'ha eliminat correctament', '✅');
 }
 
 /* ================= WORKPAD OPTIMIZADO ================= */
