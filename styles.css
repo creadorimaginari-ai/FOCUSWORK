@@ -1317,3 +1317,19 @@ button.secondary:hover,
 #clientActionsPanel.hidden {
   display: none;
 }
+.client-actions-panel {
+  transition: opacity 0.15s ease, height 0.15s ease;
+}
+
+.workpad-container {
+  transition: opacity 0.15s ease;
+}
+
+.workpad-area {
+  transition: opacity 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+   }
