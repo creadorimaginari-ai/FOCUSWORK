@@ -635,15 +635,18 @@ async function initApp() {
     await initDB();
     await loadState();
     await migrateFromLocalStorage();
-    
-    updateUI();
+
+    if (typeof updateUI === "function") {
+      updateUI();
+    } else {
+      console.error("❌ updateUI no està carregat");
+    }
+
     scheduleFullAutoBackup();
-    
     console.log('✅ FocusWork V4.0 inicialitzat amb IndexedDB');
   } catch (e) {
     console.error('Error inicialitzant app:', e);
     showAlert('Error', 'No s\'ha pogut inicialitzar l\'aplicació', '❌');
   }
-}
-
+                     }
 document.addEventListener('DOMContentLoaded', initApp);
