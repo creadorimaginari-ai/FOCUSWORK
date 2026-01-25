@@ -1,5 +1,5 @@
 /*************************************************
- * FOCUSWORK – app-ui.js (V4.0 OPTIMIZADO) - PART 1/3
+ * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 1/5
  * Llicències, Importació i Exportació
  *************************************************/
 
@@ -215,18 +215,16 @@ async function exportAllData() {
   showAlert('Backup complet', `Dades exportades: ${sizeMB}MB`, '💾');
 }
 /*************************************************
- * FOCUSWORK – app-ui.js (V4.0 OPTIMIZADO) - PART 2/3
- * UI i Gestió de Clients - VERSIÓN ANTI-DUPLICACIÓN
+ * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 2/5
+ * UI i Gestió de Clients
  *************************************************/
 
 /* ================= UI OPTIMIZADO ================= */
 async function updateUI(preloadedClient = null) {
   const activitiesPanel = $('activitiesPanel');
   
-  // Cargar cliente solo si no está pre-cargado
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
   
-  // BATCH: Agrupar todos los updates del DOM
   const updates = [];
   
   if (!state.currentClientId) {
@@ -323,12 +321,10 @@ async function updateUI(preloadedClient = null) {
     }
   });
   
-  // Ejecutar todos los updates en batch
   requestAnimationFrame(() => {
     updates.forEach(fn => fn());
   });
   
-  // ASYNC UPDATES: Ejecutar después del render principal
   const asyncUpdate = () => {
     updateWorkpad(client);
     updateTasks(client);
@@ -499,13 +495,11 @@ async function changeClient() {
 async function selectClient(clientId) {
   const previousClient = state.currentClientId;
   
-  // Evitar re-selección del mismo cliente
   if (state.currentClientId === clientId) {
     closeModal('modalChangeClient');
     return;
   }
   
-  // Actualizar estado
   state.currentClientId = clientId;
   
   if (!previousClient) {
@@ -514,17 +508,13 @@ async function selectClient(clientId) {
     state.lastTick = Date.now();
   }
   
-  // Resetear flags ANTES
   isWorkpadInitialized = false;
   areTasksInitialized = false;
   
-  // Guardar y actualizar
   await save();
   
-  // Pre-cargar cliente UNA SOLA VEZ
   const client = await loadClient(clientId);
   
-  // Actualizar UI con cliente pre-cargado
   await updateUI(client);
   
   closeModal('modalChangeClient');
@@ -580,6 +570,10 @@ function exitClient() {
   save();
   updateUI();
 }
+/*************************************************
+ * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 3/5
+ * Històric i Fotos - VERSIÓN CORREGIDA
+ *************************************************/
 
 /* ================= HISTÒRIC ================= */
 async function showHistory() {
@@ -600,20 +594,35 @@ function renderHistoryList(clients) {
     list.innerHTML = '<p class="modal-text" style="opacity: 0.6;">Sense resultats</p>';
     return;
   }
-  clients.forEach(client => {
-    const item = document.createElement('div');
-    item.className = 'client-item';
-    const notesPreview = client.notes && client.notes.trim() ? ` • ${client.notes.slice(0, 30)}...` : '';
-    item.innerHTML = `
-      <div class="client-name">${client.name}</div>
-      <div class="client-time">Total: ${formatTime(client.total)} • ${client.photos.length} fotos${notesPreview}</div>
-    `;
-    item.onclick = () => selectHistoryClient(client.id);
-    list.appendChild(item);
-  });
+  
+  clients
+    .sort((a, b) => (b.closedAt || b.createdAt || 0) - (a.closedAt || a.createdAt || 0))
+    .forEach(client => {
+      const item = document.createElement('div');
+      item.className = 'client-item';
+      
+      const closedDate = client.closedAt 
+        ? new Date(client.closedAt).toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit' })
+        : '';
+      
+      const notesPreview = client.notes && client.notes.trim() 
+        ? ` • ${client.notes.slice(0, 30)}...` 
+        : '';
+      
+      item.innerHTML = `
+        <div class="client-name">${client.name} ${closedDate ? `(${closedDate})` : ''}</div>
+        <div class="client-time">
+          Total: ${formatTime(client.total)} • 
+          📷 ${client.photos?.length || 0} fotos${notesPreview}
+        </div>
+      `;
+      
+      item.onclick = () => selectHistoryClient(client.id);
+      list.appendChild(item);
+    });
 }
 
-async function selectHistoryClient(clientId) {  // ⬅️ Afegir async
+async function selectHistoryClient(clientId) {
   state.currentClientId = clientId;
   state.currentActivity = null;
   state.sessionElapsed = 0;
@@ -621,11 +630,20 @@ async function selectHistoryClient(clientId) {  // ⬅️ Afegir async
   isWorkpadInitialized = false;
   areTasksInitialized = false;
   
-  // Pre-carregar client i passar-lo a updateUI
+  // Pre-carregar client
   const client = await loadClient(clientId);
+  
+  // Actualitzar UI amb client pre-carregat
   await updateUI(client);
+  
+  // 🔥 FIX CRÍTICO: Forzar render de fotos DESPUÉS de updateUI
+  setTimeout(() => {
+    renderPhotoGallery(client);
+  }, 100);
+  
   closeModal('modalHistory');
 }
+
 /* ================= ESBORRAR CLIENT ================= */
 async function deleteCurrentClient() {
   const client = await loadClient(state.currentClientId);
@@ -653,13 +671,9 @@ async function confirmDeleteClient() {
   await updateUI();
   closeModal('modalDeleteClient');
   showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
-    }
-/*************************************************
- * FOCUSWORK – app-ui.js (V4.0 OPTIMIZADO) - PART 3A/5
- * Fotos i Workpad - VERSIÓN ANTI-DUPLICACIÓN
- *************************************************/
+}
 
-/* ================= FOTOS OPTIMIZADO ================= */
+/* ================= FOTOS OPTIMIZADO Y CORREGIDO ================= */
 let photoToDelete = null;
 
 async function addPhotoToClient() {
@@ -749,28 +763,65 @@ async function renderPhotoGallery(preloadedClient = null) {
   
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
   
-  // Usar DocumentFragment para batch insert
+  gallery.innerHTML = ""; // Limpiar primero
+  
+  if (!client || !client.photos || client.photos.length === 0) {
+    return;
+  }
+  
   const fragment = document.createDocumentFragment();
   
-  if (client && client.photos.length) {
-    [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(p => {
+  [...client.photos]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .forEach(p => {
+      const container = document.createElement("div");
+      container.style.position = "relative";
+      container.style.display = "inline-block";
+      
       const img = document.createElement("img");
       img.src = p.data;
       img.className = "photo-thumb";
-      img.onclick = () => {
+      
+      // Click para ver en grande
+      img.onclick = (e) => {
+        e.stopPropagation();
         const w = window.open();
         if (w) w.document.write(`<img src="${p.data}" style="width:100%;background:#000">`);
       };
-      img.oncontextmenu = (e) => {
-        e.preventDefault();
+      
+      // 🔥 FIX: Botón de borrado visible (no contextmenu oculto)
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "❌";
+      deleteBtn.style.cssText = `
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      `;
+      
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
         photoToDelete = p.id;
         openModal('modalDeletePhoto');
       };
-      fragment.appendChild(img);
+      
+      container.appendChild(img);
+      container.appendChild(deleteBtn);
+      fragment.appendChild(container);
     });
-  }
   
-  gallery.innerHTML = "";
   gallery.appendChild(fragment);
 }
 
@@ -778,32 +829,42 @@ async function confirmDeletePhoto() {
   if (!photoToDelete) return;
   
   const client = await loadClient(state.currentClientId);
-  if (!client) return;
+  if (!client) {
+    closeModal('modalDeletePhoto');
+    showAlert('Error', 'Client no trobat', '⚠️');
+    return;
+  }
   
   try {
-    // 1️⃣ ESBORRAR DE INDEXEDDB PRIMER (AIXÒ ÉS EL QUE FALTAVA!)
+    // 🔥 FIX: Borrar de IndexedDB PRIMERO
     await dbDelete('photos', photoToDelete);
     
-    // 2️⃣ ACTUALITZAR ARRAY LOCAL
+    // Actualizar array local
     client.photos = client.photos.filter(f => f.id !== photoToDelete);
     
-    // 3️⃣ TANCAR MODAL
+    // Guardar cliente actualizado
+    await saveClient(client);
+    
+    // Cerrar modal
     closeModal('modalDeletePhoto');
     
-    // 4️⃣ RESET VARIABLE
-    const deletedId = photoToDelete;
+    // Reset variable
     photoToDelete = null;
     
-    // 5️⃣ RE-CARREGAR I RENDERITZAR
-    const updatedClient = await loadClient(state.currentClientId);
-    await renderPhotoGallery(updatedClient);
+    // Re-renderizar galería
+    await renderPhotoGallery(client);
     
     showAlert('Foto eliminada', 'La foto s\'ha eliminat correctament', '✅');
   } catch (e) {
     console.error('Error esborrant foto:', e);
-    showAlert('Error', 'No s\'ha pogut esborrar la foto', '❌');
+    showAlert('Error', 'No s\'ha pogut esborrar la foto: ' + e.message, '❌');
+    closeModal('modalDeletePhoto');
   }
 }
+/*************************************************
+ * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 4/5
+ * Workpad, Tasques, Hores Extra, Informe
+ *************************************************/
 
 /* ================= WORKPAD OPTIMIZADO ================= */
 let workpadTimeout = null;
@@ -824,7 +885,6 @@ async function updateWorkpad(preloadedClient = null) {
   workpadContainer.style.display = 'block';
   const savedNote = client.notes || '';
   
-  // Solo actualizar si NO está en foco Y el valor es diferente
   if (!workpadArea.matches(':focus')) {
     if (!isWorkpadInitialized || workpadArea.value !== savedNote) {
       workpadArea.value = savedNote;
@@ -902,7 +962,6 @@ async function updateTasks(preloadedClient = null) {
       urgentText = urgencyPrefix + (urgentText.replace(/^[⚠️🔴🟡📅].*\n/, ''));
     }
     
-    // Solo actualizar si NO están en foco
     if (!urgentArea.matches(':focus')) urgentArea.value = urgentText;
     if (!importantArea.matches(':focus')) importantArea.value = client.tasks.important || '';
     if (!laterArea.matches(':focus')) laterArea.value = client.tasks.later || '';
@@ -942,76 +1001,15 @@ async function saveDeliveryDate() {
   const dateValue = $('inputDeliveryDate').value;
   if (dateValue) {
     client.deliveryDate = dateValue;
-    showAlert('Data desada', `Data de lliurament establerta per al ${new Date(dateValue).toLocaleDateString('ca-ES')}`, 'âœ…');
+    showAlert('Data desada', `Data de lliurament establerta per al ${new Date(dateValue).toLocaleDateString('ca-ES')}`, '✅');
   } else {
     client.deliveryDate = null;
-    showAlert('Data eliminada', 'S\'ha eliminat la data de lliurament', 'â„¹ï¸');
+    showAlert('Data eliminada', 'S\'ha eliminat la data de lliurament', 'ℹ️');
   }
   areTasksInitialized = false;
   await saveClient(client);
   await updateUI();
   closeModal('modalDeliveryDate');
-}            
-/*************************************************
- * FOCUSWORK – app-ui.js (V4.0 OPTIMIZADO) - PART 3B/5
- * Enfocament, CSV, Hores Extra - VERSIÓN ANTI-DUPLICACIÓN
- *************************************************/
-
-/* ================= ENFOCAMENT ================= */
-function showFocus() {
-  const total = Object.values(state.focus).reduce((a, b) => a + b, 0);
-  if (!total) {
-    showAlert('Sense dades', 'Encara no hi ha dades d\'enfocament avui', 'ℹ️');
-    return;
-  }
-  const trabajo = state.focus[ACTIVITIES.WORK] || 0;
-  const pct = Math.round((trabajo / total) * 100);
-  $('modalUserName').textContent = userName;
-  $('modalTotalTime').textContent = formatTime(total);
-  const list = $('modalActivityList');
-  list.innerHTML = '';
-  for (const act in state.focus) {
-    const seconds = state.focus[act];
-    const actPct = Math.round((seconds / total) * 100);
-    const item = document.createElement('div');
-    item.className = 'activity-item';
-    item.innerHTML = `
-      <span class="activity-name">${activityLabel(act)}</span>
-      <div class="activity-stats">
-        <span class="activity-time">${formatTime(seconds)}</span>
-        <span class="activity-percent">${actPct}%</span>
-      </div>
-    `;
-    list.appendChild(item);
-  }
-  const focusState = $('modalFocusState');
-  if (pct >= 64) {
-    focusState.className = 'focus-state enfocado';
-    focusState.innerHTML = '🟢 Enfocat';
-  } else if (pct >= 40) {
-    focusState.className = 'focus-state atencion';
-    focusState.innerHTML = '🟡 Atenció';
-  } else {
-    focusState.className = 'focus-state disperso';
-    focusState.innerHTML = '🔴 Dispers';
-  }
-  openModal('modalEnfoque');
-}
-
-/* ================= CSV ================= */
-async function exportTodayCSV() {
-  const allClients = await loadAllClients();
-  let csv = "Usuari,Client,Temps,Notes\n";
-  Object.values(allClients).forEach(c => {
-    const notes = (c.notes || '').replace(/[\n\r]/g, ' ').replace(/"/g, '""');
-    csv += `${userName},"${c.name}",${formatTime(c.total)},"${notes}"\n`;
-  });
-  const blob = new Blob([csv], { type: "text/csv" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `focowork_${todayKey()}.csv`;
-  a.click();
-  showAlert('CSV exportat', 'L\'arxiu s\'ha descarregat correctament', '📄');
 }
 
 /* ================= HORES EXTRES ================= */
@@ -1219,6 +1217,67 @@ async function shareReport() {
     copyReport();
   }
 }
+/*************************************************
+ * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 5/5
+ * Enfocament, CSV, Horaris, Bulk Delete, Events
+ *************************************************/
+
+/* ================= ENFOCAMENT ================= */
+function showFocus() {
+  const total = Object.values(state.focus).reduce((a, b) => a + b, 0);
+  if (!total) {
+    showAlert('Sense dades', 'Encara no hi ha dades d\'enfocament avui', 'ℹ️');
+    return;
+  }
+  const trabajo = state.focus[ACTIVITIES.WORK] || 0;
+  const pct = Math.round((trabajo / total) * 100);
+  $('modalUserName').textContent = userName;
+  $('modalTotalTime').textContent = formatTime(total);
+  const list = $('modalActivityList');
+  list.innerHTML = '';
+  for (const act in state.focus) {
+    const seconds = state.focus[act];
+    const actPct = Math.round((seconds / total) * 100);
+    const item = document.createElement('div');
+    item.className = 'activity-item';
+    item.innerHTML = `
+      <span class="activity-name">${activityLabel(act)}</span>
+      <div class="activity-stats">
+        <span class="activity-time">${formatTime(seconds)}</span>
+        <span class="activity-percent">${actPct}%</span>
+      </div>
+    `;
+    list.appendChild(item);
+  }
+  const focusState = $('modalFocusState');
+  if (pct >= 64) {
+    focusState.className = 'focus-state enfocado';
+    focusState.innerHTML = '🟢 Enfocat';
+  } else if (pct >= 40) {
+    focusState.className = 'focus-state atencion';
+    focusState.innerHTML = '🟡 Atenció';
+  } else {
+    focusState.className = 'focus-state disperso';
+    focusState.innerHTML = '🔴 Dispers';
+  }
+  openModal('modalEnfoque');
+}
+
+/* ================= CSV ================= */
+async function exportTodayCSV() {
+  const allClients = await loadAllClients();
+  let csv = "Usuari,Client,Temps,Notes\n";
+  Object.values(allClients).forEach(c => {
+    const notes = (c.notes || '').replace(/[\n\r]/g, ' ').replace(/"/g, '""');
+    csv += `${userName},"${c.name}",${formatTime(c.total)},"${notes}"\n`;
+  });
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `focowork_${todayKey()}.csv`;
+  a.click();
+  showAlert('CSV exportat', 'L\'arxiu s\'ha descarregat correctament', '📄');
+}
 
 /* ================= CONFIGURACIÓ D'HORARI ================= */
 function openScheduleModal() {
@@ -1276,6 +1335,182 @@ function saveScheduleConfig() {
   closeModal('modalSchedule');
   const message = enabled ? `Horari activat: ${start} - ${end}\n\nL'enfocament només comptabilitzarà temps dins d'aquest horari.` : 'Horari desactivat\n\nL\'enfocament comptabilitzarà tot el temps treballat.';
   showAlert('Configuració desada', message, '✅');
+}
+
+/* ================= ESBORRAT MASSIU ================= */
+async function showBulkDeleteModal() {
+  const allClients = await loadAllClients();
+  const closedClients = Object.values(allClients).filter(c => !c.active);
+  
+  if (!closedClients.length) {
+    showAlert('Sense clients tancats', 'No hi ha clients tancats per esborrar', 'ℹ️');
+    return;
+  }
+  
+  const now = Date.now();
+  const DAY = 24 * 60 * 60 * 1000;
+  
+  const lastWeek = closedClients.filter(c => {
+    const closedDate = c.closedAt || c.createdAt || 0;
+    return (now - closedDate) <= 7 * DAY;
+  });
+  
+  const last2Weeks = closedClients.filter(c => {
+    const closedDate = c.closedAt || c.createdAt || 0;
+    return (now - closedDate) > 7 * DAY && (now - closedDate) <= 14 * DAY;
+  });
+  
+  const lastMonth = closedClients.filter(c => {
+    const closedDate = c.closedAt || c.createdAt || 0;
+    return (now - closedDate) > 14 * DAY && (now - closedDate) <= 30 * DAY;
+  });
+  
+  const older = closedClients.filter(c => {
+    const closedDate = c.closedAt || c.createdAt || 0;
+    return (now - closedDate) > 30 * DAY;
+  });
+  
+  const list = $('bulkDeleteList');
+  list.innerHTML = `
+    <div style="margin-bottom: 20px; padding: 15px; background: #fef3c7; border-radius: 10px; border-left: 4px solid #f59e0b;">
+      <strong>⚠️ Atenció:</strong> Aquesta acció NO es pot desfer.<br>
+      <strong>Recomanació:</strong> Fes una còpia de seguretat abans d'esborrar.
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      ${lastWeek.length > 0 ? `
+        <button class="bulk-delete-btn" onclick="confirmBulkDelete(7)" style="background: #10b981; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left;">
+          <div style="font-weight: 600;">📅 Última setmana (${lastWeek.length} clients)</div>
+          <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Esborrar clients tancats fa menys de 7 dies</div>
+        </button>
+      ` : ''}
+      
+      ${last2Weeks.length > 0 ? `
+        <button class="bulk-delete-btn" onclick="confirmBulkDelete(14)" style="background: #3b82f6; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left;">
+          <div style="font-weight: 600;">📅 Últimes 2 setmanes (${last2Weeks.length} clients)</div>
+          <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Esborrar clients entre 7 i 14 dies</div>
+        </button>
+      ` : ''}
+      
+      ${lastMonth.length > 0 ? `
+        <button class="bulk-delete-btn" onclick="confirmBulkDelete(30)" style="background: #f59e0b; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left;">
+          <div style="font-weight: 600;">📅 Últim mes (${lastMonth.length} clients)</div>
+          <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Esborrar clients entre 14 i 30 dies</div>
+        </button>
+      ` : ''}
+      
+      ${older.length > 0 ? `
+        <button class="bulk-delete-btn" onclick="confirmBulkDelete(999)" style="background: #ef4444; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left;">
+          <div style="font-weight: 600;">📅 Més antics (${older.length} clients)</div>
+          <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Esborrar clients de fa més de 30 dies</div>
+        </button>
+      ` : ''}
+      
+      <button class="bulk-delete-btn" onclick="confirmBulkDelete('all')" style="background: #dc2626; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left; margin-top: 10px;">
+        <div style="font-weight: 600;">🗑️ TOTS els clients tancats (${closedClients.length} clients)</div>
+        <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">⚠️ PERILL: Esborra tot l'històric</div>
+      </button>
+    </div>
+  `;
+  
+  openModal('modalBulkDelete');
+}
+
+async function confirmBulkDelete(period) {
+  const allClients = await loadAllClients();
+  const closedClients = Object.values(allClients).filter(c => !c.active);
+  
+  let toDelete = [];
+  const now = Date.now();
+  const DAY = 24 * 60 * 60 * 1000;
+  
+  if (period === 'all') {
+    toDelete = closedClients;
+  } else if (period === 7) {
+    toDelete = closedClients.filter(c => {
+      const closedDate = c.closedAt || c.createdAt || 0;
+      return (now - closedDate) <= 7 * DAY;
+    });
+  } else if (period === 14) {
+    toDelete = closedClients.filter(c => {
+      const closedDate = c.closedAt || c.createdAt || 0;
+      return (now - closedDate) > 7 * DAY && (now - closedDate) <= 14 * DAY;
+    });
+  } else if (period === 30) {
+    toDelete = closedClients.filter(c => {
+      const closedDate = c.closedAt || c.createdAt || 0;
+      return (now - closedDate) > 14 * DAY && (now - closedDate) <= 30 * DAY;
+    });
+  } else if (period === 999) {
+    toDelete = closedClients.filter(c => {
+      const closedDate = c.closedAt || c.createdAt || 0;
+      return (now - closedDate) > 30 * DAY;
+    });
+  }
+  
+  if (!toDelete.length) {
+    showAlert('Sense clients', 'No hi ha clients per esborrar en aquest període', 'ℹ️');
+    return;
+  }
+  
+  let totalPhotos = 0;
+  toDelete.forEach(c => totalPhotos += c.photos?.length || 0);
+  
+  const periodText = period === 'all' ? 'TOTS els clients tancats' :
+                     period === 7 ? 'clients de l\'última setmana' :
+                     period === 14 ? 'clients de les últimes 2 setmanes' :
+                     period === 30 ? 'clients de l\'últim mes' :
+                     'clients de fa més de 30 dies';
+  
+  const confirmed = confirm(
+    `⚠️ ATENCIÓ: Vols esborrar ${toDelete.length} clients (${periodText})?\n\n` +
+    `📷 Total fotos: ${totalPhotos}\n\n` +
+    `Aquesta acció NO es pot desfer.\n\n` +
+    `Escriu OK per confirmar.`
+  );
+  
+  if (!confirmed) return;
+  
+  const finalConfirm = prompt(
+    `Escriu ESBORRAR (en majúscules) per confirmar l'eliminació de ${toDelete.length} clients:`
+  );
+  
+  if (finalConfirm !== 'ESBORRAR') {
+    showAlert('Cancel·lat', 'Operació cancel·lada', 'ℹ️');
+    return;
+  }
+  
+  closeModal('modalBulkDelete');
+  showAlert('Esborrant...', `Esborrant ${toDelete.length} clients...`, '⏳');
+  
+  let deleted = 0;
+  for (const client of toDelete) {
+    try {
+      await deleteClient(client.id);
+      deleted++;
+    } catch (e) {
+      console.error('Error esborrant client:', client.name, e);
+    }
+  }
+  
+  setTimeout(() => {
+    showAlert(
+      'Esborrat complet', 
+      `✅ S'han esborrat ${deleted} de ${toDelete.length} clients\n📷 ${totalPhotos} fotos eliminades`, 
+      '🗑️'
+    );
+  }, 500);
+  
+  if (state.currentClientId) {
+    const wasDeleted = toDelete.find(c => c.id === state.currentClientId);
+    if (wasDeleted) {
+      state.currentClientId = null;
+      state.currentActivity = null;
+      state.lastTick = null;
+      await save();
+      await updateUI();
+    }
+  }
 }
 
 /* ================= EVENT LISTENERS ================= */
@@ -1386,189 +1621,6 @@ window.confirmDeletePhoto = confirmDeletePhoto;
 window.applyPreset = applyPreset;
 window.saveScheduleConfig = saveScheduleConfig;
 window.exportAndClose = exportAndClose;
-/* ================= ESBORRAT MASSIU DE CLIENTS ANTICS ================= */
-
-async function showBulkDeleteModal() {
-  const allClients = await loadAllClients();
-  const closedClients = Object.values(allClients).filter(c => !c.active);
-  
-  if (!closedClients.length) {
-    showAlert('Sense clients tancats', 'No hi ha clients tancats per esborrar', 'ℹ️');
-    return;
-  }
-  
-  // Calcular estadístiques per períodes
-  const now = Date.now();
-  const DAY = 24 * 60 * 60 * 1000;
-  
-  const lastWeek = closedClients.filter(c => {
-    const closedDate = c.closedAt || c.createdAt || 0;
-    return (now - closedDate) <= 7 * DAY;
-  });
-  
-  const last2Weeks = closedClients.filter(c => {
-    const closedDate = c.closedAt || c.createdAt || 0;
-    return (now - closedDate) > 7 * DAY && (now - closedDate) <= 14 * DAY;
-  });
-  
-  const lastMonth = closedClients.filter(c => {
-    const closedDate = c.closedAt || c.createdAt || 0;
-    return (now - closedDate) > 14 * DAY && (now - closedDate) <= 30 * DAY;
-  });
-  
-  const older = closedClients.filter(c => {
-    const closedDate = c.closedAt || c.createdAt || 0;
-    return (now - closedDate) > 30 * DAY;
-  });
-  
-  // Mostrar modal amb opcions
-  const list = $('bulkDeleteList');
-  list.innerHTML = `
-    <div style="margin-bottom: 20px; padding: 15px; background: #fef3c7; border-radius: 10px; border-left: 4px solid #f59e0b;">
-      <strong>⚠️ Atenció:</strong> Aquesta acció NO es pot desfer.<br>
-      <strong>Recomanació:</strong> Fes una còpia de seguretat abans d'esborrar.
-    </div>
-    
-    <div style="display: flex; flex-direction: column; gap: 10px;">
-      ${lastWeek.length > 0 ? `
-        <button class="bulk-delete-btn" onclick="confirmBulkDelete(7)" style="background: #10b981; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left;">
-          <div style="font-weight: 600;">📅 Última setmana (${lastWeek.length} clients)</div>
-          <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Esborrar clients tancats fa menys de 7 dies</div>
-        </button>
-      ` : ''}
-      
-      ${last2Weeks.length > 0 ? `
-        <button class="bulk-delete-btn" onclick="confirmBulkDelete(14)" style="background: #3b82f6; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left;">
-          <div style="font-weight: 600;">📅 Últimes 2 setmanes (${last2Weeks.length} clients)</div>
-          <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Esborrar clients entre 7 i 14 dies</div>
-        </button>
-      ` : ''}
-      
-      ${lastMonth.length > 0 ? `
-        <button class="bulk-delete-btn" onclick="confirmBulkDelete(30)" style="background: #f59e0b; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left;">
-          <div style="font-weight: 600;">📅 Últim mes (${lastMonth.length} clients)</div>
-          <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Esborrar clients entre 14 i 30 dies</div>
-        </button>
-      ` : ''}
-      
-      ${older.length > 0 ? `
-        <button class="bulk-delete-btn" onclick="confirmBulkDelete(999)" style="background: #ef4444; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left;">
-          <div style="font-weight: 600;">📅 Més antics (${older.length} clients)</div>
-          <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Esborrar clients de fa més de 30 dies</div>
-        </button>
-      ` : ''}
-      
-      <button class="bulk-delete-btn" onclick="confirmBulkDelete('all')" style="background: #dc2626; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: left; margin-top: 10px;">
-        <div style="font-weight: 600;">🗑️ TOTS els clients tancats (${closedClients.length} clients)</div>
-        <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">⚠️ PERILL: Esborra tot l'històric</div>
-      </button>
-    </div>
-  `;
-  
-  openModal('modalBulkDelete');
-}
-
-async function confirmBulkDelete(period) {
-  const allClients = await loadAllClients();
-  const closedClients = Object.values(allClients).filter(c => !c.active);
-  
-  let toDelete = [];
-  const now = Date.now();
-  const DAY = 24 * 60 * 60 * 1000;
-  
-  if (period === 'all') {
-    toDelete = closedClients;
-  } else if (period === 7) {
-    toDelete = closedClients.filter(c => {
-      const closedDate = c.closedAt || c.createdAt || 0;
-      return (now - closedDate) <= 7 * DAY;
-    });
-  } else if (period === 14) {
-    toDelete = closedClients.filter(c => {
-      const closedDate = c.closedAt || c.createdAt || 0;
-      return (now - closedDate) > 7 * DAY && (now - closedDate) <= 14 * DAY;
-    });
-  } else if (period === 30) {
-    toDelete = closedClients.filter(c => {
-      const closedDate = c.closedAt || c.createdAt || 0;
-      return (now - closedDate) > 14 * DAY && (now - closedDate) <= 30 * DAY;
-    });
-  } else if (period === 999) {
-    toDelete = closedClients.filter(c => {
-      const closedDate = c.closedAt || c.createdAt || 0;
-      return (now - closedDate) > 30 * DAY;
-    });
-  }
-  
-  if (!toDelete.length) {
-    showAlert('Sense clients', 'No hi ha clients per esborrar en aquest període', 'ℹ️');
-    return;
-  }
-  
-  // Calcular fotos totals
-  let totalPhotos = 0;
-  toDelete.forEach(c => totalPhotos += c.photos?.length || 0);
-  
-  const periodText = period === 'all' ? 'TOTS els clients tancats' :
-                     period === 7 ? 'clients de l\'última setmana' :
-                     period === 14 ? 'clients de les últimes 2 setmanes' :
-                     period === 30 ? 'clients de l\'últim mes' :
-                     'clients de fa més de 30 dies';
-  
-  const confirmed = confirm(
-    `⚠️ ATENCIÓ: Vols esborrar ${toDelete.length} clients (${periodText})?\n\n` +
-    `📷 Total fotos: ${totalPhotos}\n\n` +
-    `Aquesta acció NO es pot desfer.\n\n` +
-    `Escriu OK per confirmar.`
-  );
-  
-  if (!confirmed) return;
-  
-  const finalConfirm = prompt(
-    `Escriu ESBORRAR (en majúscules) per confirmar l'eliminació de ${toDelete.length} clients:`
-  );
-  
-  if (finalConfirm !== 'ESBORRAR') {
-    showAlert('Cancel·lat', 'Operació cancel·lada', 'ℹ️');
-    return;
-  }
-  
-  // Esborrar clients
-  closeModal('modalBulkDelete');
-  showAlert('Esborrant...', `Esborrant ${toDelete.length} clients...`, '⏳');
-  
-  let deleted = 0;
-  for (const client of toDelete) {
-    try {
-      await deleteClient(client.id);
-      deleted++;
-    } catch (e) {
-      console.error('Error esborrant client:', client.name, e);
-    }
-  }
-  
-  setTimeout(() => {
-    showAlert(
-      'Esborrat complet', 
-      `✅ S'han esborrat ${deleted} de ${toDelete.length} clients\n📷 ${totalPhotos} fotos eliminades`, 
-      '🗑️'
-    );
-  }, 500);
-  
-  // Actualitzar UI si estàvem veient un client esborrat
-  if (state.currentClientId) {
-    const wasDeleted = toDelete.find(c => c.id === state.currentClientId);
-    if (wasDeleted) {
-      state.currentClientId = null;
-      state.currentActivity = null;
-      state.lastTick = null;
-      await save();
-      await updateUI();
-    }
-  }
-}
-
-// Exportar funcions globals
 window.showBulkDeleteModal = showBulkDeleteModal;
 window.confirmBulkDelete = confirmBulkDelete;
 window.deleteExtraHour = deleteExtraHour;
