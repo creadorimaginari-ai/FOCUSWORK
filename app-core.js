@@ -1,6 +1,6 @@
 /*************************************************
- * FOCUSWORK – app-core.js (V4.0 AMB INDEXEDDB)
- * Fitxer principal: IndexedDB + Gestió d'estat
+ * FOCUSWORK – app-core.js (V4.0 ARREGLAT)
+ * IndexedDB + Cronòmetre suau + Optimitzacions
  *************************************************/
 
 /* ================= CONFIG ================= */
@@ -488,32 +488,42 @@ function resetTodayFocus() {
   showAlert('Enfocament reiniciat', 'Dades reiniciades', '✅');
 }
 
-/* ================= MOTOR DE TEMPS ================= */
+/* ================= MOTOR DE TEMPS (OPTIMITZAT) ================= */
 let lastSaveTime = 0;
+
+// FUNCIÓ PRINCIPAL: Actualitza temps cada segon
 async function tick() {
   resetDayIfNeeded();
   
   if (!state.currentClientId || !state.currentActivity || !state.lastTick) {
     state.lastTick = Date.now();
+    updateTimerDisplay(); // Actualitzar display
     return;
   }
   
   const client = await loadClient(state.currentClientId);
   if (!client || !client.active) {
     state.lastTick = Date.now();
+    updateTimerDisplay();
     return;
   }
   
   const now = Date.now();
   const elapsed = Math.floor((now - state.lastTick) / 1000);
-  if (elapsed <= 0) return;
   
+  if (elapsed <= 0) {
+    updateTimerDisplay(); // Actualitzar display fins i tot si elapsed=0
+    return;
+  }
+  
+  // Actualitzar temps
   state.lastTick = now;
   state.sessionElapsed += elapsed;
   client.total = (client.total || 0) + elapsed;
   client.activities = client.activities || {};
   client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + elapsed;
   
+  // Temps facturable
   if (state.focusSchedule.enabled) {
     if (isWithinFocusSchedule()) {
       client.billableTime = (client.billableTime || 0) + elapsed;
@@ -524,15 +534,51 @@ async function tick() {
     state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
   }
   
+  // Guardar cada 5 segons (no cada segon)
   if (Date.now() - lastSaveTime > 5000) {
     await saveClient(client);
     await save();
     lastSaveTime = Date.now();
   }
-  updateUI();
+  
+  // Actualitzar NOMÉS el cronòmetre (no tota la UI)
+  updateTimerDisplay();
 }
 
+// FUNCIÓ NOVA: Actualitza només el display del cronòmetre (no re-renderitza res més)
+function updateTimerDisplay() {
+  const timerEl = $("timer");
+  if (!timerEl) return;
+  
+  if (state.currentClientId && state.currentActivity && state.lastTick) {
+    // Calcular temps actual amb precisió
+    const now = Date.now();
+    const extraElapsed = Math.floor((now - state.lastTick) / 1000);
+    const currentElapsed = state.sessionElapsed + extraElapsed;
+    timerEl.textContent = formatTime(currentElapsed);
+  } else {
+    timerEl.textContent = "00:00:00";
+  }
+}
+
+// NOVA FUNCIÓ: Actualitza total del client (crida cada 5 segons)
+async function updateClientTotal() {
+  if (!state.currentClientId) return;
+  
+  const client = await loadClient(state.currentClientId);
+  if (!client) return;
+  
+  const clientTotalEl = $("clientTotal");
+  if (clientTotalEl) {
+    clientTotalEl.textContent = `Total client: ${formatTime(client.total)}`;
+  }
+}
+
+// Timer principal: tick cada segon
 setInterval(tick, 1000);
+
+// Timer secundari: actualitzar total client cada 5 segons
+setInterval(updateClientTotal, 5000);
 
 async function setActivity(activity) {
   const client = await loadClient(state.currentClientId);
@@ -556,8 +602,8 @@ async function migrateFromLocalStorage() {
     const parsed = JSON.parse(oldState);
     
     if (parsed.clients && Object.keys(parsed.clients).length > 0) {
-      console.log('🔄 Migrant dades de localStorage a IndexedDB...');
-      showAlert('Migració detectada', 'Migrant dades a IndexedDB...', '🔄');
+      console.log('📄 Migrant dades de localStorage a IndexedDB...');
+      showAlert('Migració detectada', 'Migrant dades a IndexedDB...', '📄');
       
       for (const clientId in parsed.clients) {
         await saveClient(parsed.clients[clientId]);
