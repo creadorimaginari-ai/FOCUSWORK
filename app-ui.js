@@ -103,7 +103,7 @@ async function importWork() {
       $('importClientName').textContent = fileData.client.name;
       $('importClientTime').textContent = formatTime(fileData.client.total);
       $('importClientPhotos').textContent = fileData.client.photos?.length || 0;
-      $('importClientNotes').textContent = fileData.client.notes ? '✔ Sí' : '– No';
+      $('importClientNotes').textContent = fileData.client.notes ? '✓ Sí' : '— No';
       window.pendingImport = fileData;
       openModal('modalImportWork');
     } catch (err) {
@@ -152,7 +152,7 @@ function handleBackupFile(backupData) {
   $('importBackupClients').textContent = clientCount;
   $('importBackupActive').textContent = activeCount;
   $('importBackupDate').textContent = new Date(backupData.timestamp).toLocaleDateString();
-  $('importBackupLicense').textContent = backupData.license ? '✔ Sí' : '– No';
+  $('importBackupLicense').textContent = backupData.license ? '✓ Sí' : '— No';
   window.pendingBackup = backupData;
   openModal('modalImportBackup');
 }
@@ -381,7 +381,7 @@ function updateLicenseInfo() {
   const infoEl = $("licenseInfo");
   if (!infoEl || !state.license) return;
   const expiryText = state.license.expiryDate ? `Vàlida fins: ${new Date(state.license.expiryDate).toLocaleDateString()}` : "Sense límit";
-  infoEl.textContent = `✔ Llicència activa - ${state.license.clientName} - ${expiryText}`;
+  infoEl.textContent = `✓ Llicència activa - ${state.license.clientName} - ${expiryText}`;
   infoEl.style.display = "block";
 }
 
@@ -630,13 +630,9 @@ async function selectHistoryClient(clientId) {
   isWorkpadInitialized = false;
   areTasksInitialized = false;
   
-  // Pre-carregar client
   const client = await loadClient(clientId);
-  
-  // Actualitzar UI amb client pre-carregat
   await updateUI(client);
   
-  // 🔥 FIX CRÍTICO: Forzar render de fotos DESPUÉS de updateUI
   setTimeout(() => {
     renderPhotoGallery(client);
   }, 100);
@@ -773,48 +769,12 @@ async function renderPhotoGallery(preloadedClient = null) {
       const img = document.createElement("img");
       img.src = p.data;
       img.className = "photo-thumb";
-      img.onclick = () => openLightbox(index);  // ⬅️ CANVIAT: Ara obre el lightbox
+      img.onclick = () => openLightbox(index);
       fragment.appendChild(img);
     });
   }
   
   gallery.innerHTML = "";
-  gallery.appendChild(fragment);
-}
-      
-      // 🔥 FIX: Botón de borrado visible (no contextmenu oculto)
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "❌";
-      deleteBtn.style.cssText = `
-        position: absolute;
-        top: 4px;
-        right: 4px;
-        background: rgba(239, 68, 68, 0.9);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 28px;
-        height: 28px;
-        cursor: pointer;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      `;
-      
-      deleteBtn.onclick = (e) => {
-        e.stopPropagation();
-        photoToDelete = p.id;
-        openModal('modalDeletePhoto');
-      };
-      
-      container.appendChild(img);
-      container.appendChild(deleteBtn);
-      fragment.appendChild(container);
-    });
-  
   gallery.appendChild(fragment);
 }
 
@@ -829,22 +789,16 @@ async function confirmDeletePhoto() {
   }
   
   try {
-    // 🔥 FIX: Borrar de IndexedDB PRIMERO
     await dbDelete('photos', photoToDelete);
     
-    // Actualizar array local
     client.photos = client.photos.filter(f => f.id !== photoToDelete);
     
-    // Guardar cliente actualizado
     await saveClient(client);
     
-    // Cerrar modal
     closeModal('modalDeletePhoto');
     
-    // Reset variable
     photoToDelete = null;
     
-    // Re-renderizar galería
     await renderPhotoGallery(client);
     
     showAlert('Foto eliminada', 'La foto s\'ha eliminat correctament', '✅');
@@ -1212,7 +1166,7 @@ async function shareReport() {
 }
 /*************************************************
  * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 5/5
- * Enfocament, CSV, Horaris, Bulk Delete, Events
+ * Enfocament, CSV, Horaris, Bulk Delete, Events i Lightbox
  *************************************************/
 
 /* ================= ENFOCAMENT ================= */
@@ -1617,6 +1571,7 @@ window.exportAndClose = exportAndClose;
 window.showBulkDeleteModal = showBulkDeleteModal;
 window.confirmBulkDelete = confirmBulkDelete;
 window.deleteExtraHour = deleteExtraHour;
+
 /* ================= LIGHTBOX PER GALERIA ================= */
 let currentLightboxIndex = 0;
 
@@ -1648,17 +1603,14 @@ function updateLightboxDisplay() {
   const photo = photos[currentLightboxIndex];
   if (!photo) return;
   
-  // Actualitzar imatge
   const img = $('lightboxImage');
   if (img) img.src = photo.data;
   
-  // Actualitzar contador
   const counter = $('lightboxCounter');
   if (counter) {
     counter.textContent = `${currentLightboxIndex + 1} / ${photos.length}`;
   }
   
-  // Actualitzar data
   const dateEl = $('lightboxDate');
   if (dateEl) {
     const date = new Date(photo.date);
@@ -1671,7 +1623,6 @@ function updateLightboxDisplay() {
     });
   }
   
-  // Actualitzar botons navegació
   const prevBtn = document.querySelector('.lightbox-nav-prev');
   const nextBtn = document.querySelector('.lightbox-nav-next');
   
@@ -1767,13 +1718,10 @@ async function deleteCurrentPhoto() {
   if (!confirmed) return;
   
   try {
-    // Esborrar de IndexedDB
     await dbDelete('photos', photo.id);
     
-    // Actualitzar array global
     window.currentClientPhotos.splice(currentLightboxIndex, 1);
     
-    // Si no queden fotos, tancar lightbox
     if (window.currentClientPhotos.length === 0) {
       closeLightbox();
       await renderPhotoGallery();
@@ -1781,15 +1729,11 @@ async function deleteCurrentPhoto() {
       return;
     }
     
-    // Ajustar índex si és necessari
     if (currentLightboxIndex >= window.currentClientPhotos.length) {
       currentLightboxIndex = window.currentClientPhotos.length - 1;
     }
     
-    // Actualitzar lightbox
     updateLightboxDisplay();
-    
-    // Re-renderitzar galeria en segon pla
     renderPhotoGallery();
     
     showAlert('Foto esborrada', 'La foto s\'ha eliminat correctament', '✅');
@@ -1845,9 +1789,9 @@ function handleLightboxSwipe() {
   if (Math.abs(diff) < threshold) return;
   
   if (diff > 0) {
-    nextPhoto(); // Swipe left
+    nextPhoto();
   } else {
-    prevPhoto(); // Swipe right
+    prevPhoto();
   }
 }
 
