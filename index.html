@@ -217,6 +217,9 @@
 ></textarea>
 
       </div>
+     
+      
+      
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalNewClient')">Cancel·lar</button>
         <button class="btn-primary" onclick="confirmNewClient()">Crear</button>
@@ -345,6 +348,10 @@
         <input type="text" id="searchHistory" class="modal-input" placeholder="🔍 Buscar client o feina...">
         <div id="historyClientsList" class="clients-list"></div>
       </div>
+     <div class="modal-buttons">
+  <button class="btn-danger" onclick="showBulkDeleteModal()">🗑️ Esborrar antics</button>
+  <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
+</div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
       </div>
