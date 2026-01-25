@@ -337,26 +337,41 @@
     </div>
   </div>
 
-  <!-- MODAL: Històric -->
-  <div id="modalHistory" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">📂</span>
-        <h2 class="modal-title">Històric de clients</h2>
-      </div>
-      <div class="modal-body">
-        <input type="text" id="searchHistory" class="modal-input" placeholder="🔍 Buscar client o feina...">
-        <div id="historyClientsList" class="clients-list"></div>
-      </div>
-     <div class="modal-buttons">
-  <button class="btn-danger" onclick="showBulkDeleteModal()">🗑️ Esborrar antics</button>
-  <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
-</div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
-      </div>
+ <!-- MODAL: Històric - VERSIÓN CORREGIDA SIN DUPLICADO -->
+<div id="modalHistory" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-icon">📂</span>
+      <h2 class="modal-title">Històric de clients</h2>
+    </div>
+    <div class="modal-body">
+      <input type="text" id="searchHistory" class="modal-input" placeholder="🔍 Buscar client o feina...">
+      <div id="historyClientsList" class="clients-list"></div>
+    </div>
+    
+    <!-- ⚠️ SOLO UN BLOQUE DE BOTONES -->
+    <div class="modal-footer">
+      <button class="btn-danger" onclick="showBulkDeleteModal()">🗑️ Esborrar antics</button>
+      <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
     </div>
   </div>
+</div
+
+  <!-- MODAL: Esborrar clients antics (MASSIU) -->
+<div id="modalBulkDelete" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-icon">🗑️</span>
+      <h2 class="modal-title">Esborrar clients antics</h2>
+    </div>
+    <div class="modal-body">
+      <div id="bulkDeleteList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modalBulkDelete')">Cancel·lar</button>
+    </div>
+  </div>
+</div>
 
   <!-- MODAL: Confirmar Tancar Client -->
   <div id="modalCloseClient" class="modal-overlay hidden">
