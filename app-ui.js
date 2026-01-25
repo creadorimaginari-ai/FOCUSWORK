@@ -612,14 +612,18 @@ function renderHistoryList(clients) {
   });
 }
 
-function selectHistoryClient(clientId) {
+async function selectHistoryClient(clientId) {  // ⬅️ Afegir async
   state.currentClientId = clientId;
   state.currentActivity = null;
   state.sessionElapsed = 0;
   state.lastTick = null;
   isWorkpadInitialized = false;
   areTasksInitialized = false;
-  updateUI();
+  
+  // ⬅️ AFEGIR AQUESTES 3 LÍNIES:
+  const client = await loadClient(clientId);
+  await updateUI(client);
+  
   closeModal('modalHistory');
 }
 
