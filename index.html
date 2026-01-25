@@ -58,7 +58,7 @@
 </section>
 
 
-    <!-- INFO CLIENTE (CÁMARA + NOTAS) -->
+<!-- INFO CLIENTE (CÁMARA + NOTAS) -->
     <section class="panel" id="clientInfoPanel">
       
       <!-- FECHA DE ENTREGA -->
@@ -77,8 +77,6 @@
         ></textarea>
       </div>
 
-     
-    
       <!-- FEINES PER URGÈNCIA -->
       <div class="workpad-container">
         <div class="workpad-header">
@@ -102,51 +100,49 @@
           placeholder="🟢 Quan es pugui (no oblidar)"
         ></textarea>
       </div>
-<!-- PANEL D'ACCIONS DEL CLIENT (afegir aquest div contenidor) -->
-<div id="clientActionsPanel" class="client-actions-panel">
-      <div class="grid" style="margin-top: 12px;">
-        <button id="setDeliveryDateBtn" class="primary">
-          📅 Data d'entrega
-        </button>
-      </div> 
-        
-      <div class="grid centered" style="margin-top: 12px;">
-        <button id="addExtraHoursBtn" class="secondary">
-          ⏱️ Afegir hores
-        </button>
-        <button id="viewExtraHoursBtn" class="secondary">
-          📊 Veure resum d'hores
-        </button>
+
+      <!-- PANEL D'ACCIONS DEL CLIENT -->
+      <div id="clientActionsPanel" class="client-actions-panel">
+        <div class="grid" style="margin-top: 12px;">
+          <button id="setDeliveryDateBtn" class="primary">
+            📅 Data d'entrega
+          </button>
+        </div> 
+          
+        <div class="grid centered" style="margin-top: 12px;">
+          <button id="addExtraHoursBtn" class="secondary">
+            ⏱️ Afegir hores
+          </button>
+          <button id="viewExtraHoursBtn" class="secondary">
+            📊 Veure resum d'hores
+          </button>
+        </div>
+
+        <div class="grid centered" style="margin-top: 12px;">
+          <button id="generateReportBtn" class="primary">
+            📋 Generar informe
+          </button>
+        </div>
+
+        <div class="grid centered" style="margin-top: 12px;">
+          <button id="cameraBtn" class="primary">
+            📷 Afegir foto al client
+          </button>
+        </div>
       </div>
-
-      <div class="grid centered" style="margin-top: 12px;">
-        <button id="generateReportBtn" class="primary">
-          📋 Generar informe
-        </button>
-      </div>
-
-      <div class="grid centered" style="margin-top: 12px;">
-        <button id="cameraBtn" class="primary">
-          📷 Afegir foto al client
-        </button>
-      </div>
-
-
       
-      <!-- Galería (se llenará por JS) -->
+      <!-- 🔥 GALERÍA DE FOTOS (CRÍTICO - ESTO ESTABA FUERA DE LUGAR) -->
       <div id="photoGallery" class="photo-gallery"></div>
+
     </section>
 
-    <!-- PANEL: AccIONS FINALS DEL CLIENT -->
-<section class="panel" id="clientFinalActions">
-
-   
-  <div class="grid full-actions" style="margin-top: 12px;">
-    <button id="historyBtn">📂 Clients tancats</button>
-    <button id="closeClient" class="danger">✅ Tancar</button>
-  </div>
-
-</section>
+    <!-- PANEL: ACCIONS FINALS DEL CLIENT -->
+    <section class="panel" id="clientFinalActions">
+      <div class="grid full-actions" style="margin-top: 12px;">
+        <button id="historyBtn">📂 Clients tancats</button>
+        <button id="closeClient" class="danger">✅ Tancar</button>
+      </div>
+    </section>
 
 
     <!-- BACKUP Y GESTIÓN -->
