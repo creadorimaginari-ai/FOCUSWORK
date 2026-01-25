@@ -777,24 +777,29 @@ async function confirmDeletePhoto() {
   const client = await loadClient(state.currentClientId);
   if (!client) return;
   
-  // Filtrar la foto
-  client.photos = client.photos.filter(f => f.id !== photoToDelete);
-  
-  // Guardar client
-  await saveClient(client);
-  
-  // Tancar modal
-  closeModal('modalDeletePhoto');
-  
-  // Reset variable
-  const deletedId = photoToDelete;
-  photoToDelete = null;
-  
-  // Re-carregar client actualitzat i renderitzar
-  const updatedClient = await loadClient(state.currentClientId);
-  await renderPhotoGallery(updatedClient);
-  
-  showAlert('Foto eliminada', 'La foto s\'ha eliminat correctament', '✅');
+  try {
+    // 1️⃣ ESBORRAR DE INDEXEDDB PRIMER (AIXÒ ÉS EL QUE FALTAVA!)
+    await dbDelete('photos', photoToDelete);
+    
+    // 2️⃣ ACTUALITZAR ARRAY LOCAL
+    client.photos = client.photos.filter(f => f.id !== photoToDelete);
+    
+    // 3️⃣ TANCAR MODAL
+    closeModal('modalDeletePhoto');
+    
+    // 4️⃣ RESET VARIABLE
+    const deletedId = photoToDelete;
+    photoToDelete = null;
+    
+    // 5️⃣ RE-CARREGAR I RENDERITZAR
+    const updatedClient = await loadClient(state.currentClientId);
+    await renderPhotoGallery(updatedClient);
+    
+    showAlert('Foto eliminada', 'La foto s\'ha eliminat correctament', '✅');
+  } catch (e) {
+    console.error('Error esborrant foto:', e);
+    showAlert('Error', 'No s\'ha pogut esborrar la foto', '❌');
+  }
 }
 
 /* ================= WORKPAD OPTIMIZADO ================= */
