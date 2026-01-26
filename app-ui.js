@@ -1632,9 +1632,10 @@ function updateLightboxDisplay() {
   if (img) img.src = photo.data;
 
   const commentInput = $('lightboxComment');
-  if (commentInput) {
-    commentInput.value = photo.comment || '';
-    commentInput.oninput = () => savePhotoComment(commentInput.value);
+if (commentInput) {
+  commentInput.value = photo.comment || '';
+  commentInput.oninput = () => savePhotoComment(commentInput.value);
+}  // ⬅️ AFEGIR AQUESTA CLAU!
   
   const counter = $('lightboxCounter');
   if (counter) {
