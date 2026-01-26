@@ -1333,7 +1333,9 @@ button.secondary:hover,
   from { opacity: 0; }
   to { opacity: 1; }
    }
-/* ================= LIGHTBOX STYLES ================= */
+/* ================= LIGHTBOX - FIXES ================= */
+
+/* CRÍTICO: Establir jerarquia de z-index correcta */
 .lightbox-overlay {
   position: fixed;
   top: 0;
@@ -1344,7 +1346,7 @@ button.secondary:hover,
   z-index: 10000;
   display: none;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between; /* Canviat de center a space-between */
   align-items: center;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -1356,86 +1358,55 @@ button.secondary:hover,
 }
 
 .lightbox-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative; /* Canviat de absolute a relative */
+  width: 100%;
   padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-  z-index: 10002;
+  z-index: 10003;
+  flex-shrink: 0; /* No es comprimeix */
 }
 
-.lightbox-info {
-  color: white;
-  font-size: 14px;
-}
-
-.lightbox-counter {
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.lightbox-date {
-  opacity: 0.8;
-  margin-top: 4px;
-}
-
-.lightbox-close {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  font-size: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  backdrop-filter: blur(10px);
-}
-
-.lightbox-close:hover {
-  background: rgba(255,255,255,0.2);
-  transform: scale(1.1);
-}
-
-.lightbox-image-container {
+/* Container principal del canvas - fixar desbordament */
+.lightbox-canvas-container {
   position: relative;
   width: 100%;
-  height: 100%;
+  max-width: 90vw;
+  max-height: 60vh; /* Limitar altura per deixar espai als botons */
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 80px 20px 100px;
-  box-sizing: border-box;
+  flex-shrink: 1; /* Permet compressió si cal */
+  overflow: hidden; /* Evita desbordament */
+  margin: 10px 0; /* Espai superior i inferior */
 }
 
-.lightbox-image {
+#photoCanvas {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;
-  user-select: none;
-  transition: transform 0.3s ease;
-  cursor: grab;
-  animation: fadeIn 0.3s ease;
+  width: auto;
+  height: auto;
+  cursor: default;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: block;
+  touch-action: none; /* CRUCIAL: evita scroll mentre es dibuixa */
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+#photoCanvas.drawing-mode {
+  cursor: crosshair !important;
+  touch-action: none; /* Desactiva gestos del navegador mentre es dibuixa */
 }
 
+/* Botons de navegació - ara amb z-index més alt */
 .lightbox-nav {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
   color: white;
   width: 50px;
   height: 50px;
@@ -1447,11 +1418,12 @@ button.secondary:hover,
   justify-content: center;
   transition: all 0.2s;
   backdrop-filter: blur(10px);
-  z-index: 10001;
+  z-index: 10004; /* Més alt que l'editor */
+  pointer-events: auto; /* Assegurar que són clicables */
 }
 
 .lightbox-nav:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.25);
   transform: translateY(-50%) scale(1.1);
 }
 
@@ -1466,88 +1438,50 @@ button.secondary:hover,
 }
 
 .lightbox-nav-prev {
-  left: 20px;
+  left: 10px;
 }
 
 .lightbox-nav-next {
-  right: 20px;
+  right: 10px;
 }
 
+/* Editor toolbar - ara separat dels altres botons */
+.editor-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  background: rgba(30, 41, 59, 0.95);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  z-index: 10001;
+  width: 100%;
+  max-width: 90vw;
+  box-sizing: border-box;
+  margin: 10px 0;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  flex-shrink: 0; /* No es comprimeix */
+}
+
+/* Footer amb comentaris i botons - fixar posició */
 .lightbox-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative; /* Canviat de absolute a relative */
+  width: 100%;
   padding: 20px;
   display: flex;
-  gap: 10px;
-  justify-content: center;
+  flex-direction: column;
+  gap: 15px;
   background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
   z-index: 10002;
+  flex-shrink: 0; /* No es comprimeix */
 }
 
-.lightbox-btn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.lightbox-btn:hover {
-  background: rgba(255,255,255,0.2);
-  transform: translateY(-2px);
-}
-
-.lightbox-btn.danger {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
-}
-
-.lightbox-btn.danger:hover {
-  background: rgba(239, 68, 68, 0.3);
-}
-
-@media (max-width: 768px) {
-  .lightbox-nav {
-    width: 45px;
-    height: 45px;
-    font-size: 20px;
-  }
-  
-  .lightbox-nav-prev {
-    left: 10px;
-  }
-  
-  .lightbox-nav-next {
-    right: 10px;
-  }
-  
-  .lightbox-footer {
-    flex-wrap: wrap;
-    padding: 15px;
-  }
-  
-  .lightbox-btn {
-    padding: 10px 16px;
-    font-size: 13px;
-  }
-  
-  .lightbox-header {
-    padding: 15px;
-  }
 .lightbox-comment-container {
   width: 100%;
   max-width: 600px;
-  margin: 0 auto 15px;
+  margin: 0 auto;
 }
 
 .lightbox-comment-input {
@@ -1583,69 +1517,61 @@ button.secondary:hover,
   flex-wrap: wrap;
 }
 
-@media (max-width: 768px) {
-  .lightbox-comment-input {
-    font-size: 13px;
-    padding: 10px 14px;
-    min-height: 50px;
-  }
-  
-  .lightbox-comment-container {
-    margin-bottom: 10px;
-  }
-/* ================= EDITOR DE FOTOS ================= */
-.lightbox-canvas-container {
-  position: relative;
-  max-width: 90vw;
-  max-height: calc(100vh - 300px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#photoCanvas {
-  max-width: 100%;
-  max-height: 100%;
-  cursor: default;
-  border-radius: 8px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  display: block;
-}
-
-#photoCanvas.drawing-mode {
-  cursor: crosshair !important;
-}
-
-.editor-toolbar {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  margin-top: 10px;
-  padding: 10px;
-  background: rgba(0,0,0,0.5);
-  border-radius: 12px;
+.lightbox-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
   backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
+.lightbox-btn:hover {
+  background: rgba(255,255,255,0.2);
+  transform: translateY(-2px);
+}
+
+.lightbox-btn.danger {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.lightbox-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+/* Botons de l'editor */
 .editor-btn-small {
   background: rgba(255,255,255,0.1);
   border: 1px solid rgba(255,255,255,0.2);
   color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .editor-btn-small:hover {
   background: rgba(255,255,255,0.2);
   transform: translateY(-1px);
+}
+
+.editor-btn-small:active {
+  transform: translateY(0);
 }
 
 .editor-btn-small.active {
@@ -1660,6 +1586,7 @@ button.secondary:hover,
   cursor: pointer;
   border: 3px solid rgba(255,255,255,0.3);
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .color-picker-mini:hover {
@@ -1676,21 +1603,143 @@ button.secondary:hover,
 .size-slider-mini {
   width: 80px;
   accent-color: #3b82f6;
+  flex-shrink: 0;
 }
 
+/* MÒBIL - Ajustos específics */
 @media (max-width: 768px) {
+  .lightbox-canvas-container {
+    max-height: 50vh; /* Menys altura al mòbil per deixar més espai */
+  }
+
+  .lightbox-header {
+    padding: 15px;
+  }
+
+  .lightbox-footer {
+    padding: 15px;
+    gap: 12px;
+  }
+
   .editor-toolbar {
     gap: 6px;
-    padding: 8px;
+    padding: 10px;
+    max-width: 95vw;
   }
   
   .editor-btn-small {
-    padding: 6px 10px;
+    padding: 8px 10px;
     font-size: 11px;
+    gap: 4px;
+  }
+  
+  .editor-btn-small span:last-child {
+    display: none; /* Ocultar text al mòbil, només icones */
   }
   
   .color-picker-mini {
     width: 28px;
     height: 28px;
+    border-width: 2px;
   }
+  
+  .color-picker-mini.active {
+    border-width: 3px;
+  }
+
+  .size-slider-mini {
+    width: 60px;
+  }
+
+  .lightbox-nav {
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+  
+  .lightbox-nav-prev {
+    left: 5px;
+  }
+  
+  .lightbox-nav-next {
+    right: 5px;
+  }
+
+  .lightbox-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .lightbox-comment-input {
+    font-size: 13px;
+    padding: 10px 14px;
+    min-height: 50px;
+  }
+}
+
+/* TABLETS */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .lightbox-canvas-container {
+    max-height: 65vh;
+  }
+}
+
+/* PC / DESKTOP */
+@media (min-width: 1025px) {
+  .lightbox-canvas-container {
+    max-height: 70vh;
+    max-width: 85vw;
+  }
+
+  .editor-toolbar {
+    max-width: 800px;
+  }
+
+  .lightbox-footer {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}
+
+/* Info adicional de la lightbox */
+.lightbox-info {
+  color: white;
+  font-size: 14px;
+}
+
+.lightbox-counter {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.lightbox-date {
+  opacity: 0.8;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.lightbox-close {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.2);
+  transform: scale(1.1);
+}
+
+.lightbox-close:active {
+  transform: scale(0.95);
 }
