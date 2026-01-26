@@ -1628,9 +1628,32 @@ function updateLightboxDisplay() {
   const photo = photos[currentLightboxIndex];
   if (!photo) return;
   
-  const img = $('lightboxImage');
-  if (img) img.src = photo.data;
-
+  // Actualitzar canvas amb la imatge
+initPhotoCanvas();
+if (photoCanvas && photoCtx) {
+  const img = new Image();
+  img.onload = () => {
+    photoCanvas.width = img.width;
+    photoCanvas.height = img.height;
+    photoCtx.drawImage(img, 0, 0);
+    
+    // Guardar foto original
+    originalPhotoData = photo.data;
+    
+    // Iniciar historial
+    drawHistory = [];
+    saveDrawState();
+    
+    // Reset mode dibuix
+    drawingEnabled = false;
+    const btn = $('drawToggle');
+    const text = $('drawToggleText');
+    if (btn) btn.classList.remove('active');
+    if (text) text.textContent = 'Dibuixar';
+    photoCanvas.classList.remove('drawing-mode');
+  };
+  img.src = photo.data;
+}
   const commentInput = $('lightboxComment');
 if (commentInput) {
   commentInput.value = photo.comment || '';
@@ -1802,6 +1825,9 @@ let touchEndX = 0;
 document.addEventListener('DOMContentLoaded', () => {
   const lightbox = $('lightbox');
   if (!lightbox) return;
+  // Inicialitzar canvas d'edició
+initPhotoCanvas();
+setupCanvasDrawing();
   
   lightbox.addEventListener('touchstart', (e) => {
     touchStartX = e.changedTouches[0].screenX;
@@ -1855,7 +1881,199 @@ async function savePhotoComment(comment) {
     }
   }, 1000);
 }
+/* ================= EDITOR DE DIBUIX PER FOTOS ================= */
+let photoCanvas = null;
+let photoCtx = null;
+let isDrawingOnPhoto = false;
+let drawingEnabled = false;
+let drawColor = '#ef4444';
+let drawSize = 3;
+let drawHistory = [];
+let originalPhotoData = null;
 
+function initPhotoCanvas() {
+  photoCanvas = $('photoCanvas');
+  if (!photoCanvas) return;
+  photoCtx = photoCanvas.getContext('2d');
+}
+
+function toggleDrawing() {
+  drawingEnabled = !drawingEnabled;
+  const btn = $('drawToggle');
+  const text = $('drawToggleText');
+  const canvas = $('photoCanvas');
+  
+  if (drawingEnabled) {
+    btn.classList.add('active');
+    text.textContent = 'Activat';
+    canvas.classList.add('drawing-mode');
+  } else {
+    btn.classList.remove('active');
+    text.textContent = 'Dibuixar';
+    canvas.classList.remove('drawing-mode');
+  }
+}
+
+function setDrawColor(color) {
+  drawColor = color;
+  document.querySelectorAll('.color-picker-mini').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.color === color) {
+      btn.classList.add('active');
+    }
+  });
+}
+
+function updateDrawSize(size) {
+  drawSize = parseInt(size);
+}
+
+function saveDrawState() {
+  if (!photoCanvas) return;
+  drawHistory.push(photoCanvas.toDataURL());
+  if (drawHistory.length > 20) {
+    drawHistory.shift();
+  }
+}
+
+function undoDraw() {
+  if (drawHistory.length > 1) {
+    drawHistory.pop();
+    const previousState = drawHistory[drawHistory.length - 1];
+    const img = new Image();
+    img.onload = () => {
+      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
+      photoCtx.drawImage(img, 0, 0);
+    };
+    img.src = previousState;
+  }
+}
+
+function clearDrawing() {
+  if (!confirm('🗑️ Vols esborrar tots els dibuixos i tornar a la foto original?')) return;
+  
+  if (originalPhotoData) {
+    const img = new Image();
+    img.onload = () => {
+      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
+      photoCtx.drawImage(img, 0, 0);
+      drawHistory = [];
+      saveDrawState();
+    };
+    img.src = originalPhotoData;
+  }
+}
+
+async function saveEditedPhoto() {
+  if (!photoCanvas || !window.currentClientPhotos) return;
+  
+  const confirmed = confirm('💾 Vols guardar els canvis a aquesta foto?\n\nLa foto original serà substituïda.');
+  if (!confirmed) return;
+  
+  try {
+    const editedData = photoCanvas.toDataURL('image/jpeg', 0.85);
+    const photo = window.currentClientPhotos[currentLightboxIndex];
+    
+    // Actualitzar dades
+    photo.data = editedData;
+    originalPhotoData = editedData;
+    
+    // Guardar a IndexedDB
+    await dbPut('photos', {
+      id: photo.id,
+      clientId: state.currentClientId,
+      data: photo.data,
+      date: photo.date,
+      comment: photo.comment || ""
+    });
+    
+    // Re-generar historial
+    drawHistory = [];
+    saveDrawState();
+    
+    showAlert('Foto guardada', 'Els canvis s\'han guardat correctament', '✅');
+  } catch (e) {
+    console.error('Error guardant foto editada:', e);
+    showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
+  }
+}
+
+// Event listeners per dibuixar
+function setupCanvasDrawing() {
+  if (!photoCanvas) return;
+  
+  let lastX = 0;
+  let lastY = 0;
+  
+  function getCanvasPos(e) {
+    const rect = photoCanvas.getBoundingClientRect();
+    const scaleX = photoCanvas.width / rect.width;
+    const scaleY = photoCanvas.height / rect.height;
+    
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
+  
+  function startDrawing(e) {
+    if (!drawingEnabled) return;
+    e.preventDefault();
+    isDrawingOnPhoto = true;
+    const pos = getCanvasPos(e);
+    lastX = pos.x;
+    lastY = pos.y;
+  }
+  
+  function draw(e) {
+    if (!isDrawingOnPhoto || !drawingEnabled) return;
+    e.preventDefault();
+    
+    const pos = getCanvasPos(e);
+    
+    photoCtx.strokeStyle = drawColor;
+    photoCtx.lineWidth = drawSize;
+    photoCtx.lineCap = 'round';
+    photoCtx.lineJoin = 'round';
+    
+    photoCtx.beginPath();
+    photoCtx.moveTo(lastX, lastY);
+    photoCtx.lineTo(pos.x, pos.y);
+    photoCtx.stroke();
+    
+    lastX = pos.x;
+    lastY = pos.y;
+  }
+  
+  function stopDrawing() {
+    if (isDrawingOnPhoto) {
+      isDrawingOnPhoto = false;
+      saveDrawState();
+    }
+  }
+  
+  // Mouse events
+  photoCanvas.addEventListener('mousedown', startDrawing);
+  photoCanvas.addEventListener('mousemove', draw);
+  photoCanvas.addEventListener('mouseup', stopDrawing);
+  photoCanvas.addEventListener('mouseleave', stopDrawing);
+  
+  // Touch events
+  photoCanvas.addEventListener('touchstart', startDrawing);
+  photoCanvas.addEventListener('touchmove', draw);
+  photoCanvas.addEventListener('touchend', stopDrawing);
+}
+
+// Exportar funcions
+window.toggleDrawing = toggleDrawing;
+window.setDrawColor = setDrawColor;
+window.updateDrawSize = updateDrawSize;
+window.undoDraw = undoDraw;
+window.clearDrawing = clearDrawing;
+window.saveEditedPhoto = saveEditedPhoto;
 window.savePhotoComment = savePhotoComment;
   
 // Exportar funcions globals
