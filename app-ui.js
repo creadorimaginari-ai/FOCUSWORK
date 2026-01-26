@@ -1697,7 +1697,13 @@ if (commentInput) {
   }
 }
 
+
 function prevPhoto() {
+  if (drawHistory.length > 1 && drawingEnabled) {
+    const confirmed = confirm('⚠️ Tens dibuixos sense guardar. Vols canviar de foto igualment?\n\nPrem "Guardar canvis" abans de canviar de foto per no perdre els dibuixos.');
+    if (!confirmed) return;
+  }
+  
   if (currentLightboxIndex > 0) {
     currentLightboxIndex--;
     updateLightboxDisplay();
@@ -1705,13 +1711,17 @@ function prevPhoto() {
 }
 
 function nextPhoto() {
+  if (drawHistory.length > 1 && drawingEnabled) {
+    const confirmed = confirm('⚠️ Tens dibuixos sense guardar. Vols canviar de foto igualment?\n\nPrem "Guardar canvis" abans de canviar de foto per no perdre els dibuixos.');
+    if (!confirmed) return;
+  }
+  
   const photos = window.currentClientPhotos;
   if (photos && currentLightboxIndex < photos.length - 1) {
     currentLightboxIndex++;
     updateLightboxDisplay();
   }
 }
-
 async function downloadCurrentPhoto() {
   const photos = window.currentClientPhotos;
   if (!photos || !photos[currentLightboxIndex]) return;
@@ -1818,40 +1828,61 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Touch swipe per mòbil
+
+// Touch swipe per mòbil - VARIABLES MILLORADES
 let touchStartX = 0;
 let touchEndX = 0;
+let touchStartY = 0;
+let touchEndY = 0;
+let isTouchOnCanvas = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   const lightbox = $('lightbox');
   if (!lightbox) return;
-  // Inicialitzar canvas d'edició
-initPhotoCanvas();
-setupCanvasDrawing();
   
+  // Inicialitzar canvas d'edició
+  initPhotoCanvas();
+  setupCanvasDrawing();
+  
+  // CRÍTICO: Gestió millorada de touch events
   lightbox.addEventListener('touchstart', (e) => {
     touchStartX = e.changedTouches[0].screenX;
-  });
+    touchStartY = e.changedTouches[0].screenY;
+    
+    const canvas = $('photoCanvas');
+    if (canvas && e.target === canvas) {
+      isTouchOnCanvas = true;
+    } else {
+      isTouchOnCanvas = false;
+    }
+  }, { passive: false });
   
   lightbox.addEventListener('touchend', (e) => {
     touchEndX = e.changedTouches[0].screenX;
-    handleLightboxSwipe();
-  });
+    touchEndY = e.changedTouches[0].screenY;
+    
+    if (!drawingEnabled && !isTouchOnCanvas) {
+      handleLightboxSwipe();
+    }
+    
+    isTouchOnCanvas = false;
+  }, { passive: false });
 });
 
 function handleLightboxSwipe() {
-  const diff = touchStartX - touchEndX;
-  const threshold = 50;
+  const diffX = touchStartX - touchEndX;
+  const diffY = Math.abs(touchStartY - touchEndY);
+  const thresholdX = 50;
+  const thresholdY = 30;
   
-  if (Math.abs(diff) < threshold) return;
+  if (Math.abs(diffX) < thresholdX || diffY > thresholdY) return;
   
-  if (diff > 0) {
+  if (diffX > 0) {
     nextPhoto();
   } else {
     prevPhoto();
   }
 }
-
 /* ================= COMENTARIS DE FOTOS ================= */
 let photoCommentTimeout = null;
 
@@ -1964,368 +1995,7 @@ function clearDrawing() {
   }
 }
 
-async function saveEditedPhoto() {
-  if (!photoCanvas || !window.currentClientPhotos) return;
-  
-  const confirmed = confirm('💾 Vols guardar els canvis a aquesta foto?\n\nLa foto original serà substituïda.');
-  if (!confirmed) return;
-  
-  try {
-    const editedData = photoCanvas.toDataURL('image/jpeg', 0.85);
-    const photo = window.currentClientPhotos[currentLightboxIndex];
-    
-    // Actualitzar dades
-    photo.data = editedData;
-    originalPhotoData = editedData;
-    
-    // Guardar a IndexedDB
-    await dbPut('photos', {
-      id: photo.id,
-      clientId: state.currentClientId,
-      data: photo.data,
-      date: photo.date,
-      comment: photo.comment || ""
-    });
-    
-    // Re-generar historial
-    drawHistory = [];
-    saveDrawState();
-    
-    showAlert('Foto guardada', 'Els canvis s\'han guardat correctament', '✅');
-  } catch (e) {
-    console.error('Error guardant foto editada:', e);
-    showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
-  }
-}
 
-// Event listeners per dibuixar
-function setupCanvasDrawing() {
-  if (!photoCanvas) return;
-  
-  let lastX = 0;
-  let lastY = 0;
-  
-  function getCanvasPos(e) {
-    const rect = photoCanvas.getBoundingClientRect();
-    const scaleX = photoCanvas.width / rect.width;
-    const scaleY = photoCanvas.height / rect.height;
-    
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
-    };
-  }
-  
-  function startDrawing(e) {
-    if (!drawingEnabled) return;
-    e.preventDefault();
-    isDrawingOnPhoto = true;
-    const pos = getCanvasPos(e);
-    lastX = pos.x;
-    lastY = pos.y;
-  }
-  
-  function draw(e) {
-    if (!isDrawingOnPhoto || !drawingEnabled) return;
-    e.preventDefault();
-    
-    const pos = getCanvasPos(e);
-    
-    photoCtx.strokeStyle = drawColor;
-    photoCtx.lineWidth = drawSize;
-    photoCtx.lineCap = 'round';
-    photoCtx.lineJoin = 'round';
-    
-    photoCtx.beginPath();
-    photoCtx.moveTo(lastX, lastY);
-    photoCtx.lineTo(pos.x, pos.y);
-    photoCtx.stroke();
-    
-    lastX = pos.x;
-    lastY = pos.y;
-  }
-  
-  function stopDrawing() {
-    if (isDrawingOnPhoto) {
-      isDrawingOnPhoto = false;
-      saveDrawState();
-    }
-  }
-  
-  // Mouse events
-  photoCanvas.addEventListener('mousedown', startDrawing);
-  photoCanvas.addEventListener('mousemove', draw);
-  photoCanvas.addEventListener('mouseup', stopDrawing);
-  photoCanvas.addEventListener('mouseleave', stopDrawing);
-  
-  // Touch events
-  photoCanvas.addEventListener('touchstart', startDrawing);
-  photoCanvas.addEventListener('touchmove', draw);
-  photoCanvas.addEventListener('touchend', stopDrawing);
-}
-
-// Exportar funcions
-window.toggleDrawing = toggleDrawing;
-window.setDrawColor = setDrawColor;
-window.updateDrawSize = updateDrawSize;
-window.undoDraw = undoDraw;
-window.clearDrawing = clearDrawing;
-window.saveEditedPhoto = saveEditedPhoto;
-window.savePhotoComment = savePhotoComment;
-  
-// Exportar funcions globals
-window.openLightbox = openLightbox;
-window.closeLightbox = closeLightbox;
-window.prevPhoto = prevPhoto;
-window.nextPhoto = nextPhoto;
-window.downloadCurrentPhoto = downloadCurrentPhoto;
-window.shareCurrentPhoto = shareCurrentPhoto;
-window.deleteCurrentPhoto = deleteCurrentPhoto;
-/* ================= FIXES PER LIGHTBOX I EDITOR DE FOTOS ================= */
-
-// Variables globals per gestió de touch events
-let touchStartX = 0;
-let touchEndX = 0;
-let touchStartY = 0;
-let touchEndY = 0;
-let isTouchOnCanvas = false;
-
-// Reemplaçar l'event listener del lightbox existent
-document.addEventListener('DOMContentLoaded', () => {
-  const lightbox = $('lightbox');
-  if (!lightbox) return;
-  
-  // Inicialitzar canvas d'edició
-  initPhotoCanvas();
-  setupCanvasDrawing();
-  
-  // CRÍTICO: Gestió millorada de touch events per evitar canvis de foto mentre es dibuixa
-  lightbox.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-    
-    // Detectar si el touch és sobre el canvas
-    const canvas = $('photoCanvas');
-    if (canvas && e.target === canvas) {
-      isTouchOnCanvas = true;
-    } else {
-      isTouchOnCanvas = false;
-    }
-  }, { passive: false });
-  
-  lightbox.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    touchEndY = e.changedTouches[0].screenY;
-    
-    // NOMÉS processar swipe si NO estem dibuixant i NO és sobre el canvas
-    if (!drawingEnabled && !isTouchOnCanvas) {
-      handleLightboxSwipe();
-    }
-    
-    isTouchOnCanvas = false;
-  }, { passive: false });
-});
-
-function handleLightboxSwipe() {
-  const diffX = touchStartX - touchEndX;
-  const diffY = Math.abs(touchStartY - touchEndY);
-  const thresholdX = 50;
-  const thresholdY = 30;
-  
-  // Només processar swipe horitzontal si no hi ha massa moviment vertical
-  if (Math.abs(diffX) < thresholdX || diffY > thresholdY) return;
-  
-  if (diffX > 0) {
-    nextPhoto();
-  } else {
-    prevPhoto();
-  }
-}
-
-// Event listeners millorats per dibuixar
-function setupCanvasDrawing() {
-  if (!photoCanvas) return;
-  
-  let lastX = 0;
-  let lastY = 0;
-  
-  function getCanvasPos(e) {
-    const rect = photoCanvas.getBoundingClientRect();
-    const scaleX = photoCanvas.width / rect.width;
-    const scaleY = photoCanvas.height / rect.height;
-    
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
-    };
-  }
-  
-  function startDrawing(e) {
-    if (!drawingEnabled) return;
-    e.preventDefault(); // Evita scroll
-    e.stopPropagation(); // Evita que l'event pugi
-    isDrawingOnPhoto = true;
-    const pos = getCanvasPos(e);
-    lastX = pos.x;
-    lastY = pos.y;
-  }
-  
-  function draw(e) {
-    if (!isDrawingOnPhoto || !drawingEnabled) return;
-    e.preventDefault(); // Evita scroll
-    e.stopPropagation(); // Evita que l'event pugi
-    
-    const pos = getCanvasPos(e);
-    
-    photoCtx.strokeStyle = drawColor;
-    photoCtx.lineWidth = drawSize;
-    photoCtx.lineCap = 'round';
-    photoCtx.lineJoin = 'round';
-    
-    photoCtx.beginPath();
-    photoCtx.moveTo(lastX, lastY);
-    photoCtx.lineTo(pos.x, pos.y);
-    photoCtx.stroke();
-    
-    lastX = pos.x;
-    lastY = pos.y;
-  }
-  
-  function stopDrawing(e) {
-    if (isDrawingOnPhoto) {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      isDrawingOnPhoto = false;
-      saveDrawState();
-    }
-  }
-  
-  // Mouse events
-  photoCanvas.addEventListener('mousedown', startDrawing, { passive: false });
-  photoCanvas.addEventListener('mousemove', draw, { passive: false });
-  photoCanvas.addEventListener('mouseup', stopDrawing, { passive: false });
-  photoCanvas.addEventListener('mouseleave', stopDrawing, { passive: false });
-  
-  // Touch events amb passive: false per poder prevenir el comportament per defecte
-  photoCanvas.addEventListener('touchstart', startDrawing, { passive: false });
-  photoCanvas.addEventListener('touchmove', draw, { passive: false });
-  photoCanvas.addEventListener('touchend', stopDrawing, { passive: false });
-  photoCanvas.addEventListener('touchcancel', stopDrawing, { passive: false });
-}
-
-// Millorar la funció updateLightboxDisplay per assegurar que el canvas no activa swipe
-function updateLightboxDisplay() {
-  const photos = window.currentClientPhotos;
-  if (!photos || !photos.length) return;
-  
-  const photo = photos[currentLightboxIndex];
-  if (!photo) return;
-  
-  // Actualitzar canvas amb la imatge
-  initPhotoCanvas();
-  if (photoCanvas && photoCtx) {
-    const img = new Image();
-    img.onload = () => {
-      photoCanvas.width = img.width;
-      photoCanvas.height = img.height;
-      photoCtx.drawImage(img, 0, 0);
-      
-      // Guardar foto original
-      originalPhotoData = photo.data;
-      
-      // Iniciar historial
-      drawHistory = [];
-      saveDrawState();
-      
-      // Reset mode dibuix
-      drawingEnabled = false;
-      const btn = $('drawToggle');
-      const text = $('drawToggleText');
-      if (btn) btn.classList.remove('active');
-      if (text) text.textContent = 'Dibuixar';
-      photoCanvas.classList.remove('drawing-mode');
-    };
-    img.src = photo.data;
-  }
-  
-  const commentInput = $('lightboxComment');
-  if (commentInput) {
-    commentInput.value = photo.comment || '';
-    commentInput.oninput = () => savePhotoComment(commentInput.value);
-  }
-  
-  const counter = $('lightboxCounter');
-  if (counter) {
-    counter.textContent = `${currentLightboxIndex + 1} / ${photos.length}`;
-  }
-  
-  const dateEl = $('lightboxDate');
-  if (dateEl) {
-    const date = new Date(photo.date);
-    dateEl.textContent = date.toLocaleDateString('ca-ES', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-  
-  const prevBtn = document.querySelector('.lightbox-nav-prev');
-  const nextBtn = document.querySelector('.lightbox-nav-next');
-  
-  if (prevBtn) {
-    if (currentLightboxIndex === 0) {
-      prevBtn.classList.add('disabled');
-    } else {
-      prevBtn.classList.remove('disabled');
-    }
-  }
-  
-  if (nextBtn) {
-    if (currentLightboxIndex === photos.length - 1) {
-      nextBtn.classList.add('disabled');
-    } else {
-      nextBtn.classList.remove('disabled');
-    }
-  }
-}
-
-// Afegir missatge d'avís abans de canviar de foto si hi ha dibuixos sense guardar
-function prevPhoto() {
-  if (drawHistory.length > 1 && drawingEnabled) {
-    const confirmed = confirm('⚠️ Tens dibuixos sense guardar. Vols canviar de foto igualment?\n\nPrem "Guardar canvis" abans de canviar de foto per no perdre els dibuixos.');
-    if (!confirmed) return;
-  }
-  
-  if (currentLightboxIndex > 0) {
-    currentLightboxIndex--;
-    updateLightboxDisplay();
-  }
-}
-
-function nextPhoto() {
-  if (drawHistory.length > 1 && drawingEnabled) {
-    const confirmed = confirm('⚠️ Tens dibuixos sense guardar. Vols canviar de foto igualment?\n\nPrem "Guardar canvis" abans de canviar de foto per no perdre els dibuixos.');
-    if (!confirmed) return;
-  }
-  
-  const photos = window.currentClientPhotos;
-  if (photos && currentLightboxIndex < photos.length - 1) {
-    currentLightboxIndex++;
-    updateLightboxDisplay();
-  }
-}
-
-// Millorar la funció saveEditedPhoto per avisar si hi ha mode dibuix actiu
 async function saveEditedPhoto() {
   if (!photoCanvas || !window.currentClientPhotos) return;
   
@@ -2370,9 +2040,96 @@ async function saveEditedPhoto() {
   }
 }
 
-// Exportar funcions actualitzades
-window.updateLightboxDisplay = updateLightboxDisplay;
+// Event listeners per dibuixar - MILLORATS
+function setupCanvasDrawing() {
+  if (!photoCanvas) return;
+  
+  let lastX = 0;
+  let lastY = 0;
+  
+  function getCanvasPos(e) {
+    const rect = photoCanvas.getBoundingClientRect();
+    const scaleX = photoCanvas.width / rect.width;
+    const scaleY = photoCanvas.height / rect.height;
+    
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
+  
+  function startDrawing(e) {
+    if (!drawingEnabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+    isDrawingOnPhoto = true;
+    const pos = getCanvasPos(e);
+    lastX = pos.x;
+    lastY = pos.y;
+  }
+  
+  function draw(e) {
+    if (!isDrawingOnPhoto || !drawingEnabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const pos = getCanvasPos(e);
+    
+    photoCtx.strokeStyle = drawColor;
+    photoCtx.lineWidth = drawSize;
+    photoCtx.lineCap = 'round';
+    photoCtx.lineJoin = 'round';
+    
+    photoCtx.beginPath();
+    photoCtx.moveTo(lastX, lastY);
+    photoCtx.lineTo(pos.x, pos.y);
+    photoCtx.stroke();
+    
+    lastX = pos.x;
+    lastY = pos.y;
+  }
+  
+  function stopDrawing(e) {
+    if (isDrawingOnPhoto) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      isDrawingOnPhoto = false;
+      saveDrawState();
+    }
+  }
+  
+  // Mouse events
+  photoCanvas.addEventListener('mousedown', startDrawing, { passive: false });
+  photoCanvas.addEventListener('mousemove', draw, { passive: false });
+  photoCanvas.addEventListener('mouseup', stopDrawing, { passive: false });
+  photoCanvas.addEventListener('mouseleave', stopDrawing, { passive: false });
+  
+  // Touch events
+  photoCanvas.addEventListener('touchstart', startDrawing, { passive: false });
+  photoCanvas.addEventListener('touchmove', draw, { passive: false });
+  photoCanvas.addEventListener('touchend', stopDrawing, { passive: false });
+  photoCanvas.addEventListener('touchcancel', stopDrawing, { passive: false });
+}
+
+// Exportar funcions
+window.toggleDrawing = toggleDrawing;
+window.setDrawColor = setDrawColor;
+window.updateDrawSize = updateDrawSize;
+window.undoDraw = undoDraw;
+window.clearDrawing = clearDrawing;
+window.saveEditedPhoto = saveEditedPhoto;
+window.savePhotoComment = savePhotoComment;
+  
+// Exportar funcions globals
+window.openLightbox = openLightbox;
+window.closeLightbox = closeLightbox;
 window.prevPhoto = prevPhoto;
 window.nextPhoto = nextPhoto;
-window.saveEditedPhoto = saveEditedPhoto;
-window.setupCanvasDrawing = setupCanvasDrawing;
+window.downloadCurrentPhoto = downloadCurrentPhoto;
+window.shareCurrentPhoto = shareCurrentPhoto;
+window.deleteCurrentPhoto = deleteCurrentPhoto;
