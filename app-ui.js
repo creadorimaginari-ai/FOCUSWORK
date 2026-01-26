@@ -766,13 +766,37 @@ async function renderPhotoGallery(preloadedClient = null) {
   const fragment = document.createDocumentFragment();
   
   if (client && client.photos.length) {
-    [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
-      const img = document.createElement("img");
-      img.src = p.data;
-      img.className = "photo-thumb";
-      img.onclick = () => openLightbox(index);
-      fragment.appendChild(img);
-    });
+[...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
+  const container = document.createElement("div");
+  container.style.cssText = "position: relative; cursor: pointer;";
+  container.onclick = () => openLightbox(index);
+  
+  const img = document.createElement("img");
+  img.src = p.data;
+  img.className = "photo-thumb";
+  container.appendChild(img);
+  
+  // Mostrar badge si hi ha comentari
+  if (p.comment && p.comment.trim()) {
+    const badge = document.createElement("div");
+    badge.style.cssText = `
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      backdrop-filter: blur(5px);
+      pointer-events: none;
+    `;
+    badge.textContent = '💬';
+    container.appendChild(badge);
+  }
+  
+  fragment.appendChild(container);
+});
   }
   
   gallery.innerHTML = "";
@@ -1606,6 +1630,11 @@ function updateLightboxDisplay() {
   
   const img = $('lightboxImage');
   if (img) img.src = photo.data;
+
+  const commentInput = $('lightboxComment');
+  if (commentInput) {
+    commentInput.value = photo.comment || '';
+    commentInput.oninput = () => savePhotoComment(commentInput.value);
   
   const counter = $('lightboxCounter');
   if (counter) {
@@ -1796,6 +1825,38 @@ function handleLightboxSwipe() {
   }
 }
 
+/* ================= COMENTARIS DE FOTOS ================= */
+let photoCommentTimeout = null;
+
+async function savePhotoComment(comment) {
+  const photos = window.currentClientPhotos;
+  if (!photos || !photos[currentLightboxIndex]) return;
+  
+  const photo = photos[currentLightboxIndex];
+  photo.comment = comment;
+  
+  // Guardar després de 1 segon sense escriure
+  clearTimeout(photoCommentTimeout);
+  photoCommentTimeout = setTimeout(async () => {
+    try {
+      // Guardar a IndexedDB
+      await dbPut('photos', {
+        id: photo.id,
+        clientId: state.currentClientId,
+        data: photo.data,
+        date: photo.date,
+        comment: photo.comment || ""
+      });
+      
+      console.log('💬 Comentari guardat:', photo.comment);
+    } catch (e) {
+      console.error('Error guardant comentari:', e);
+    }
+  }, 1000);
+}
+
+window.savePhotoComment = savePhotoComment;
+  
 // Exportar funcions globals
 window.openLightbox = openLightbox;
 window.closeLightbox = closeLightbox;
