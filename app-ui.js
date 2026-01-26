@@ -714,11 +714,12 @@ async function addPhotoToClient() {
         
         const dataURL = canvas.toDataURL("image/jpeg", 0.7);
         
-        const photoObj = {
-          id: uid(),
-          date: new Date().toISOString(),
-          data: dataURL
-        };
+const photoObj = {
+  id: uid(),
+  date: new Date().toISOString(),
+  data: dataURL,
+  comment: ""  // ⬅️ AFEGIR AQUESTA LÍNIA
+};
         
         const currentClient = await loadClient(state.currentClientId);
         if (!currentClient) {
