@@ -648,7 +648,19 @@
     <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
   </div>
   
-  <div class="lightbox-footer">
+<div class="lightbox-footer">
+  <!-- Camp de comentari NOU -->
+  <div class="lightbox-comment-container">
+    <textarea 
+      id="lightboxComment" 
+      class="lightbox-comment-input" 
+      placeholder="💬 Afegeix un comentari a aquesta foto..."
+      rows="2"
+    ></textarea>
+  </div>
+  
+  <!-- Botons existents -->
+  <div class="lightbox-buttons">
     <button class="lightbox-btn" onclick="downloadCurrentPhoto()">
       <span>⬇️</span>
       <span>Descarregar</span>
