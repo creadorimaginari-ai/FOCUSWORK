@@ -714,12 +714,12 @@ async function addPhotoToClient() {
         
         const dataURL = canvas.toDataURL("image/jpeg", 0.7);
         
-const photoObj = {
-  id: uid(),
-  date: new Date().toISOString(),
-  data: dataURL,
-  comment: ""  // ⬅️ AFEGIR AQUESTA LÍNIA
-};
+        const photoObj = {
+          id: uid(),
+          date: new Date().toISOString(),
+          data: dataURL,
+          comment: ""
+        };
         
         const currentClient = await loadClient(state.currentClientId);
         if (!currentClient) {
@@ -1635,7 +1635,7 @@ function updateLightboxDisplay() {
 if (commentInput) {
   commentInput.value = photo.comment || '';
   commentInput.oninput = () => savePhotoComment(commentInput.value);
-}  // ⬅️ AFEGIR AQUESTA CLAU!
+}
   
   const counter = $('lightboxCounter');
   if (counter) {
