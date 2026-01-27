@@ -3,6 +3,40 @@
  * Llicències, Importació i Exportació
  *************************************************/
 
+/*
+ * CSS NECESSARI PER AL CORRECTE FUNCIONAMENT:
+ * 
+ * Afegeix aquest CSS al teu fitxer d'estils:
+ * 
+ * #photoGallery {
+ *   position: relative;
+ *   overflow: hidden;
+ * }
+ * 
+ * .photo-thumb {
+ *   position: relative;
+ *   z-index: 1;
+ * }
+ * 
+ * #photoContainer {
+ *   position: relative;
+ *   overflow: hidden;
+ * }
+ * 
+ * #lightboxPhoto {
+ *   position: absolute;
+ *   inset: 0;
+ *   z-index: 1;
+ * }
+ * 
+ * #photoCanvas {
+ *   position: absolute;
+ *   inset: 0;
+ *   z-index: 2;
+ *   pointer-events: auto;
+ * }
+ */
+
 /* ================= LLICÈNCIES ================= */
 async function loadLicenseFile() {
   const input = document.createElement('input');
@@ -1686,23 +1720,6 @@ if (photoCanvas && photoCtx) {
     
     // Inicialitzar sistema de dibuix (només una vegada)
     if (!photoCanvas._drawingInitialized) {
-     function getCanvasPoint(e) {
-  const rect = photoCanvas.getBoundingClientRect();
-
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-  let x = clientX - rect.left;
-  let y = clientY - rect.top;
-
-  const scaleX = photoCanvas.width / rect.width;
-  const scaleY = photoCanvas.height / rect.height;
-
-  return {
-    x: x * scaleX,
-    y: y * scaleY
-  };
-}
       setupCanvasDrawing();
       photoCanvas._drawingInitialized = true;
     }
@@ -2310,9 +2327,26 @@ async function saveEditedPhoto() {
   }
 }
 
-// Event listeners per dibuixar - MILLORATS
+// Funció global per obtenir coordenades del canvas
+function getCanvasPoint(e) {
+  const rect = photoCanvas.getBoundingClientRect();
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  const scaleX = photoCanvas.width / rect.width;
+  const scaleY = photoCanvas.height / rect.height;
+
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
+  };
+}
+
+// Event listeners per dibuixar - VERSIÓ FINAL CORRECTA
 function setupCanvasDrawing() {
-function setupCanvasDrawing() {
+  if (!photoCanvas || !photoCtx) return;
+
   let isDrawing = false;
 
   function startDraw(e) {
@@ -2326,7 +2360,7 @@ function setupCanvasDrawing() {
   }
 
   function draw(e) {
-    if (!isDrawing) return;
+    if (!isDrawing || !drawingEnabled) return;
     e.preventDefault();
 
     const { x, y } = getCanvasPoint(e);
@@ -2334,8 +2368,10 @@ function setupCanvasDrawing() {
     photoCtx.stroke();
   }
 
-  function endDraw() {
+  function endDraw(e) {
     if (!isDrawing) return;
+    if (e) e.preventDefault();
+
     isDrawing = false;
     photoCtx.closePath();
     saveDrawState();
@@ -2351,20 +2387,6 @@ function setupCanvasDrawing() {
   photoCanvas.addEventListener('touchstart', startDraw, { passive: false });
   photoCanvas.addEventListener('touchmove', draw, { passive: false });
   photoCanvas.addEventListener('touchend', endDraw);
-}
-
-  
-  // Mouse events
-  photoCanvas.addEventListener('mousedown', startDrawing, { passive: false });
-  photoCanvas.addEventListener('mousemove', draw, { passive: false });
-  photoCanvas.addEventListener('mouseup', stopDrawing, { passive: false });
-  photoCanvas.addEventListener('mouseleave', stopDrawing, { passive: false });
-  
-  // Touch events
-  photoCanvas.addEventListener('touchstart', startDrawing, { passive: false });
-  photoCanvas.addEventListener('touchmove', draw, { passive: false });
-  photoCanvas.addEventListener('touchend', stopDrawing, { passive: false });
-  photoCanvas.addEventListener('touchcancel', stopDrawing, { passive: false });
 }
 
 // Exportar funcions
