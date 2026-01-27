@@ -300,9 +300,12 @@ async function updateUI(preloadedClient = null) {
       exitContainer.style.display = client ? "block" : "none";
     }
     
-    // BOTO FLOTANT DESACTIVAT
     if (exitFloating) {
-      exitFloating.classList.add('hidden');
+      if (client && client.active) {
+        exitFloating.classList.remove('hidden');
+      } else {
+        exitFloating.classList.add('hidden');
+      }
     }
     
     if (deletePanel) {
@@ -499,11 +502,10 @@ async function selectClient(clientId) {
   
   state.currentClientId = clientId;
   
-  if (!previousClient) {
-    state.currentActivity = ACTIVITIES.WORK;
-    state.sessionElapsed = 0;
-    state.lastTick = Date.now();
-  }
+  // SEMPRE resetar el cronòmetre quan canvies de client
+  state.currentActivity = ACTIVITIES.WORK;
+  state.sessionElapsed = 0;
+  state.lastTick = Date.now();
   
   isWorkpadInitialized = false;
   areTasksInitialized = false;
@@ -1504,8 +1506,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('focusBtn')) $('focusBtn').onclick = showFocus;
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
-  // BOTO FLOTANT DESACTIVAT
-  // if ($('exitClientFloating')) $('exitClientFloating').onclick = exitClient;
+  if ($('exitClientFloating')) $('exitClientFloating').onclick = exitClient;
   
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
@@ -1572,7 +1573,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  updateBackupButtonStatus();
+  // NO actualitzar l'estat del botó de backup a l'inici
+  // Només comprovar-ho periòdicament cada 5 minuts
+  // updateBackupButtonStatus();
   setInterval(updateBackupButtonStatus, 5 * 60 * 1000);
 });
 
