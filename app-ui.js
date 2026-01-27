@@ -300,12 +300,9 @@ async function updateUI(preloadedClient = null) {
       exitContainer.style.display = client ? "block" : "none";
     }
     
+    // BOTO FLOTANT DESACTIVAT
     if (exitFloating) {
-      if (client && client.active) {
-        exitFloating.classList.remove('hidden');
-      } else {
-        exitFloating.classList.add('hidden');
-      }
+      exitFloating.classList.add('hidden');
     }
     
     if (deletePanel) {
@@ -1507,7 +1504,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('focusBtn')) $('focusBtn').onclick = showFocus;
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
-  if ($('exitClientFloating')) $('exitClientFloating').onclick = exitClient;
+  // BOTO FLOTANT DESACTIVAT
+  // if ($('exitClientFloating')) $('exitClientFloating').onclick = exitClient;
   
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
@@ -2287,12 +2285,12 @@ function getCanvasPos(e) {
   const clientX = e.clientX || (e.touches && e.touches[0].clientX);
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   
-  // Coordenades del cursor respecte al canvas visible
+  // Coordenades del cursor en la finestra
   const viewX = clientX - rect.left;
   const viewY = clientY - rect.top;
   
+  // Si no hi ha zoom, conversió simple
   if (currentZoom === 1) {
-    // Sense zoom: conversió directa
     const scaleX = photoCanvas.width / rect.width;
     const scaleY = photoCanvas.height / rect.height;
     return { 
@@ -2301,45 +2299,34 @@ function getCanvasPos(e) {
     };
   }
   
-  // AMB ZOOM - Invertir la transformació CSS
-  // transform: translate(panX, panY) scale(currentZoom)
-  // transform-origin: center center
+  // AMB ZOOM: Calcular posició real al canvas
+  // El canvas té: transform: translate(panX, panY) scale(currentZoom)
+  // amb transform-origin: center center
   
-  // El rect.width i rect.height JA reflecteixen l'efecte del zoom
-  // Mida base del canvas en CSS (sense zoom):
-  const baseWidth = rect.width / currentZoom;
-  const baseHeight = rect.height / currentZoom;
+  // 1. Trobar el centre del canvas visible
+  const centerVisibleX = rect.width / 2;
+  const centerVisibleY = rect.height / 2;
   
-  const baseCenterX = baseWidth / 2;
-  const baseCenterY = baseHeight / 2;
+  // 2. Posició del cursor respecte al centre visible
+  const offsetX = viewX - centerVisibleX;
+  const offsetY = viewY - centerVisibleY;
   
-  // Desfer transformació: viewPos = ((canvasPos - center) * zoom + center) + pan
-  // Invertint: canvasPos = ((viewPos - pan - center) / zoom) + center
+  // 3. Desfer el translate (restar pan)
+  const afterPanX = offsetX - panX;
+  const afterPanY = offsetY - panY;
   
-  // 1. Restar el pan
-  const afterPanX = viewX - panX;
-  const afterPanY = viewY - panY;
+  // 4. Desfer el scale (dividir pel zoom)
+  const unscaledX = afterPanX / currentZoom;
+  const unscaledY = afterPanY / currentZoom;
   
-  // 2. Restar el centre (coordenades relatives al centre amb zoom)
-  const relX = afterPanX - (baseCenterX * currentZoom);
-  const relY = afterPanY - (baseCenterY * currentZoom);
+  // 5. Afegir el centre del canvas original
+  const canvasCenterX = photoCanvas.width / 2;
+  const canvasCenterY = photoCanvas.height / 2;
   
-  // 3. Desfer el zoom
-  const unzoomedRelX = relX / currentZoom;
-  const unzoomedRelY = relY / currentZoom;
+  const finalX = canvasCenterX + unscaledX;
+  const finalY = canvasCenterY + unscaledY;
   
-  // 4. Tornar a coordenades des de top-left
-  const finalViewX = unzoomedRelX + baseCenterX;
-  const finalViewY = unzoomedRelY + baseCenterY;
-  
-  // 5. Convertir a coordenades internes del canvas
-  const scaleX = photoCanvas.width / baseWidth;
-  const scaleY = photoCanvas.height / baseHeight;
-  
-  return {
-    x: finalViewX * scaleX,
-    y: finalViewY * scaleY
-  };
+  return { x: finalX, y: finalY };
 }
   
   function startDrawing(e) {
