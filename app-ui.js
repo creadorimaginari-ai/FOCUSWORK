@@ -1607,14 +1607,19 @@ function openLightbox(photos, index) {
   const lightbox = $('lightbox');
   if (lightbox) {
     lightbox.classList.add('active');
+    
+    // CANVI: Inicialitzar canvas PRIMER
+    initPhotoCanvas();
+    
+    // Després mostrar foto
     updateLightboxDisplay();
     
-    // Inicialitzar sistema de zoom
+    // Zoom al final amb més temps
     setTimeout(() => {
       if (typeof initZoomSystem === 'function') {
         initZoomSystem();
       }
-    }, 100);
+    }, 300);
     
     document.body.style.overflow = 'hidden';
   }
@@ -1712,8 +1717,18 @@ if (commentInput) {
       nextBtn.classList.remove('disabled');
     }
   }
-}
-
+  // AFEGIR AIXÒ AQUÍ ↓
+  
+  // Forçar visibilitat del canvas
+  setTimeout(() => {
+    if (photoCanvas) {
+      photoCanvas.style.display = 'block';
+      photoCanvas.style.visibility = 'visible';
+      photoCanvas.style.opacity = '1';
+      console.log('✅ Canvas forçat visible');
+    }
+  }, 100);
+ }  // ← Ara tanca la funció
 
 function prevPhoto() {
   if (drawHistory.length > 1 && drawingEnabled) {
@@ -1940,9 +1955,26 @@ let drawHistory = [];
 let originalPhotoData = null;
 
 function initPhotoCanvas() {
-  photoCanvas = $('photoCanvas');
-  if (!photoCanvas) return;
+  photoCanvas = document.getElementById('photoCanvas');
+  
+  if (!photoCanvas) {
+    console.error('❌ photoCanvas not found!');
+    return;
+  }
+  
+  // Assegurar visibilitat
+  photoCanvas.style.display = 'block';
+  photoCanvas.style.visibility = 'visible';
+  photoCanvas.style.opacity = '1';
+  
   photoCtx = photoCanvas.getContext('2d');
+  
+  if (!photoCtx) {
+    console.error('❌ No canvas context!');
+    return;
+  }
+  
+  console.log('✅ Canvas OK');
 }
 
 function toggleDrawing() {
