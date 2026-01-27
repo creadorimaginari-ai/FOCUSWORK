@@ -1600,15 +1600,22 @@ window.deleteExtraHour = deleteExtraHour;
 /* ================= LIGHTBOX PER GALERIA ================= */
 let currentLightboxIndex = 0;
 
-function openLightbox(index) {
-  if (!window.currentClientPhotos || !window.currentClientPhotos.length) return;
-  
+function openLightbox(photos, index) {
+  window.currentClientPhotos = photos;
   currentLightboxIndex = index;
-  updateLightboxDisplay();
   
   const lightbox = $('lightbox');
   if (lightbox) {
     lightbox.classList.add('active');
+    updateLightboxDisplay();
+    
+    // Inicialitzar sistema de zoom
+    setTimeout(() => {
+      if (typeof initZoomSystem === 'function') {
+        initZoomSystem();
+      }
+    }, 100);
+    
     document.body.style.overflow = 'hidden';
   }
 }
@@ -1617,6 +1624,12 @@ function closeLightbox() {
   const lightbox = $('lightbox');
   if (lightbox) {
     lightbox.classList.remove('active');
+    
+    // Netejar sistema de zoom
+    if (typeof cleanupZoomSystem === 'function') {
+      cleanupZoomSystem();
+    }
+    
     document.body.style.overflow = 'auto';
   }
 }
@@ -1627,6 +1640,10 @@ function updateLightboxDisplay() {
   
   const photo = photos[currentLightboxIndex];
   if (!photo) return;
+   // Reset zoom quan canviem de foto
+  if (typeof resetZoom === 'function') {
+    resetZoom();
+  }
   
   // Actualitzar canvas amb la imatge
 initPhotoCanvas();
@@ -2055,10 +2072,21 @@ function setupCanvasDrawing() {
     const clientX = e.clientX || (e.touches && e.touches[0].clientX);
     const clientY = e.clientY || (e.touches && e.touches[0].clientY);
     
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
-    };
+    const canvasX = (clientX - rect.left) * scaleX;
+    const canvasY = (clientY - rect.top) * scaleY;
+    
+    // Si hi ha zoom actiu, ajustar coordenades
+    if (typeof currentZoom !== 'undefined' && currentZoom > 1) {
+      const centerX = photoCanvas.width / 2;
+      const centerY = photoCanvas.height / 2;
+      
+      const adjustedX = ((canvasX - centerX) / currentZoom) + centerX - (panX * scaleX / currentZoom);
+      const adjustedY = ((canvasY - centerY) / currentZoom) + centerY - (panY * scaleY / currentZoom);
+      
+      return { x: adjustedX, y: adjustedY };
+    }
+    
+    return { x: canvasX, y: canvasY };
   }
   
   function startDrawing(e) {
