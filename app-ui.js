@@ -769,7 +769,7 @@ async function renderPhotoGallery(preloadedClient = null) {
 [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
   const container = document.createElement("div");
   container.style.cssText = "position: relative; cursor: pointer;";
-  container.onclick = () => openLightbox(index);
+ container.onclick = () => openLightbox(window.currentClientPhotos, index);
   
   const img = document.createElement("img");
   img.src = p.data;
