@@ -1686,6 +1686,23 @@ if (photoCanvas && photoCtx) {
     
     // Inicialitzar sistema de dibuix (només una vegada)
     if (!photoCanvas._drawingInitialized) {
+     function getCanvasPoint(e) {
+  const rect = photoCanvas.getBoundingClientRect();
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  let x = clientX - rect.left;
+  let y = clientY - rect.top;
+
+  const scaleX = photoCanvas.width / rect.width;
+  const scaleY = photoCanvas.height / rect.height;
+
+  return {
+    x: x * scaleX,
+    y: y * scaleY
+  };
+}
       setupCanvasDrawing();
       photoCanvas._drawingInitialized = true;
     }
@@ -2295,101 +2312,47 @@ async function saveEditedPhoto() {
 
 // Event listeners per dibuixar - MILLORATS
 function setupCanvasDrawing() {
-  if (!photoCanvas) return;
-  
-  let lastX = 0;
-  let lastY = 0;
-  
-function getCanvasPos(e) {
-  const rect = photoCanvas.getBoundingClientRect();
-  const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-  const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-  
-  // Coordenades del cursor en la finestra
-  const viewX = clientX - rect.left;
-  const viewY = clientY - rect.top;
-  
-  // Si no hi ha zoom, conversió simple
-  if (currentZoom === 1) {
-    const scaleX = photoCanvas.width / rect.width;
-    const scaleY = photoCanvas.height / rect.height;
-    return { 
-      x: viewX * scaleX,
-      y: viewY * scaleY
-    };
-  }
-  
-  // AMB ZOOM: Calcular posició real al canvas
-  // El canvas té: transform: translate(panX, panY) scale(currentZoom)
-  // amb transform-origin: center center
-  
-  // 1. Trobar el centre del canvas visible
-  const centerVisibleX = rect.width / 2;
-  const centerVisibleY = rect.height / 2;
-  
-  // 2. Posició del cursor respecte al centre visible
-  const offsetX = viewX - centerVisibleX;
-  const offsetY = viewY - centerVisibleY;
-  
-  // 3. Desfer el translate (restar pan)
-  const afterPanX = offsetX - panX;
-  const afterPanY = offsetY - panY;
-  
-  // 4. Desfer el scale (dividir pel zoom)
-  const unscaledX = afterPanX / currentZoom;
-  const unscaledY = afterPanY / currentZoom;
-  
-  // 5. Afegir el centre del canvas original
-  const canvasCenterX = photoCanvas.width / 2;
-  const canvasCenterY = photoCanvas.height / 2;
-  
-  const finalX = canvasCenterX + unscaledX;
-  const finalY = canvasCenterY + unscaledY;
-  
-  return { x: finalX, y: finalY };
-}
-  
-  function startDrawing(e) {
+function setupCanvasDrawing() {
+  let isDrawing = false;
+
+  function startDraw(e) {
     if (!drawingEnabled) return;
     e.preventDefault();
-    e.stopPropagation();
-    isDrawingOnPhoto = true;
-    const pos = getCanvasPos(e);
-    lastX = pos.x;
-    lastY = pos.y;
-  }
-  
-  function draw(e) {
-    if (!isDrawingOnPhoto || !drawingEnabled) return;
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const pos = getCanvasPos(e);
-    
-    photoCtx.strokeStyle = drawColor;
-    photoCtx.lineWidth = drawSize;
-    photoCtx.lineCap = 'round';
-    photoCtx.lineJoin = 'round';
-    
+
+    isDrawing = true;
+    const { x, y } = getCanvasPoint(e);
     photoCtx.beginPath();
-    photoCtx.moveTo(lastX, lastY);
-    photoCtx.lineTo(pos.x, pos.y);
+    photoCtx.moveTo(x, y);
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+
+    const { x, y } = getCanvasPoint(e);
+    photoCtx.lineTo(x, y);
     photoCtx.stroke();
-    
-    lastX = pos.x;
-    lastY = pos.y;
   }
-  
-  function stopDrawing(e) {
-    if (isDrawingOnPhoto) {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      isDrawingOnPhoto = false;
-      saveDrawState();
-    }
+
+  function endDraw() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    photoCtx.closePath();
+    saveDrawState();
   }
+
+  // Mouse
+  photoCanvas.addEventListener('mousedown', startDraw);
+  photoCanvas.addEventListener('mousemove', draw);
+  photoCanvas.addEventListener('mouseup', endDraw);
+  photoCanvas.addEventListener('mouseleave', endDraw);
+
+  // Touch
+  photoCanvas.addEventListener('touchstart', startDraw, { passive: false });
+  photoCanvas.addEventListener('touchmove', draw, { passive: false });
+  photoCanvas.addEventListener('touchend', endDraw);
+}
+
   
   // Mouse events
   photoCanvas.addEventListener('mousedown', startDrawing, { passive: false });
