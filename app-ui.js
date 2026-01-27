@@ -2287,11 +2287,11 @@ function getCanvasPos(e) {
   const clientX = e.clientX || (e.touches && e.touches[0].clientX);
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   
-  // Coordenades del cursor en l'espai VISIBLE del canvas (després de transformació CSS)
+  // Coordenades del cursor en la finestra
   const viewX = clientX - rect.left;
   const viewY = clientY - rect.top;
   
-  // Si no hi ha transformació, conversió simple
+  // Si no hi ha zoom, conversió simple
   if (currentZoom === 1) {
     const scaleX = photoCanvas.width / rect.width;
     const scaleY = photoCanvas.height / rect.height;
@@ -2301,34 +2301,32 @@ function getCanvasPos(e) {
     };
   }
   
-  // AMB TRANSFORMACIÓ: Inversió de transform CSS
-  // La transformació CSS és: translate(panX, panY) scale(zoom) amb origin center
+  // AMB ZOOM: Calcular posició real al canvas
+  // El canvas té: transform: translate(panX, panY) scale(currentZoom)
+  // amb transform-origin: center center
   
-  const canvasVisualWidth = rect.width;
-  const canvasVisualHeight = rect.height;
+  // 1. Trobar el centre del canvas visible
+  const centerVisibleX = rect.width / 2;
+  const centerVisibleY = rect.height / 2;
   
-  // Centre visual del canvas (on es fa el scale)
-  const centerX = canvasVisualWidth / 2;
-  const centerY = canvasVisualHeight / 2;
+  // 2. Posició del cursor respecte al centre visible
+  const offsetX = viewX - centerVisibleX;
+  const offsetY = viewY - centerVisibleY;
   
-  // Posició del cursor respecte al centre visual
-  const offsetFromCenterX = viewX - centerX;
-  const offsetFromCenterY = viewY - centerY;
+  // 3. Desfer el translate (restar pan)
+  const afterPanX = offsetX - panX;
+  const afterPanY = offsetY - panY;
   
-  // Restar el pan (que està en px visuals)
-  const afterPanX = offsetFromCenterX - panX;
-  const afterPanY = offsetFromCenterY - panY;
+  // 4. Desfer el scale (dividir pel zoom)
+  const unscaledX = afterPanX / currentZoom;
+  const unscaledY = afterPanY / currentZoom;
   
-  // Dividir pel zoom per obtenir coordenades abans del scale
-  const beforeScaleX = afterPanX / currentZoom;
-  const beforeScaleY = afterPanY / currentZoom;
+  // 5. Afegir el centre del canvas original
+  const canvasCenterX = photoCanvas.width / 2;
+  const canvasCenterY = photoCanvas.height / 2;
   
-  // Tornar al sistema de coordenades del canvas original
-  const originalCenterX = photoCanvas.width / 2;
-  const originalCenterY = photoCanvas.height / 2;
-  
-  const finalX = originalCenterX + beforeScaleX;
-  const finalY = originalCenterY + beforeScaleY;
+  const finalX = canvasCenterX + unscaledX;
+  const finalY = canvasCenterY + unscaledY;
   
   return { x: finalX, y: finalY };
 }
