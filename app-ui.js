@@ -2096,30 +2096,54 @@ function setupCanvasDrawing() {
   let lastX = 0;
   let lastY = 0;
   
-  function getCanvasPos(e) {
-    const rect = photoCanvas.getBoundingClientRect();
+function getCanvasPos(e) {
+  const rect = photoCanvas.getBoundingClientRect();
+  
+  // Coordenades del clic en píxels de pantalla, relatives al canvas visible
+  const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+  const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+  
+  // Coordenades relatives al canvas visible (després de zoom)
+  const viewX = clientX - rect.left;
+  const viewY = clientY - rect.top;
+  
+  // Si NO hi ha zoom, càlcul simple
+  if (typeof currentZoom === 'undefined' || currentZoom <= 1) {
     const scaleX = photoCanvas.width / rect.width;
     const scaleY = photoCanvas.height / rect.height;
-    
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    
-    const canvasX = (clientX - rect.left) * scaleX;
-    const canvasY = (clientY - rect.top) * scaleY;
-    
-    // Si hi ha zoom actiu, ajustar coordenades
-    if (typeof currentZoom !== 'undefined' && currentZoom > 1) {
-      const centerX = photoCanvas.width / 2;
-      const centerY = photoCanvas.height / 2;
-      
-      const adjustedX = ((canvasX - centerX) / currentZoom) + centerX - (panX * scaleX / currentZoom);
-      const adjustedY = ((canvasY - centerY) / currentZoom) + centerY - (panY * scaleY / currentZoom);
-      
-      return { x: adjustedX, y: adjustedY };
-    }
-    
-    return { x: canvasX, y: canvasY };
+    return { 
+      x: viewX * scaleX, 
+      y: viewY * scaleY 
+    };
   }
+  
+  // AMB ZOOM: Necessitem invertir la transformació
+  // La transformació CSS és: translate(panX, panY) scale(currentZoom)
+  // Per tant, hem d'aplicar: (pos - pan) / zoom
+  
+  // 1. Centre del canvas visible (en píxels de pantalla)
+  const centerViewX = rect.width / 2;
+  const centerViewY = rect.height / 2;
+  
+  // 2. Posició relativa al centre
+  const relX = viewX - centerViewX;
+  const relY = viewY - centerViewY;
+  
+  // 3. Invertir zoom (dividir per currentZoom)
+  const unzoomedRelX = relX / currentZoom;
+  const unzoomedRelY = relY / currentZoom;
+  
+  // 4. Invertir pan
+  // Pan està en píxels de pantalla, cal convertir a píxels de canvas
+  const canvasCenterX = photoCanvas.width / 2;
+  const canvasCenterY = photoCanvas.height / 2;
+  
+  // 5. Calcular posició final en coordenades del canvas original
+  const finalX = canvasCenterX + unzoomedRelX - (panX / currentZoom);
+  const finalY = canvasCenterY + unzoomedRelY - (panY / currentZoom);
+  
+  return { x: finalX, y: finalY };
+}
   
   function startDrawing(e) {
     if (!drawingEnabled) return;
