@@ -2287,46 +2287,44 @@ function getCanvasPos(e) {
   const clientX = e.clientX || (e.touches && e.touches[0].clientX);
   const clientY = e.clientY || (e.touches && e.touches[0].clientY);
   
-  // Coordenades del cursor en la finestra
+  // Coordenades del cursor respecte al contenidor del canvas
   const viewX = clientX - rect.left;
   const viewY = clientY - rect.top;
   
-  // Si no hi ha zoom, conversió simple
+  // Escala base del canvas (per adaptació CSS)
+  const scaleX = photoCanvas.width / rect.width;
+  const scaleY = photoCanvas.height / rect.height;
+  
   if (currentZoom === 1) {
-    const scaleX = photoCanvas.width / rect.width;
-    const scaleY = photoCanvas.height / rect.height;
+    // Sense zoom: conversió simple
     return { 
       x: viewX * scaleX,
       y: viewY * scaleY
     };
   }
   
-  // AMB ZOOM: Calcular posició real al canvas
-  // El canvas té: transform: translate(panX, panY) scale(currentZoom)
-  // amb transform-origin: center center
+  // AMB ZOOM: Aplicar transformació inversa
+  // Transform aplicat: translate(panX, panY) scale(currentZoom) amb origin center
   
-  // 1. Trobar el centre del canvas visible
-  const centerVisibleX = rect.width / 2;
-  const centerVisibleY = rect.height / 2;
+  // 1. Convertir a coordenades del canvas sense escala CSS
+  const canvasX = viewX * scaleX;
+  const canvasY = viewY * scaleY;
   
-  // 2. Posició del cursor respecte al centre visible
-  const offsetX = viewX - centerVisibleX;
-  const offsetY = viewY - centerVisibleY;
+  // 2. Centre del canvas (punt d'origen del zoom)
+  const centerX = photoCanvas.width / 2;
+  const centerY = photoCanvas.height / 2;
   
-  // 3. Desfer el translate (restar pan)
-  const afterPanX = offsetX - panX;
-  const afterPanY = offsetY - panY;
+  // 3. Posició relativa al centre
+  const relX = canvasX - centerX;
+  const relY = canvasY - centerY;
   
-  // 4. Desfer el scale (dividir pel zoom)
-  const unscaledX = afterPanX / currentZoom;
-  const unscaledY = afterPanY / currentZoom;
+  // 4. Desfer pan (el pan està en píxels de la vista, cal convertir)
+  const afterPanX = relX - (panX * scaleX);
+  const afterPanY = relY - (panY * scaleY);
   
-  // 5. Afegir el centre del canvas original
-  const canvasCenterX = photoCanvas.width / 2;
-  const canvasCenterY = photoCanvas.height / 2;
-  
-  const finalX = canvasCenterX + unscaledX;
-  const finalY = canvasCenterY + unscaledY;
+  // 5. Desfer zoom
+  const finalX = centerX + (afterPanX / currentZoom);
+  const finalY = centerY + (afterPanY / currentZoom);
   
   return { x: finalX, y: finalY };
 }
