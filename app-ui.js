@@ -1666,6 +1666,12 @@ if (photoCanvas && photoCtx) {
     drawHistory = [];
     saveDrawState();
     
+    // Inicialitzar sistema de dibuix (només una vegada)
+    if (!photoCanvas._drawingInitialized) {
+      setupCanvasDrawing();
+      photoCanvas._drawingInitialized = true;
+    }
+    
     // Reset mode dibuix
     drawingEnabled = false;
     const btn = $('drawToggle');
@@ -1871,10 +1877,6 @@ let isTouchOnCanvas = false;
 document.addEventListener('DOMContentLoaded', () => {
   const lightbox = $('lightbox');
   if (!lightbox) return;
-  
-  // Inicialitzar canvas d'edició
-  initPhotoCanvas();
-  setupCanvasDrawing();
   
   // CRÍTICO: Gestió millorada de touch events
   lightbox.addEventListener('touchstart', (e) => {
