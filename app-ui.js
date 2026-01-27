@@ -1953,269 +1953,195 @@ let drawColor = '#ef4444';
 let drawSize = 3;
 let drawHistory = [];
 let originalPhotoData = null;
+// ============================================================================
+// SISTEMA DE ZOOM I PAN COMPLET - AFEGIR DESPRÉS DE LA LÍNIA 1955
+// (després de: let originalPhotoData = null;)
+// ============================================================================
 
-function initPhotoCanvas() {
-  photoCanvas = document.getElementById('photoCanvas');
-  
-  if (!photoCanvas) {
-    console.error('❌ photoCanvas not found!');
-    return;
-  }
-  
-  // Assegurar visibilitat
-  photoCanvas.style.display = 'block';
-  photoCanvas.style.visibility = 'visible';
-  photoCanvas.style.opacity = '1';
-  
-  photoCtx = photoCanvas.getContext('2d');
-  
-  if (!photoCtx) {
-    console.error('❌ No canvas context!');
-    return;
-  }
-  
-  console.log('✅ Canvas OK');
-}
+// Variables de zoom i pan
+let currentZoom = 1;
+let panX = 0;
+let panY = 0;
+let isPanning = false;
+let startPanX = 0;
+let startPanY = 0;
+let lastTouchDistance = 0;
 
-function toggleDrawing() {
-  drawingEnabled = !drawingEnabled;
-  const btn = $('drawToggle');
-  const text = $('drawToggleText');
-  const canvas = $('photoCanvas');
-  
-  if (drawingEnabled) {
-    btn.classList.add('active');
-    text.textContent = 'Activat';
-    canvas.classList.add('drawing-mode');
-  } else {
-    btn.classList.remove('active');
-    text.textContent = 'Dibuixar';
-    canvas.classList.remove('drawing-mode');
-  }
-}
-
-function setDrawColor(color) {
-  drawColor = color;
-  document.querySelectorAll('.color-picker-mini').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.color === color) {
-      btn.classList.add('active');
-    }
-  });
-}
-
-function updateDrawSize(size) {
-  drawSize = parseInt(size);
-}
-
-function saveDrawState() {
+// Funcions de zoom
+function zoomIn() {
   if (!photoCanvas) return;
-  drawHistory.push(photoCanvas.toDataURL());
-  if (drawHistory.length > 20) {
-    drawHistory.shift();
-  }
+  currentZoom = Math.min(currentZoom * 1.3, 5);
+  applyZoomTransform();
 }
 
-function undoDraw() {
-  if (drawHistory.length > 1) {
-    drawHistory.pop();
-    const previousState = drawHistory[drawHistory.length - 1];
-    const img = new Image();
-    img.onload = () => {
-      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
-      photoCtx.drawImage(img, 0, 0);
-    };
-    img.src = previousState;
-  }
-}
-
-function clearDrawing() {
-  if (!confirm('🗑️ Vols esborrar tots els dibuixos i tornar a la foto original?')) return;
-  
-  if (originalPhotoData) {
-    const img = new Image();
-    img.onload = () => {
-      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
-      photoCtx.drawImage(img, 0, 0);
-      drawHistory = [];
-      saveDrawState();
-    };
-    img.src = originalPhotoData;
-  }
-}
-
-
-async function saveEditedPhoto() {
-  if (!photoCanvas || !window.currentClientPhotos) return;
-  
-  // Desactivar mode dibuix abans de guardar
-  if (drawingEnabled) {
-    drawingEnabled = false;
-    const btn = $('drawToggle');
-    const text = $('drawToggleText');
-    if (btn) btn.classList.remove('active');
-    if (text) text.textContent = 'Dibuixar';
-    photoCanvas.classList.remove('drawing-mode');
-  }
-  
-  const confirmed = confirm('💾 Vols guardar els canvis a aquesta foto?\n\nLa foto original serà substituïda.');
-  if (!confirmed) return;
-  
-  try {
-    const editedData = photoCanvas.toDataURL('image/jpeg', 0.85);
-    const photo = window.currentClientPhotos[currentLightboxIndex];
-    
-    // Actualitzar dades
-    photo.data = editedData;
-    originalPhotoData = editedData;
-    
-    // Guardar a IndexedDB
-    await dbPut('photos', {
-      id: photo.id,
-      clientId: state.currentClientId,
-      data: photo.data,
-      date: photo.date,
-      comment: photo.comment || ""
-    });
-    
-    // Re-generar historial
-    drawHistory = [];
-    saveDrawState();
-    
-    showAlert('Foto guardada', 'Els canvis s\'han guardat correctament', '✅');
-  } catch (e) {
-    console.error('Error guardant foto editada:', e);
-    showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
-  }
-}
-
-// Event listeners per dibuixar - MILLORATS
-function setupCanvasDrawing() {
+function zoomOut() {
   if (!photoCanvas) return;
-  
-  let lastX = 0;
-  let lastY = 0;
-  
-function getCanvasPos(e) {
-  const rect = photoCanvas.getBoundingClientRect();
-  const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-  const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-  
-  // Coordenades del cursor en l'espai VISIBLE del canvas (després de transformació CSS)
-  const viewX = clientX - rect.left;
-  const viewY = clientY - rect.top;
-  
-  // Si no hi ha transformació, conversió simple
+  currentZoom = Math.max(currentZoom / 1.3, 1);
   if (currentZoom === 1) {
-    const scaleX = photoCanvas.width / rect.width;
-    const scaleY = photoCanvas.height / rect.height;
-    return { 
-      x: viewX * scaleX,
-      y: viewY * scaleY
-    };
+    panX = 0;
+    panY = 0;
   }
-  
-  // AMB TRANSFORMACIÓ: Inversió de transform CSS
-  // La transformació CSS és: translate(panX, panY) scale(zoom) amb origin center
-  
-  const canvasVisualWidth = rect.width;
-  const canvasVisualHeight = rect.height;
-  
-  // Centre visual del canvas (on es fa el scale)
-  const centerX = canvasVisualWidth / 2;
-  const centerY = canvasVisualHeight / 2;
-  
-  // Posició del cursor respecte al centre visual
-  const offsetFromCenterX = viewX - centerX;
-  const offsetFromCenterY = viewY - centerY;
-  
-  // Restar el pan (que està en px visuals)
-  const afterPanX = offsetFromCenterX - panX;
-  const afterPanY = offsetFromCenterY - panY;
-  
-  // Dividir pel zoom per obtenir coordenades abans del scale
-  const beforeScaleX = afterPanX / currentZoom;
-  const beforeScaleY = afterPanY / currentZoom;
-  
-  // Tornar al sistema de coordenades del canvas original
-  const originalCenterX = photoCanvas.width / 2;
-  const originalCenterY = photoCanvas.height / 2;
-  
-  const finalX = originalCenterX + beforeScaleX;
-  const finalY = originalCenterY + beforeScaleY;
-  
-  return { x: finalX, y: finalY };
-}
-  
-  function startDrawing(e) {
-    if (!drawingEnabled) return;
-    e.preventDefault();
-    e.stopPropagation();
-    isDrawingOnPhoto = true;
-    const pos = getCanvasPos(e);
-    lastX = pos.x;
-    lastY = pos.y;
-  }
-  
-  function draw(e) {
-    if (!isDrawingOnPhoto || !drawingEnabled) return;
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const pos = getCanvasPos(e);
-    
-    photoCtx.strokeStyle = drawColor;
-    photoCtx.lineWidth = drawSize;
-    photoCtx.lineCap = 'round';
-    photoCtx.lineJoin = 'round';
-    
-    photoCtx.beginPath();
-    photoCtx.moveTo(lastX, lastY);
-    photoCtx.lineTo(pos.x, pos.y);
-    photoCtx.stroke();
-    
-    lastX = pos.x;
-    lastY = pos.y;
-  }
-  
-  function stopDrawing(e) {
-    if (isDrawingOnPhoto) {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      isDrawingOnPhoto = false;
-      saveDrawState();
-    }
-  }
-  
-  // Mouse events
-  photoCanvas.addEventListener('mousedown', startDrawing, { passive: false });
-  photoCanvas.addEventListener('mousemove', draw, { passive: false });
-  photoCanvas.addEventListener('mouseup', stopDrawing, { passive: false });
-  photoCanvas.addEventListener('mouseleave', stopDrawing, { passive: false });
-  
-  // Touch events
-  photoCanvas.addEventListener('touchstart', startDrawing, { passive: false });
-  photoCanvas.addEventListener('touchmove', draw, { passive: false });
-  photoCanvas.addEventListener('touchend', stopDrawing, { passive: false });
-  photoCanvas.addEventListener('touchcancel', stopDrawing, { passive: false });
+  applyZoomTransform();
 }
 
-// Exportar funcions
-window.toggleDrawing = toggleDrawing;
-window.setDrawColor = setDrawColor;
-window.updateDrawSize = updateDrawSize;
-window.undoDraw = undoDraw;
-window.clearDrawing = clearDrawing;
-window.saveEditedPhoto = saveEditedPhoto;
-window.savePhotoComment = savePhotoComment;
+function resetZoom() {
+  if (!photoCanvas) return;
+  currentZoom = 1;
+  panX = 0;
+  panY = 0;
+  applyZoomTransform();
+}
+
+function applyZoomTransform() {
+  if (!photoCanvas) return;
+  photoCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+  photoCanvas.style.transformOrigin = 'center center';
+}
+
+// Sistema d'inicialització de zoom
+function initZoomSystem() {
+  if (!photoCanvas) return;
   
+  // Mouse wheel zoom
+  const wheelHandler = (e) => {
+    if (drawingEnabled) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    currentZoom = Math.max(1, Math.min(5, currentZoom * delta));
+    if (currentZoom === 1) {
+      panX = 0;
+      panY = 0;
+    }
+    applyZoomTransform();
+  };
+  
+  // Mouse pan
+  const mouseDownHandler = (e) => {
+    if (drawingEnabled || currentZoom <= 1) return;
+    isPanning = true;
+    startPanX = e.clientX - panX;
+    startPanY = e.clientY - panY;
+    e.preventDefault();
+  };
+  
+  const mouseMoveHandler = (e) => {
+    if (!isPanning || drawingEnabled) return;
+    panX = e.clientX - startPanX;
+    panY = e.clientY - startPanY;
+    applyZoomTransform();
+  };
+  
+  const mouseUpHandler = () => {
+    if (drawingEnabled) return;
+    isPanning = false;
+  };
+  
+  // Touch pinch zoom
+  const touchStartHandler = (e) => {
+    if (drawingEnabled) return;
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      lastTouchDistance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+    } else if (e.touches.length === 1 && currentZoom > 1) {
+      isPanning = true;
+      startPanX = e.touches[0].clientX - panX;
+      startPanY = e.touches[0].clientY - panY;
+    }
+  };
+  
+  const touchMoveHandler = (e) => {
+    if (drawingEnabled) return;
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const newDistance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+      
+      if (lastTouchDistance > 0) {
+        const zoomDelta = newDistance / lastTouchDistance;
+        currentZoom = Math.max(1, Math.min(5, currentZoom * zoomDelta));
+        if (currentZoom === 1) {
+          panX = 0;
+          panY = 0;
+        }
+        applyZoomTransform();
+      }
+      lastTouchDistance = newDistance;
+    } else if (isPanning && e.touches.length === 1) {
+      e.preventDefault();
+      panX = e.touches[0].clientX - startPanX;
+      panY = e.touches[0].clientY - startPanY;
+      applyZoomTransform();
+    }
+  };
+  
+  const touchEndHandler = () => {
+    if (drawingEnabled) return;
+    isPanning = false;
+    lastTouchDistance = 0;
+  };
+  
+  // Afegir event listeners
+  photoCanvas.addEventListener('wheel', wheelHandler, { passive: false });
+  photoCanvas.addEventListener('mousedown', mouseDownHandler);
+  photoCanvas.addEventListener('mousemove', mouseMoveHandler);
+  photoCanvas.addEventListener('mouseup', mouseUpHandler);
+  photoCanvas.addEventListener('mouseleave', mouseUpHandler);
+  photoCanvas.addEventListener('touchstart', touchStartHandler, { passive: false });
+  photoCanvas.addEventListener('touchmove', touchMoveHandler, { passive: false });
+  photoCanvas.addEventListener('touchend', touchEndHandler);
+  photoCanvas.addEventListener('touchcancel', touchEndHandler);
+  
+  // Guardar referències per poder eliminar-les després
+  photoCanvas._zoomHandlers = {
+    wheel: wheelHandler,
+    mousedown: mouseDownHandler,
+    mousemove: mouseMoveHandler,
+    mouseup: mouseUpHandler,
+    mouseleave: mouseUpHandler,
+    touchstart: touchStartHandler,
+    touchmove: touchMoveHandler,
+    touchend: touchEndHandler,
+    touchcancel: touchEndHandler
+  };
+}
+
+function cleanupZoomSystem() {
+  if (!photoCanvas || !photoCanvas._zoomHandlers) return;
+  
+  const h = photoCanvas._zoomHandlers;
+  photoCanvas.removeEventListener('wheel', h.wheel);
+  photoCanvas.removeEventListener('mousedown', h.mousedown);
+  photoCanvas.removeEventListener('mousemove', h.mousemove);
+  photoCanvas.removeEventListener('mouseup', h.mouseup);
+  photoCanvas.removeEventListener('mouseleave', h.mouseleave);
+  photoCanvas.removeEventListener('touchstart', h.touchstart);
+  photoCanvas.removeEventListener('touchmove', h.touchmove);
+  photoCanvas.removeEventListener('touchend', h.touchend);
+  photoCanvas.removeEventListener('touchcancel', h.touchcancel);
+  
+  delete photoCanvas._zoomHandlers;
+  
+  // Reset valors
+  currentZoom = 1;
+  panX = 0;
+  panY = 0;
+  isPanning = false;
+}
+
 // Exportar funcions globals
-window.openLightbox = openLightbox;
-window.closeLightbox = closeLightbox;
-window.prevPhoto = prevPhoto;
-window.nextPhoto = nextPhoto;
-window.downloadCurrentPhoto = downloadCurrentPhoto;
-window.shareCurrentPhoto = shareCurrentPhoto;
-window.deleteCurrentPhoto = deleteCurrentPhoto;
+window.zoomIn = zoomIn;
+window.zoomOut = zoomOut;
+window.resetZoom = resetZoom;
+
+// ============================================================================
+// FI DEL CODI DE ZOOM I PAN
+// ============================================================================
