@@ -297,7 +297,14 @@ async function updateUI(preloadedClient = null) {
   
   updates.push(() => {
     if (exitContainer) {
-      exitContainer.style.display = client ? "block" : "none";
+      if (client) {
+        exitContainer.style.display = "block";
+      } else {
+        exitContainer.style.display = "none";
+        exitContainer.style.height = "0";
+        exitContainer.style.margin = "0";
+        exitContainer.style.padding = "0";
+      }
     }
     
     if (exitFloating) {
@@ -305,11 +312,19 @@ async function updateUI(preloadedClient = null) {
         exitFloating.classList.remove('hidden');
       } else {
         exitFloating.classList.add('hidden');
+        exitFloating.style.display = "none";
       }
     }
     
     if (deletePanel) {
-      deletePanel.style.display = (client && !client.active) ? "block" : "none";
+      if (client && !client.active) {
+        deletePanel.style.display = "block";
+      } else {
+        deletePanel.style.display = "none";
+        deletePanel.style.height = "0";
+        deletePanel.style.margin = "0";
+        deletePanel.style.padding = "0";
+      }
     }
 
     if (clientActionsPanel) {
@@ -317,6 +332,9 @@ async function updateUI(preloadedClient = null) {
         clientActionsPanel.style.display = 'block';
       } else {
         clientActionsPanel.style.display = 'none';
+        clientActionsPanel.style.height = '0';
+        clientActionsPanel.style.margin = '0';
+        clientActionsPanel.style.padding = '0';
       }
     }
   });
@@ -502,10 +520,11 @@ async function selectClient(clientId) {
   
   state.currentClientId = clientId;
   
-  // SEMPRE resetar el cronòmetre quan canvies de client
-  state.currentActivity = ACTIVITIES.WORK;
-  state.sessionElapsed = 0;
-  state.lastTick = Date.now();
+  if (!previousClient) {
+    state.currentActivity = ACTIVITIES.WORK;
+    state.sessionElapsed = 0;
+    state.lastTick = Date.now();
+  }
   
   isWorkpadInitialized = false;
   areTasksInitialized = false;
@@ -1573,9 +1592,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // NO actualitzar l'estat del botó de backup a l'inici
-  // Només comprovar-ho periòdicament cada 5 minuts
-  // updateBackupButtonStatus();
+  updateBackupButtonStatus();
   setInterval(updateBackupButtonStatus, 5 * 60 * 1000);
 });
 
