@@ -1953,10 +1953,6 @@ let drawColor = '#ef4444';
 let drawSize = 3;
 let drawHistory = [];
 let originalPhotoData = null;
-// ============================================================================
-// SISTEMA DE ZOOM I PAN COMPLET - AFEGIR DESPRÉS DE LA LÍNIA 1955
-// (després de: let originalPhotoData = null;)
-// ============================================================================
 
 // Variables de zoom i pan
 let currentZoom = 1;
@@ -2137,76 +2133,203 @@ function cleanupZoomSystem() {
   isPanning = false;
 }
 
-// Exportar funcions globals
+// Exportar funcions globals de zoom
 window.zoomIn = zoomIn;
 window.zoomOut = zoomOut;
 window.resetZoom = resetZoom;
 
-// ============================================================================
-// FI DEL CODI DE ZOOM I PAN
-// ============================================================================
-// ============================================================================
-// AFEGIR AQUEST CODI AL FINAL DEL TEU ARXIU app-ui__10_.js
-// (DESPRÉS de la línia que diu: window.resetZoom = resetZoom;)
-// ============================================================================
+function initPhotoCanvas() {
+  photoCanvas = document.getElementById('photoCanvas');
+  
+  if (!photoCanvas) {
+    console.error('❌ photoCanvas not found!');
+    return;
+  }
+  
+  // Assegurar visibilitat
+  photoCanvas.style.display = 'block';
+  photoCanvas.style.visibility = 'visible';
+  photoCanvas.style.opacity = '1';
+  
+  photoCtx = photoCanvas.getContext('2d');
+  
+  if (!photoCtx) {
+    console.error('❌ No canvas context!');
+    return;
+  }
+  
+  console.log('✅ Canvas OK');
+}
 
-// Event listeners per dibuixar - CORREGITS AMB TRANSFORMACIÓ INVERSA
+function toggleDrawing() {
+  drawingEnabled = !drawingEnabled;
+  const btn = $('drawToggle');
+  const text = $('drawToggleText');
+  const canvas = $('photoCanvas');
+  
+  if (drawingEnabled) {
+    btn.classList.add('active');
+    text.textContent = 'Activat';
+    canvas.classList.add('drawing-mode');
+  } else {
+    btn.classList.remove('active');
+    text.textContent = 'Dibuixar';
+    canvas.classList.remove('drawing-mode');
+  }
+}
+
+function setDrawColor(color) {
+  drawColor = color;
+  document.querySelectorAll('.color-picker-mini').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.color === color) {
+      btn.classList.add('active');
+    }
+  });
+}
+
+function updateDrawSize(size) {
+  drawSize = parseInt(size);
+}
+
+function saveDrawState() {
+  if (!photoCanvas) return;
+  drawHistory.push(photoCanvas.toDataURL());
+  if (drawHistory.length > 20) {
+    drawHistory.shift();
+  }
+}
+
+function undoDraw() {
+  if (drawHistory.length > 1) {
+    drawHistory.pop();
+    const previousState = drawHistory[drawHistory.length - 1];
+    const img = new Image();
+    img.onload = () => {
+      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
+      photoCtx.drawImage(img, 0, 0);
+    };
+    img.src = previousState;
+  }
+}
+
+function clearDrawing() {
+  if (!confirm('🗑️ Vols esborrar tots els dibuixos i tornar a la foto original?')) return;
+  
+  if (originalPhotoData) {
+    const img = new Image();
+    img.onload = () => {
+      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
+      photoCtx.drawImage(img, 0, 0);
+      drawHistory = [];
+      saveDrawState();
+    };
+    img.src = originalPhotoData;
+  }
+}
+
+
+async function saveEditedPhoto() {
+  if (!photoCanvas || !window.currentClientPhotos) return;
+  
+  // Desactivar mode dibuix abans de guardar
+  if (drawingEnabled) {
+    drawingEnabled = false;
+    const btn = $('drawToggle');
+    const text = $('drawToggleText');
+    if (btn) btn.classList.remove('active');
+    if (text) text.textContent = 'Dibuixar';
+    photoCanvas.classList.remove('drawing-mode');
+  }
+  
+  const confirmed = confirm('💾 Vols guardar els canvis a aquesta foto?\n\nLa foto original serà substituïda.');
+  if (!confirmed) return;
+  
+  try {
+    const editedData = photoCanvas.toDataURL('image/jpeg', 0.85);
+    const photo = window.currentClientPhotos[currentLightboxIndex];
+    
+    // Actualitzar dades
+    photo.data = editedData;
+    originalPhotoData = editedData;
+    
+    // Guardar a IndexedDB
+    await dbPut('photos', {
+      id: photo.id,
+      clientId: state.currentClientId,
+      data: photo.data,
+      date: photo.date,
+      comment: photo.comment || ""
+    });
+    
+    // Re-generar historial
+    drawHistory = [];
+    saveDrawState();
+    
+    showAlert('Foto guardada', 'Els canvis s\'han guardat correctament', '✅');
+  } catch (e) {
+    console.error('Error guardant foto editada:', e);
+    showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
+  }
+}
+
+// Event listeners per dibuixar - MILLORATS
 function setupCanvasDrawing() {
   if (!photoCanvas) return;
   
   let lastX = 0;
   let lastY = 0;
   
-  function getCanvasPos(e) {
-    const rect = photoCanvas.getBoundingClientRect();
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    
-    // Coordenades del cursor en l'espai VISIBLE del canvas (després de transformació CSS)
-    const viewX = clientX - rect.left;
-    const viewY = clientY - rect.top;
-    
-    // Si no hi ha transformació, conversió simple
-    if (currentZoom === 1) {
-      const scaleX = photoCanvas.width / rect.width;
-      const scaleY = photoCanvas.height / rect.height;
-      return { 
-        x: viewX * scaleX,
-        y: viewY * scaleY
-      };
-    }
-    
-    // AMB TRANSFORMACIÓ: Inversió de transform CSS
-    // La transformació CSS és: translate(panX, panY) scale(zoom) amb origin center
-    
-    const canvasVisualWidth = rect.width;
-    const canvasVisualHeight = rect.height;
-    
-    // Centre visual del canvas (on es fa el scale)
-    const centerX = canvasVisualWidth / 2;
-    const centerY = canvasVisualHeight / 2;
-    
-    // Posició del cursor respecte al centre visual
-    const offsetFromCenterX = viewX - centerX;
-    const offsetFromCenterY = viewY - centerY;
-    
-    // Restar el pan (que està en px visuals)
-    const afterPanX = offsetFromCenterX - panX;
-    const afterPanY = offsetFromCenterY - panY;
-    
-    // Dividir pel zoom per obtenir coordenades abans del scale
-    const beforeScaleX = afterPanX / currentZoom;
-    const beforeScaleY = afterPanY / currentZoom;
-    
-    // Tornar al sistema de coordenades del canvas original
-    const originalCenterX = photoCanvas.width / 2;
-    const originalCenterY = photoCanvas.height / 2;
-    
-    const finalX = originalCenterX + beforeScaleX;
-    const finalY = originalCenterY + beforeScaleY;
-    
-    return { x: finalX, y: finalY };
+function getCanvasPos(e) {
+  const rect = photoCanvas.getBoundingClientRect();
+  const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+  const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+  
+  // Coordenades del cursor en l'espai VISIBLE del canvas (després de transformació CSS)
+  const viewX = clientX - rect.left;
+  const viewY = clientY - rect.top;
+  
+  // Si no hi ha transformació, conversió simple
+  if (currentZoom === 1) {
+    const scaleX = photoCanvas.width / rect.width;
+    const scaleY = photoCanvas.height / rect.height;
+    return { 
+      x: viewX * scaleX,
+      y: viewY * scaleY
+    };
   }
+  
+  // AMB TRANSFORMACIÓ: Inversió de transform CSS
+  // La transformació CSS és: translate(panX, panY) scale(zoom) amb origin center
+  
+  const canvasVisualWidth = rect.width;
+  const canvasVisualHeight = rect.height;
+  
+  // Centre visual del canvas (on es fa el scale)
+  const centerX = canvasVisualWidth / 2;
+  const centerY = canvasVisualHeight / 2;
+  
+  // Posició del cursor respecte al centre visual
+  const offsetFromCenterX = viewX - centerX;
+  const offsetFromCenterY = viewY - centerY;
+  
+  // Restar el pan (que està en px visuals)
+  const afterPanX = offsetFromCenterX - panX;
+  const afterPanY = offsetFromCenterY - panY;
+  
+  // Dividir pel zoom per obtenir coordenades abans del scale
+  const beforeScaleX = afterPanX / currentZoom;
+  const beforeScaleY = afterPanY / currentZoom;
+  
+  // Tornar al sistema de coordenades del canvas original
+  const originalCenterX = photoCanvas.width / 2;
+  const originalCenterY = photoCanvas.height / 2;
+  
+  const finalX = originalCenterX + beforeScaleX;
+  const finalY = originalCenterY + beforeScaleY;
+  
+  return { x: finalX, y: finalY };
+}
   
   function startDrawing(e) {
     if (!drawingEnabled) return;
@@ -2263,7 +2386,7 @@ function setupCanvasDrawing() {
   photoCanvas.addEventListener('touchcancel', stopDrawing, { passive: false });
 }
 
-// Exportar funcions de dibuix
+// Exportar funcions
 window.toggleDrawing = toggleDrawing;
 window.setDrawColor = setDrawColor;
 window.updateDrawSize = updateDrawSize;
@@ -2272,7 +2395,7 @@ window.clearDrawing = clearDrawing;
 window.saveEditedPhoto = saveEditedPhoto;
 window.savePhotoComment = savePhotoComment;
   
-// Exportar funcions globals del lightbox
+// Exportar funcions globals
 window.openLightbox = openLightbox;
 window.closeLightbox = closeLightbox;
 window.prevPhoto = prevPhoto;
