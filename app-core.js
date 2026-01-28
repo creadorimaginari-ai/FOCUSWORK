@@ -218,7 +218,8 @@ async function saveClient(client) {
         id: photo.id || uid(),
         clientId: client.id,
         data: photo.data,
-        date: photo.date
+        date: photo.date,
+        comment: photo.comment || ""
       });
     }
     
@@ -238,7 +239,8 @@ async function loadClient(clientId) {
     client.photos = photos.map(p => ({
       id: p.id,
       data: p.data,
-      date: p.date
+      date: p.date,
+      comment: p.comment || ""
     }));
     
     return client;
@@ -258,7 +260,8 @@ async function loadAllClients() {
       client.photos = photos.map(p => ({
         id: p.id,
         data: p.data,
-        date: p.date
+        date: p.date,
+        comment: p.comment || ""
       }));
       clientsObj[client.id] = client;
     }
