@@ -252,7 +252,25 @@ async function exportAllData() {
  * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 2/5
  * UI i Gestió de Clients
  *************************************************/
+async function savePhotoComment(text) {
+  const clientId = state.currentClientId;
+  if (!clientId) return;
 
+  const client = await loadClient(clientId);
+  if (!client || !client.photos) return;
+
+  const photo = client.photos.find(
+    p => p.id === window.currentClientPhotos[currentLightboxIndex]?.id
+  );
+  if (!photo) return;
+
+  photo.comment = text;
+
+  await saveClient(client);
+
+  // Actualitzar còpia en memòria perquè UI i dades coincideixin
+  window.currentClientPhotos[currentLightboxIndex].comment = text;
+  }
 /* ================= UI OPTIMIZADO ================= */
 async function updateUI(preloadedClient = null) {
   const activitiesPanel = $('activitiesPanel');
