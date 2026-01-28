@@ -413,33 +413,33 @@ async function updateUI(preloadedClient = null) {
     if (exitContainer) {
       if (client) {
         exitContainer.style.display = "block";
+        exitContainer.style.height = "";
+        exitContainer.style.margin = "";
+        exitContainer.style.padding = "";
       } else {
         exitContainer.style.display = "none";
-        exitContainer.style.height = "0";
-        exitContainer.style.margin = "0";
-        exitContainer.style.padding = "0";
       }
     }
     
     if (deletePanel) {
       if (client && !client.active) {
         deletePanel.style.display = "block";
+        deletePanel.style.height = "";
+        deletePanel.style.margin = "";
+        deletePanel.style.padding = "";
       } else {
         deletePanel.style.display = "none";
-        deletePanel.style.height = "0";
-        deletePanel.style.margin = "0";
-        deletePanel.style.padding = "0";
       }
     }
 
     if (clientActionsPanel) {
       if (client && client.active) {
         clientActionsPanel.style.display = 'block';
+        clientActionsPanel.style.height = "";
+        clientActionsPanel.style.margin = "";
+        clientActionsPanel.style.padding = "";
       } else {
         clientActionsPanel.style.display = 'none';
-        clientActionsPanel.style.height = '0';
-        clientActionsPanel.style.margin = '0';
-        clientActionsPanel.style.padding = '0';
       }
     }
   });
