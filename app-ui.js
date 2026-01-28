@@ -325,7 +325,6 @@ async function updateUI(preloadedClient = null) {
   updates.push(() => updateFocusScheduleStatus());
   
   const exitContainer = $("exitClientContainer");
-  const exitFloating = $("exitClientFloating");
   const deletePanel = $("deleteClientPanel");
   const clientActionsPanel = $("clientActionsPanel");
   
@@ -338,15 +337,6 @@ async function updateUI(preloadedClient = null) {
         exitContainer.style.height = "0";
         exitContainer.style.margin = "0";
         exitContainer.style.padding = "0";
-      }
-    }
-    
-    if (exitFloating) {
-      if (client && client.active) {
-        exitFloating.classList.remove('hidden');
-      } else {
-        exitFloating.classList.add('hidden');
-        exitFloating.style.display = "none";
       }
     }
     
@@ -1559,7 +1549,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('focusBtn')) $('focusBtn').onclick = showFocus;
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
   if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
-  if ($('exitClientFloating')) $('exitClientFloating').onclick = exitClient;
   
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);
@@ -1626,8 +1615,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  updateBackupButtonStatus();
-  setInterval(updateBackupButtonStatus, 5 * 60 * 1000);
+  // Nota: updateBackupButtonStatus ha estat eliminat per evitar canvis de color automàtics
 });
 
 /* ================= EXPORTAR FUNCIONS GLOBALS ================= */
@@ -2355,6 +2343,13 @@ function setupCanvasDrawing() {
 
     isDrawing = true;
     const { x, y } = getCanvasPoint(e);
+    
+    // Aplicar color i gruix ABANS de dibuixar
+    photoCtx.strokeStyle = drawColor;
+    photoCtx.lineWidth = drawSize;
+    photoCtx.lineCap = 'round';
+    photoCtx.lineJoin = 'round';
+    
     photoCtx.beginPath();
     photoCtx.moveTo(x, y);
   }
