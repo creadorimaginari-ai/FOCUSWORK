@@ -266,11 +266,74 @@ async function savePhotoComment(text) {
 
   photo.comment = text;
 
+  // Guardar el client complet (inclou les fotos)
   await saveClient(client);
 
   // Actualitzar còpia en memòria perquè UI i dades coincideixin
   window.currentClientPhotos[currentLightboxIndex].comment = text;
+  
+  // AFEGIT: Guardar també la foto directament a IndexedDB per seguretat
+  try {
+    await dbPut('photos', {
+      id: photo.id,
+      clientId: clientId,
+      data: photo.data,
+      date: photo.date,
+      comment: photo.comment || ""
+    });
+    console.log('💬 Comentari guardat correctament');
+    
+    // ✅ AFEGIT: Actualitzar badge 💬 de la miniatura
+    updatePhotoBadge(photo.id, text);
+    
+  } catch (e) {
+    console.error('Error guardant comentari a IndexedDB:', e);
   }
+}
+
+// Funció auxiliar per actualitzar el badge d'una foto específica
+function updatePhotoBadge(photoId, comment) {
+  const gallery = $("photoGallery");
+  if (!gallery) return;
+  
+  // Buscar la miniatura corresponent
+  const thumbnails = gallery.querySelectorAll('.photo-thumb');
+  const photos = window.currentClientPhotos;
+  
+  photos.forEach((p, index) => {
+    if (p.id === photoId) {
+      const img = thumbnails[index];
+      if (!img) return;
+      
+      const container = img.parentElement;
+      if (!container) return;
+      
+      // Eliminar badge anterior si existeix
+      const oldBadge = container.querySelector('.comment-badge');
+      if (oldBadge) oldBadge.remove();
+      
+      // Afegir nou badge si hi ha comentari
+      if (comment && comment.trim()) {
+        const badge = document.createElement("div");
+        badge.className = 'comment-badge';
+        badge.style.cssText = `
+          position: absolute;
+          bottom: 5px;
+          left: 5px;
+          background: rgba(0,0,0,0.7);
+          color: white;
+          padding: 3px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          backdrop-filter: blur(5px);
+          pointer-events: none;
+        `;
+        badge.textContent = '💬';
+        container.appendChild(badge);
+      }
+    }
+  });
+}
 /* ================= UI OPTIMIZADO ================= */
 async function updateUI(preloadedClient = null) {
   const activitiesPanel = $('activitiesPanel');
@@ -837,6 +900,7 @@ async function renderPhotoGallery(preloadedClient = null) {
   // Mostrar badge si hi ha comentari
   if (p.comment && p.comment.trim()) {
     const badge = document.createElement("div");
+    badge.className = 'comment-badge';
     badge.style.cssText = `
       position: absolute;
       bottom: 5px;
@@ -1972,35 +2036,6 @@ function handleLightboxSwipe() {
   } else {
     prevPhoto();
   }
-}
-/* ================= COMENTARIS DE FOTOS ================= */
-let photoCommentTimeout = null;
-
-async function savePhotoComment(comment) {
-  const photos = window.currentClientPhotos;
-  if (!photos || !photos[currentLightboxIndex]) return;
-  
-  const photo = photos[currentLightboxIndex];
-  photo.comment = comment;
-  
-  // Guardar després de 1 segon sense escriure
-  clearTimeout(photoCommentTimeout);
-  photoCommentTimeout = setTimeout(async () => {
-    try {
-      // Guardar a IndexedDB
-      await dbPut('photos', {
-        id: photo.id,
-        clientId: state.currentClientId,
-        data: photo.data,
-        date: photo.date,
-        comment: photo.comment || ""
-      });
-      
-      console.log('💬 Comentari guardat:', photo.comment);
-    } catch (e) {
-      console.error('Error guardant comentari:', e);
-    }
-  }, 1000);
 }
 /* ================= EDITOR DE DIBUIX PER FOTOS ================= */
 let photoCanvas = null;
