@@ -1,3 +1,6 @@
+ixed · JS
+Copiar
+
 /*************************************************
  * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 1/5
  * Llicències, Importació i Exportació
@@ -562,11 +565,11 @@ async function selectClient(clientId) {
   
   state.currentClientId = clientId;
   
-  if (!previousClient) {
-    state.currentActivity = ACTIVITIES.WORK;
-    state.sessionElapsed = 0;
-    state.lastTick = Date.now();
-  }
+  // ✅ SEMPRE reiniciar el rellotge quan es canvia de client
+  // Això assegura que el temps no es segueixi comptant del client anterior
+  state.currentActivity = ACTIVITIES.WORK;
+  state.sessionElapsed = 0;
+  state.lastTick = Date.now();
   
   isWorkpadInitialized = false;
   areTasksInitialized = false;
@@ -684,9 +687,12 @@ function renderHistoryList(clients) {
 
 async function selectHistoryClient(clientId) {
   state.currentClientId = clientId;
-  state.currentActivity = null;
+  
+  // ✅ Reiniciar el rellotge correctament quan s'obre un client de l'històric
+  state.currentActivity = ACTIVITIES.WORK;
   state.sessionElapsed = 0;
-  state.lastTick = null;
+  state.lastTick = Date.now();
+  
   isWorkpadInitialized = false;
   areTasksInitialized = false;
   
@@ -2351,71 +2357,4 @@ function getCanvasPoint(e) {
 
 // Event listeners per dibuixar - VERSIÓ FINAL CORRECTA
 function setupCanvasDrawing() {
-  if (!photoCanvas || !photoCtx) return;
-
-  let isDrawing = false;
-
-  function startDraw(e) {
-    if (!drawingEnabled) return;
-    e.preventDefault();
-
-    isDrawing = true;
-    const { x, y } = getCanvasPoint(e);
-    
-    // Aplicar color i gruix ABANS de dibuixar
-    photoCtx.strokeStyle = drawColor;
-    photoCtx.lineWidth = drawSize;
-    photoCtx.lineCap = 'round';
-    photoCtx.lineJoin = 'round';
-    
-    photoCtx.beginPath();
-    photoCtx.moveTo(x, y);
-  }
-
-  function draw(e) {
-    if (!isDrawing || !drawingEnabled) return;
-    e.preventDefault();
-
-    const { x, y } = getCanvasPoint(e);
-    photoCtx.lineTo(x, y);
-    photoCtx.stroke();
-  }
-
-  function endDraw(e) {
-    if (!isDrawing) return;
-    if (e) e.preventDefault();
-
-    isDrawing = false;
-    photoCtx.closePath();
-    saveDrawState();
-  }
-
-  // Mouse
-  photoCanvas.addEventListener('mousedown', startDraw);
-  photoCanvas.addEventListener('mousemove', draw);
-  photoCanvas.addEventListener('mouseup', endDraw);
-  photoCanvas.addEventListener('mouseleave', endDraw);
-
-  // Touch
-  photoCanvas.addEventListener('touchstart', startDraw, { passive: false });
-  photoCanvas.addEventListener('touchmove', draw, { passive: false });
-  photoCanvas.addEventListener('touchend', endDraw);
-}
-
-// Exportar funcions
-window.toggleDrawing = toggleDrawing;
-window.setDrawColor = setDrawColor;
-window.updateDrawSize = updateDrawSize;
-window.undoDraw = undoDraw;
-window.clearDrawing = clearDrawing;
-window.saveEditedPhoto = saveEditedPhoto;
-window.savePhotoComment = savePhotoComment;
-  
-// Exportar funcions globals
-window.openLightbox = openLightbox;
-window.closeLightbox = closeLightbox;
-window.prevPhoto = prevPhoto;
-window.nextPhoto = nextPhoto;
-window.downloadCurrentPhoto = downloadCurrentPhoto;
-window.shareCurrentPhoto = shareCurrentPhoto;
-window.deleteCurrentPhoto = deleteCurrentPhoto;
+  if (!photoCanvas ||
