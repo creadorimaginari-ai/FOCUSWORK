@@ -160,7 +160,7 @@ function showAlert(title, message, icon = 'ℹ️') {
 }
 
 /* ================= USUARI ================= */
-let userName = localStorage.getItem("focowork_user_name") || "Usuari";
+let userName = localStorage.getItem("focowork_user_name") || null;
 
 /* ================= ESTAT ================= */
 let state = {
@@ -652,6 +652,12 @@ async function initApp() {
     await loadState();
     await migrateFromLocalStorage();
     
+    // Comprovar si és la primera vegada (onboarding obligatori)
+    if (!userName) {
+      showOnboardingScreen();
+      return; // No continuar fins que l'usuari introdueixi el nom
+    }
+    
     updateUI();
     scheduleFullAutoBackup();
     
@@ -660,6 +666,185 @@ async function initApp() {
     console.error('Error inicialitzant app:', e);
     showAlert('Error', 'No s\'ha pogut inicialitzar l\'aplicació', '❌');
   }
+}
+
+/* ================= ONBOARDING OBLIGATORI ================= */
+function showOnboardingScreen() {
+  // Crear pantalla d'onboarding
+  const onboardingHTML = `
+    <div id="onboardingScreen" style="
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 20px;
+    ">
+      <div style="
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 500px;
+        width: 100%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        text-align: center;
+      ">
+        <div style="font-size: 64px; margin-bottom: 20px;">👋</div>
+        <h1 style="
+          font-size: 28px;
+          font-weight: bold;
+          color: #1e293b;
+          margin-bottom: 12px;
+        ">Benvingut a FocusWork!</h1>
+        <p style="
+          font-size: 16px;
+          color: #64748b;
+          margin-bottom: 30px;
+          line-height: 1.5;
+        ">
+          Abans de començar, si us plau introdueix el teu nom.<br>
+          Aquest nom apareixerà als informes que generis.
+        </p>
+        
+        <div style="margin-bottom: 20px;">
+          <input 
+            type="text" 
+            id="onboardingUserName" 
+            placeholder="El teu nom..."
+            maxlength="50"
+            style="
+              width: 100%;
+              padding: 16px;
+              font-size: 16px;
+              border: 2px solid #e2e8f0;
+              border-radius: 12px;
+              outline: none;
+              transition: all 0.2s;
+              box-sizing: border-box;
+            "
+            autocomplete="name"
+          />
+          <div id="onboardingError" style="
+            color: #ef4444;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+          ">❌ Si us plau, introdueix el teu nom</div>
+        </div>
+        
+        <button 
+          id="onboardingConfirm"
+          style="
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          "
+          onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(102, 126, 234, 0.5)';"
+          onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)';"
+        >
+          ✅ Començar a usar FocusWork
+        </button>
+        
+        <p style="
+          font-size: 12px;
+          color: #94a3b8;
+          margin-top: 20px;
+        ">
+          💡 Pots canviar el teu nom més endavant des de Configuració
+        </p>
+      </div>
+    </div>
+  `;
+  
+  // Afegir a la pàgina
+  document.body.insertAdjacentHTML('beforeend', onboardingHTML);
+  
+  const input = document.getElementById('onboardingUserName');
+  const button = document.getElementById('onboardingConfirm');
+  const error = document.getElementById('onboardingError');
+  
+  // Focus automàtic al camp
+  setTimeout(() => input.focus(), 100);
+  
+  // Enter per confirmar
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      confirmOnboarding();
+    }
+  });
+  
+  // Click al botó
+  button.addEventListener('click', confirmOnboarding);
+  
+  function confirmOnboarding() {
+    const name = input.value.trim();
+    
+    if (!name) {
+      // Mostrar error
+      error.style.display = 'block';
+      input.style.borderColor = '#ef4444';
+      input.focus();
+      
+      // Animació d'error
+      input.style.animation = 'shake 0.5s';
+      setTimeout(() => {
+        input.style.animation = '';
+      }, 500);
+      
+      return;
+    }
+    
+    // Guardar el nom
+    userName = name;
+    localStorage.setItem("focowork_user_name", userName);
+    
+    // Eliminar pantalla d'onboarding amb animació
+    const screen = document.getElementById('onboardingScreen');
+    screen.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    screen.style.opacity = '0';
+    screen.style.transform = 'scale(0.95)';
+    
+    setTimeout(() => {
+      screen.remove();
+      
+      // Ara sí, inicialitzar l'app
+      updateUI();
+      scheduleFullAutoBackup();
+      
+      // Missatge de benvinguda
+      showAlert(
+        `Hola ${userName}! 👋`, 
+        'Benvingut a FocusWork.\n\nComença creant el teu primer encàrrec!',
+        '🎉'
+      );
+      
+      console.log(`✅ FocusWork inicialitzat per a ${userName}`);
+    }, 300);
+  }
+}
+
+// Afegir animació de shake al CSS global
+if (!document.getElementById('onboardingStyles')) {
+  const style = document.createElement('style');
+  style.id = 'onboardingStyles';
+  style.textContent = `
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+      20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
