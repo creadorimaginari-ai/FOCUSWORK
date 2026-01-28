@@ -26,16 +26,23 @@
 
     <!-- HEADER -->
     <header class="header">
-      <div id="clientName" class="client-name">Cap encàrrec actiu</div>
-      <div id="activityName" class="activity-name">—</div>
-      <div id="timer" class="timer">00:00:00</div>
-      <div id="clientTotal" class="client-total"></div>
+      <!-- Part sticky: només nom del client i activitat -->
+      <div class="client-info-sticky">
+        <div id="clientName" class="client-name">Cap encàrrec actiu</div>
+        <div id="activityName" class="activity-name">—</div>
+      </div>
       
-      <!-- TIEMPO FACTURABLE -->
-      <div id="billableTimeBox" class="billable-time-box" style="display: none;"></div>
-      
-      <!-- AVISO FUERA DE HORARIO DE ENFOQUE -->
-      <div id="focusScheduleStatus" style="display: none; margin-top: 8px; padding: 6px 12px; background: rgba(251, 191, 36, 0.2); border-radius: 6px; font-size: 0.85rem; color: #fbbf24; text-align: center;"></div>
+      <!-- Part NO sticky: rellotge, total i resta -->
+      <div class="timer-section">
+        <div id="timer" class="timer">00:00:00</div>
+        <div id="clientTotal" class="client-total"></div>
+        
+        <!-- TIEMPO FACTURABLE -->
+        <div id="billableTimeBox" class="billable-time-box" style="display: none;"></div>
+        
+        <!-- AVISO FUERA DE HORARIO DE ENFOQUE -->
+        <div id="focusScheduleStatus" style="display: none; margin-top: 8px; padding: 6px 12px; background: rgba(251, 191, 36, 0.2); border-radius: 6px; font-size: 0.85rem; color: #fbbf24; text-align: center;"></div>
+      </div>
     </header>
 
     <!-- ACTIVIDADES -->
@@ -45,6 +52,7 @@
   <div class="grid centered" style="margin-top: 12px;">
    
 <button id="newClientBtn">➕ Nou encàrrec</button>
+<button id="changeClient">🔄 Activar client</button>
      <button id="focusPriorityBtn" class="primary full-width">
       👁️ Revisar encàrrecs
     </button>
