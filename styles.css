@@ -2267,5 +2267,241 @@ input, textarea, select, a {
    per al header fix, sino el contingut quedaria
    tapat pel header.
 */
+/* ============================================
+   SOLUCIÓ: Botó de foto que no respon a l'iPad
+   ============================================
+   
+   PROBLEMA: A iOS/iPad, els botons amb backdrop-filter,
+   z-index complex, o certs estils poden no respondre
+   als clicks/taps.
+   
+   SOLUCIÓ: CSS específic per iOS + fixes de touch
+*/
 
+/* ============================================
+   1. FIX GENERAL PER iOS
+   ============================================ */
+
+/* Assegurar que tots els botons són touchables */
+button {
+  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
+  touch-action: manipulation; /* Evita zoom en double-tap */
+  position: relative;
+  z-index: 10;
+  pointer-events: auto !important;
+}
+
+/* Específic per iOS */
+@supports (-webkit-touch-callout: none) {
+  button {
+    /* Forçar hardware acceleration */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+  }
+}
+
+/* ============================================
+   2. FIX ESPECÍFIC DEL BOTÓ DE CÀMERA
+   ============================================ */
+
+#cameraBtn {
+  /* Assegurar que és clickable */
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  
+  /* Forçar a una capa independent (GPU) */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform, opacity;
+  
+  /* Z-index alt per estar per sobre de tot */
+  z-index: 50 !important;
+  position: relative;
+  
+  /* iOS específic: eliminar possibles interferències */
+  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  
+  /* Backdrop filter pot causar problemes a iOS */
+  /* Si el botó segueix sense funcionar, comenta aquestes línies: */
+  /* backdrop-filter: blur(10px); */
+  /* -webkit-backdrop-filter: blur(10px); */
+}
+
+/* Estat actiu més visible a iOS */
+#cameraBtn:active {
+  transform: translateZ(0) scale(0.98);
+  -webkit-transform: translateZ(0) scale(0.98);
+  opacity: 0.9;
+}
+
+/* ============================================
+   3. FIX DEL PANEL CONTENIDOR
+   ============================================ */
+
+/* Assegurar que el panel no bloqueja clicks */
+#clientActionsPanel {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto !important;
+  
+  /* iOS fix */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Grid del botó */
+#clientActionsPanel .grid {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto !important;
+}
+
+/* ============================================
+   4. ELIMINAR ELEMENTS QUE PODEN BLOQUEJAR
+   ============================================ */
+
+/* Assegurar que floating layer no bloqueja */
+#floating-layer {
+  pointer-events: none !important;
+}
+
+/* Photo gallery no ha de bloquejar botons */
+#photoGallery {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+  margin-top: 16px;
+}
+
+/* ============================================
+   5. FIX GLOBAL PER TOTS ELS BOTONS PRIMARY
+   ============================================ */
+
+.primary {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  cursor: pointer;
+  
+  /* iOS hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  
+  /* Eliminar delays de click a iOS */
+  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
+}
+
+.primary:active {
+  transform: translateZ(0) scale(0.98);
+  -webkit-transform: translateZ(0) scale(0.98);
+}
+
+/* ============================================
+   6. FIX DEL BACKDROP-FILTER (Pot causar problemes)
+   ============================================ */
+
+/* OPCIÓ A: Mantenir backdrop-filter amb fix */
+#cameraBtn,
+#setDeliveryDateBtn,
+#activateFull {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  
+  /* IMPORTANT: Afegir això per iOS */
+  isolation: isolate;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* OPCIÓ B: Si encara no funciona, desactiva backdrop-filter a iOS */
+@supports (-webkit-touch-callout: none) {
+  /*
+  #cameraBtn,
+  #setDeliveryDateBtn,
+  #activateFull {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(30, 64, 175, 0.9)) !important;
+  }
+}
+
+/* ============================================
+   7. FIX PER CANVAS (pot interferir amb clicks)
+   ============================================ */
+
+#photoCanvas {
+  pointer-events: none !important;
+}
+
+canvas {
+  pointer-events: none !important;
+}
+
+/* ============================================
+   8. MILLORES VISUALS PER iOS
+   ============================================ */
+
+/* Feedback visual més clar a l'iPad */
+#cameraBtn:active,
+button.primary:active {
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.4),
+    0 4px 12px rgba(30, 64, 175, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ============================================
+   9. SAFE AREA per iPad amb notch
+   ============================================ */
+
+@supports (padding: max(0px)) {
+  #clientActionsPanel {
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+}
+
+/* ============================================
+   10. DEBUG: Ressaltar botó (temporal)
+   ============================================
+   
+   Descomenta això per veure si el botó està
+   realment on creus que està:
+*/
+
+/*
+#cameraBtn {
+  outline: 3px solid red !important;
+  background: yellow !important;
+}
+*/
+
+/* ============================================
+   NOTES IMPORTANTS
+   ============================================
+   
+   Problemes comuns a iOS/iPad:
+   
+   1. backdrop-filter pot fer que els botons no siguin clickables
+      → Solució: transform: translateZ(0) + isolation: isolate
+   
+   2. z-index complex pot bloquejar clicks
+      → Solució: z-index alt + position: relative
+   
+   3. Elements amb pointer-events: none poden estar per sobre
+      → Solució: Forçar pointer-events: auto al botó
+   
+   4. Hover states no funcionen a touch
+      → Solució: Usar :active en lloc de :hover
+   
+   5. Double-tap pot fer zoom
+      → Solució: touch-action: manipulation
+*/
 
