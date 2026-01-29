@@ -832,7 +832,163 @@ function showOnboardingScreen() {
     }, 300);
   }
 }
+/* ============================================
+   JAVASCRIPT: Gestió de visibilitat de botons
+   ============================================
+   
+   Aquest codi gestiona quins botons es veuen segons
+   si hi ha un client actiu o no.
+   
+   Afegeix aquest codi al teu app-ui.js o app-core.js
+*/
 
+// Funció per actualitzar la visibilitat dels botons
+function updateButtonsVisibility() {
+  const hasActiveClient = window.currentClient !== null && window.currentClient !== undefined;
+  
+  // Afegir/eliminar classe al body
+  if (hasActiveClient) {
+    document.body.classList.add('client-active');
+    document.body.classList.remove('no-client');
+  } else {
+    document.body.classList.add('no-client');
+    document.body.classList.remove('client-active');
+  }
+  
+  // Gestionar visibilitat dels botons
+  const newClientBtn = document.getElementById('newClientBtn');
+  const changeClientBtn = document.getElementById('changeClient');
+  const exitClientBtn = document.getElementById('exitClientBtn');
+  const focusPriorityBtn = document.getElementById('focusPriorityBtn');
+  
+  if (hasActiveClient) {
+    // Amb client actiu:
+    // - Amagar "Nou encàrrec"
+    // - Amagar "Activar client"
+    // - Mostrar "Sortir del client"
+    // - Mostrar "Revisar encàrrecs"
+    
+    if (newClientBtn) newClientBtn.style.display = 'none';
+    if (changeClientBtn) changeClientBtn.style.display = 'none';
+    if (exitClientBtn) exitClientBtn.style.display = 'block';
+    if (focusPriorityBtn) focusPriorityBtn.style.display = 'block';
+    
+    console.log('✅ Client actiu - Botons actualitzats');
+  } else {
+    // Sense client actiu:
+    // - Mostrar "Nou encàrrec"
+    // - Mostrar "Activar client"
+    // - Amagar "Sortir del client"
+    // - Mostrar "Revisar encàrrecs"
+    
+    if (newClientBtn) newClientBtn.style.display = 'block';
+    if (changeClientBtn) changeClientBtn.style.display = 'block';
+    if (exitClientBtn) exitClientBtn.style.display = 'none';
+    if (focusPriorityBtn) focusPriorityBtn.style.display = 'block';
+    
+    console.log('✅ Sense client - Botons actualitzats');
+  }
+}
+
+// Cridar aquesta funció quan:
+// 1. Carrega l'app
+// 2. S'activa un client
+// 3. Es tanca un client
+
+// Exemple d'integració amb les funcions existents:
+
+// Quan l'app carrega
+document.addEventListener('DOMContentLoaded', () => {
+  updateButtonsVisibility();
+});
+
+// També cridar quan canvia l'estat (afegir a les funcions existents)
+/*
+// A la funció que activa un client (probablement a app-core.js):
+async function activateClient(clientId) {
+  // ... codi existent ...
+  window.currentClient = clientId;
+  updateButtonsVisibility(); // ← Afegir això
+  // ... resta del codi ...
+}
+
+// A la funció que tanca un client:
+async function exitClient() {
+  // ... codi existent ...
+  window.currentClient = null;
+  updateButtonsVisibility(); // ← Afegir això
+  // ... resta del codi ...
+}
+
+// A la funció updateUI (si existeix):
+function updateUI() {
+  // ... codi existent ...
+  updateButtonsVisibility(); // ← Afegir això
+}
+*/
+
+// Funcionalitat del botó de sortir
+document.getElementById('exitClientBtn')?.addEventListener('click', async () => {
+  console.log('🚪 Sortint del client...');
+  
+  // Opció 1: Usar el botó flotant existent
+  const exitFloatingBtn = document.getElementById('exitClientFloating');
+  if (exitFloatingBtn) {
+    exitFloatingBtn.click();
+    return;
+  }
+  
+  // Opció 2: Cridar directament la funció
+  if (typeof exitClient === 'function') {
+    await exitClient();
+  } else {
+    console.error('❌ Funció exitClient no trobada');
+  }
+});
+
+// Exposar la funció globalment
+window.updateButtonsVisibility = updateButtonsVisibility;
+
+console.log('✅ Sistema de gestió de botons inicialitzat');
+
+/* ============================================
+   INTEGRACIÓ AMB EL CODI EXISTENT
+   ============================================
+   
+   Si tens una funció updateUI() que ja gestiona
+   la interfície, afegeix això dins:
+*/
+
+// Exemple d'integració:
+/*
+function updateUI() {
+  const client = window.currentClient;
+  
+  // Codi existent...
+  
+  // Afegir al final:
+  updateButtonsVisibility();
+}
+*/
+
+/* ============================================
+   DEBUG
+   ============================================
+   
+   Per comprovar l'estat actual:
+*/
+
+window.debugButtons = function() {
+  console.log('🔍 ESTAT DELS BOTONS:');
+  console.log('  currentClient:', window.currentClient);
+  console.log('  Body classes:', document.body.className);
+  console.log('  newClientBtn:', document.getElementById('newClientBtn')?.style.display);
+  console.log('  changeClient:', document.getElementById('changeClient')?.style.display);
+  console.log('  exitClientBtn:', document.getElementById('exitClientBtn')?.style.display);
+  console.log('  focusPriorityBtn:', document.getElementById('focusPriorityBtn')?.style.display);
+};
+
+// Executa a la consola: debugButtons()
 // Afegir animació de shake al CSS global
 if (!document.getElementById('onboardingStyles')) {
   const style = document.createElement('style');
