@@ -2555,15 +2555,7 @@ input, textarea, select, a {
   }
 }
 
-/* ============================================
-   7. SI ENCARA NO FUNCIONA - OPCIÓ NUCLEAR
-   ============================================
-   
-   Si amb tot això el panel encara empeny el títol,
-   descomenta aquest bloc:
-*/
 
-/*
 .header {
   position: fixed !important;
   top: 0;
