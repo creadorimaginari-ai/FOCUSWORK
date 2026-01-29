@@ -52,11 +52,21 @@
   <div class="grid centered" style="margin-top: 12px;">
    
 <button id="newClientBtn">➕ Nou encàrrec</button>
-<button id="changeClient">🔄 👁️ Revisar encàrrecs</button>
+<button id="changeClient">🔄 Activar client</button>
+     <button id="focusPriorityBtn" class="primary full-width">
+      👁️ Revisar encàrrecs
     </button>
       </div>
-  <!-- GRID D’ACTIVITATS (si n’hi ha) -->
-  <div class="grid activities" id="activitiesGrid">
+  
+  <!-- BOTÓ DE SORTIR DEL CLIENT (NOU!) -->
+  <div id="exitClientContainer">
+    <button id="exitClientBtn">
+      ↩ Sortir del client
+    </button>
+  </div>
+  
+  <!-- GRID D'ACTIVITATS (OCULT) -->
+  <div class="grid activities" id="activitiesGrid" style="display: none;">
     <!-- aquí ja podràs posar altres activitats més endavant -->
   </div>
 
@@ -630,6 +640,24 @@
       });
     });
   }
+  // Funcionalitat del botó de sortir del client
+document.getElementById('exitClientBtn')?.addEventListener('click', async () => {
+  // Mateix comportament que el botó flotant actual
+  const exitFloatingBtn = document.getElementById('exitClientFloating');
+  if (exitFloatingBtn) {
+    exitFloatingBtn.click(); // Simular click del botó flotant
+  } else {
+    // Si no hi ha botó flotant, sortir directament
+    await exitClient();
+  }
+});
+
+// O alternativament, pots cridar directament la funció:
+/*
+document.getElementById('exitClientBtn')?.addEventListener('click', async () => {
+  await exitClient();
+});
+*/
 </script>
 <!-- BOTÓ FLOTANT PER SORTIR DEL CLIENT -->
 <div id="floating-layer">
