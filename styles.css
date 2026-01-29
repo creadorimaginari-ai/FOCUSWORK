@@ -1804,69 +1804,149 @@ button.secondary:hover,
     margin: 0 auto;
   }
 }
-/* ✅ AFEGEIX AIXÒ (CSS nou - només nom sticky) */
+/* ============================================
+   SOLUCIÓ MILLORADA: Nom sticky sense problemes d'espai
+   ============================================
+   
+   Aquest CSS soluciona:
+   1. El rellotge no xoca amb els botons
+   2. No hi ha barres de colors diferents
+   3. Transició suau
+*/
 
-/* Dividir el header en dues parts */
+/* ============================================
+   OPCIÓ 1: Amb fons uniforme (RECOMANAT)
+   ============================================ */
+
+/* El header ocupa tot l'espai però només el nom és sticky */
 .header {
-  display: flex;
-  flex-direction: column;
+  background: transparent; /* Sense fons fix */
   padding: 0;
+  margin: 0;
 }
 
-/* Només el nom del client i l'activitat són sticky */
+/* Només el nom del client és sticky */
 .client-info-sticky {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #0f172a;
+  background: #0f172a; /* Fons sòlid */
   padding: 12px 20px 8px 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  margin-bottom: 0; /* IMPORTANT: sense marge */
 }
 
-/* El rellotge i la resta NO són sticky */
+/* Rellotge i total - SENSE padding-top extra */
 .timer-section {
+  background: #0f172a; /* Mateix color que el sticky */
   padding: 8px 20px 16px 20px;
-  background: #0f172a;
+  margin-top: 0; /* IMPORTANT: sense marge */
 }
 
-/* Estils del nom del client */
+/* Nom del client */
 .client-name {
   font-size: 1.1rem;
   font-weight: 700;
   color: #f1f5f9;
   text-align: center;
-  margin-bottom: 4px;
+  margin: 0 0 4px 0;
 }
 
-/* Activitat actual */
+/* Activitat */
 .activity-name {
   font-size: 0.85rem;
   color: #94a3b8;
   text-align: center;
   font-weight: 500;
+  margin: 0;
 }
 
-/* Rellotge (NO sticky) */
+/* Rellotge */
 .timer {
   font-size: 2.5rem;
   font-weight: 700;
   text-align: center;
   color: #f1f5f9;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.05em;
-  margin-bottom: 8px;
+  margin: 0 0 8px 0;
 }
 
-/* Total del client */
+/* Total */
 .client-total {
   font-size: 0.9rem;
   color: #cbd5e1;
   text-align: center;
   font-weight: 500;
+  margin: 0;
 }
 
-/* Responsive */
+/* El body principal */
+body {
+  background: #0f172a; /* Mateix color per tot */
+  margin: 0;
+  padding: 0;
+}
+
+/* L'app container */
+.app {
+  background: #0f172a; /* Mateix color */
+  min-height: 100vh;
+}
+
+/* Els panels */
+.panel {
+  background: transparent; /* Hereten el color del body */
+}
+
+
+/* ============================================
+   OPCIÓ 2: Rellotge que es fa petit quan fas scroll
+   ============================================
+   
+   Si vols que el rellotge sigui visible però més petit
+   quan fas scroll, afegeix això:
+*/
+
+/*
+.timer-section {
+  transition: all 0.3s ease;
+  max-height: 200px;
+  overflow: hidden;
+}
+
+body.scrolled .timer-section {
+  max-height: 0;
+  padding: 0;
+  opacity: 0;
+}
+
+.timer {
+  transition: all 0.3s ease;
+}
+
+body.scrolled .timer {
+  font-size: 0;
+  margin: 0;
+}
+*/
+
+/* Això requereix JavaScript per afegir la classe 'scrolled' al body:
+
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 50) {
+    document.body.classList.add('scrolled');
+  } else {
+    document.body.classList.remove('scrolled');
+  }
+});
+
+*/
+
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
 @media (max-width: 640px) {
   .client-info-sticky {
     padding: 10px 16px 6px 16px;
@@ -1883,4 +1963,22 @@ button.secondary:hover,
   .timer {
     font-size: 2rem;
   }
+  
+  .activity-name {
+    font-size: 0.8rem;
+  }
+}
+
+
+/* ============================================
+   MILLORA EXTRA: Animació suau
+   ============================================ */
+
+.client-info-sticky {
+  transition: box-shadow 0.2s ease;
+}
+
+/* Quan fas scroll, l'ombra és més forta */
+body:not([style*="scroll"]) .client-info-sticky {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
