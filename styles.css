@@ -2367,3 +2367,225 @@ input, textarea, select, a {
    per al header fix, sino el contingut quedaria
    tapat pel header.
 */
+/* ============================================
+   SOLUCIÓ ESPECÍFICA: Panel que empeny el títol
+   ============================================
+   
+   PROBLEMA DETECTAT:
+   - El #activitiesPanel té margin-top que empeny el header
+   - Quan fas scroll, aquest marge interacciona amb el sticky
+   - Resultat: El títol desapareix o es mou
+   
+   SOLUCIÓ:
+   - Eliminar tots els marges superiors del panel
+   - Assegurar que el header sticky està completament separat
+*/
+
+/* ============================================
+   1. HEADER COMPLETAMENT INDEPENDENT
+   ============================================ */
+
+/* Header - z-index alt per estar sempre a dalt */
+.header {
+  position: relative;
+  z-index: 100;
+  background: transparent;
+  padding: 0;
+  margin: 0 0 16px 0; /* Només marge inferior */
+  
+  /* Eliminar animació que pot causar problemes */
+  animation: none !important;
+}
+
+/* Nom del client sticky */
+.client-info-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #0f172a;
+  padding: 12px 20px 8px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  margin: 0;
+  
+  /* Forçar GPU acceleration per evitar problemes */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  
+  /* Aïllar completament */
+  isolation: isolate;
+}
+
+/* Timer section */
+.timer-section {
+  position: relative;
+  background: #0f172a;
+  padding: 8px 20px 16px 20px;
+  margin: 0;
+  z-index: 1;
+}
+
+/* ============================================
+   2. PANEL D'ACTIVITATS - ELIMINAR MARGES
+   ============================================ */
+
+/* IMPORTANT: Forçar eliminació del margin-top */
+#activitiesPanel {
+  position: relative;
+  z-index: 1;
+  margin-top: 0 !important; /* Forçar amb !important */
+  padding-top: 0;
+  pointer-events: auto;
+}
+
+/* La grid interna pot tenir marge */
+#activitiesPanel .grid {
+  margin-top: 12px; /* Aquest marge està bé */
+}
+
+/* Però el grid inline amb style també ha de ser controlat */
+#activitiesPanel .grid[style*="margin-top"] {
+  margin-top: 12px !important; /* Normalitzar */
+}
+
+/* Tots els panels */
+.panel {
+  position: relative;
+  z-index: 1;
+  margin-top: 0;
+  padding-top: 0;
+  pointer-events: auto;
+}
+
+/* ============================================
+   3. ESTRUCTURA GENERAL
+   ============================================ */
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #0f172a;
+  overflow-x: hidden;
+}
+
+.app {
+  position: relative;
+  min-height: 100vh;
+  background: #0f172a;
+  display: block; /* NO flex */
+}
+
+/* ============================================
+   4. ELEMENTS DEL HEADER
+   ============================================ */
+
+.client-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-align: center;
+  margin: 0 0 4px 0;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.activity-name {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-align: center;
+  font-weight: 500;
+  margin: 0;
+}
+
+.timer {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: #f1f5f9;
+  margin: 0 0 8px 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+.client-total {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  text-align: center;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ============================================
+   5. INTERACTIVITAT
+   ============================================ */
+
+button {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+input, textarea, select, a {
+  position: relative;
+  pointer-events: auto;
+}
+
+/* ============================================
+   6. RESPONSIVE
+   ============================================ */
+
+@media (max-width: 640px) {
+  .client-info-sticky {
+    padding: 10px 16px 6px 16px;
+  }
+  
+  .timer-section {
+    padding: 6px 16px 12px 16px;
+  }
+  
+  .client-name {
+    font-size: 1rem;
+  }
+  
+  .timer {
+    font-size: 2rem;
+  }
+}
+
+/* ============================================
+   7. SI ENCARA NO FUNCIONA - OPCIÓ NUCLEAR
+   ============================================
+   
+   Si amb tot això el panel encara empeny el títol,
+   descomenta aquest bloc:
+*/
+
+/*
+.header {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #0f172a;
+}
+
+.app {
+  padding-top: 160px;
+}
+
+#activitiesPanel {
+  margin-top: 0 !important;
+}
+*/
+
+/* ============================================
+   NOTES:
+   - Usa !important per forçar l'eliminació del margin-top
+   - transform: translateZ(0) força GPU acceleration
+   - isolation: isolate crea un context d'apilament independent
+   - Si res funciona, usa l'opció "nuclear" de dalt
+   ============================================ */
