@@ -2505,3 +2505,179 @@ button.primary:active {
       → Solució: touch-action: manipulation
 */
 
+/* ============================================
+   SOLUCIÓ COMPLETA: Botons i espaiament
+   ============================================
+   
+   Problemes a solucionar:
+   1. Ocultar "Activar client" quan hi ha client actiu
+   2. Ocultar contenidors buits
+   3. Afegir espai entre botons (no estan enganxats)
+   4. Assegurar que "Sortir del client" es veu correctament
+*/
+
+/* ============================================
+   1. OCULTAR CONTENIDORS BUITS
+   ============================================ */
+
+/* Ocultar el grid d'activitats sempre */
+#activitiesGrid {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ============================================
+   2. VISIBILITAT DELS BOTONS SEGONS ESTAT
+   ============================================ */
+
+/* Per defecte, tots els botons visibles */
+#newClientBtn,
+#changeClient,
+#focusPriorityBtn,
+#exitClientBtn {
+  display: block;
+}
+
+/* Quan NO hi ha client actiu */
+body:not(.client-active) #exitClientBtn {
+  display: none !important;
+}
+
+/* Quan SÍ hi ha client actiu */
+body.client-active #changeClient {
+  display: none !important;
+}
+
+body.client-active #newClientBtn {
+  display: none !important;
+}
+
+/* ============================================
+   3. ESPAIAMENT ENTRE BOTONS
+   ============================================ */
+
+/* Grid principal amb espaiament adequat */
+#activitiesPanel .grid.centered {
+  gap: 12px; /* Espai entre botons */
+  margin-bottom: 12px;
+}
+
+/* Espai entre cada botó */
+#newClientBtn,
+#changeClient,
+#focusPriorityBtn {
+  margin-bottom: 0; /* Eliminar marges individuals */
+}
+
+/* Contenidor del botó de sortir amb espai */
+#exitClientContainer {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+/* ============================================
+   4. ESTIL DEL BOTÓ DE SORTIR (més gran)
+   ============================================ */
+
+#exitClientBtn {
+  width: 100%;
+  padding: 16px 20px; /* Més padding per fer-lo més gran */
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(185, 28, 28, 0.15));
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  /* Per iOS */
+  -webkit-tap-highlight-color: rgba(239, 68, 68, 0.3);
+  touch-action: manipulation;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
+  
+  /* Assegurar visibilitat */
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#exitClientBtn:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.25));
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+#exitClientBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
+}
+
+/* ============================================
+   5. ASSEGURAR QUE EL GRID USA GAP
+   ============================================ */
+
+/* Si el grid no té gap, forçar-lo */
+.grid.centered {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px !important;
+  margin-top: 12px;
+}
+
+/* El botó full-width ocupa totes les columnes */
+.grid.centered .full-width {
+  grid-column: 1 / -1;
+}
+
+/* ============================================
+   6. RESPONSIVE
+   ============================================ */
+
+@media (max-width: 640px) {
+  #exitClientBtn {
+    font-size: 0.95rem;
+    padding: 14px 18px;
+  }
+  
+  .grid.centered {
+    gap: 10px !important;
+  }
+  
+  #exitClientContainer {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+}
+
+/* ============================================
+   7. DEBUG (Descomenta per veure els botons)
+   ============================================ */
+
+/*
+#newClientBtn { outline: 2px solid green !important; }
+#changeClient { outline: 2px solid blue !important; }
+#focusPriorityBtn { outline: 2px solid purple !important; }
+#exitClientBtn { outline: 2px solid red !important; }
+*/
+
+/* ============================================
+   NOTES IMPORTANTS
+   ============================================
+   
+   Aquest CSS assumeix que el JavaScript afegeix
+   la classe "client-active" al body quan hi ha
+   un client actiu.
+   
+   Si això no passa automàticament, necessitaràs
+   afegir JavaScript per gestionar la visibilitat.
+   
+   Veure fitxer JS adjunt per la solució completa.
+*/
