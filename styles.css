@@ -1804,45 +1804,7 @@ button.secondary:hover,
     margin: 0 auto;
   }
 }
-/* ============================================
-   SOLUCIÓ MILLORADA: Nom sticky sense problemes d'espai
-   ============================================
-   
-   Aquest CSS soluciona:
-   1. El rellotge no xoca amb els botons
-   2. No hi ha barres de colors diferents
-   3. Transició suau
-*/
 
-/* ============================================
-   OPCIÓ 1: Amb fons uniforme (RECOMANAT)
-   ============================================ */
-
-/* El header ocupa tot l'espai però només el nom és sticky */
-.header {
-  background: transparent; /* Sense fons fix */
-  padding: 0;
-  margin: 0;
-}
-
-/* Només el nom del client és sticky */
-.client-info-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: #0f172a; /* Fons sòlid */
-  padding: 12px 20px 8px 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-  margin-bottom: 0; /* IMPORTANT: sense marge */
-}
-
-/* Rellotge i total - SENSE padding-top extra */
-.timer-section {
-  background: #0f172a; /* Mateix color que el sticky */
-  padding: 8px 20px 16px 20px;
-  margin-top: 0; /* IMPORTANT: sense marge */
-}
 
 /* Nom del client */
 .client-name {
@@ -1943,45 +1905,7 @@ window.addEventListener('scroll', () => {
 */
 
 
-/* ============================================
-   RESPONSIVE
-   ============================================ */
 
-@media (max-width: 640px) {
-  .client-info-sticky {
-    padding: 10px 16px 6px 16px;
-  }
-  
-  .timer-section {
-    padding: 6px 16px 12px 16px;
-  }
-  
-  .client-name {
-    font-size: 1rem;
-  }
-  
-  .timer {
-    font-size: 2rem;
-  }
-  
-  .activity-name {
-    font-size: 0.8rem;
-  }
-}
-
-
-/* ============================================
-   MILLORA EXTRA: Animació suau
-   ============================================ */
-
-.client-info-sticky {
-  transition: box-shadow 0.2s ease;
-}
-
-/* Quan fas scroll, l'ombra és més forta */
-body:not([style*="scroll"]) .client-info-sticky {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
 /* ============================================
    SOLUCIÓ: Botó de foto que no respon a l'iPad
    ============================================
@@ -2219,4 +2143,227 @@ button.primary:active {
    
    5. Double-tap pot fer zoom
       → Solució: touch-action: manipulation
+*/
+/* ============================================
+   SOLUCIÓ RADICAL: Header completament fix
+   ============================================
+   
+   Si les solucions anteriors no han funcionat,
+   aquesta és l'opció més forta: fer el header
+   completament FIXED (no sticky)
+   
+   Això GARANTEIX que el títol sempre estigui
+   a la part superior, sense cap interferència
+*/
+
+/* ============================================
+   OPCIÓ 1: NOMÉS el nom del client fix
+   ============================================ */
+
+/* Body i app */
+body {
+  margin: 0;
+  padding: 0;
+  background: #0f172a;
+  overflow-x: hidden;
+}
+
+.app {
+  position: relative;
+  min-height: 100vh;
+  background: #0f172a;
+  /* Afegir padding per fer espai al header fix */
+  padding-top: 60px; /* Ajusta segons necessitis */
+}
+
+/* Header contenidor */
+.header {
+  position: relative;
+  z-index: 50;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  animation: none !important;
+}
+
+/* NOM DEL CLIENT - POSITION FIXED (no sticky) */
+.client-info-sticky {
+  position: fixed !important; /* FIXED en lloc de sticky */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #0f172a;
+  padding: 12px 20px 8px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  margin: 0;
+}
+
+/* Timer section - ara ha d'estar just sota el client name fix */
+.timer-section {
+  position: relative;
+  background: #0f172a;
+  padding: 8px 20px 16px 20px;
+  margin: 0;
+  z-index: 1;
+}
+
+/* Panel d'activitats - sense problemes de margin */
+#activitiesPanel {
+  position: relative;
+  z-index: 1;
+  margin-top: 0 !important;
+  padding-top: 0;
+  pointer-events: auto;
+}
+
+.panel {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+/* Elements del header */
+.client-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-align: center;
+  margin: 0 0 4px 0;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.activity-name {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-align: center;
+  font-weight: 500;
+  margin: 0;
+}
+
+.timer {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: #f1f5f9;
+  margin: 0 0 8px 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+.client-total {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  text-align: center;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Botons i interactivitat */
+button {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+input, textarea, select, a {
+  position: relative;
+  pointer-events: auto;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .app {
+    padding-top: 55px; /* Menys espai al mòbil */
+  }
+  
+  .client-info-sticky {
+    padding: 10px 16px 6px 16px;
+  }
+  
+  .timer-section {
+    padding: 6px 16px 12px 16px;
+  }
+  
+  .client-name {
+    font-size: 1rem;
+  }
+  
+  .timer {
+    font-size: 2rem;
+  }
+}
+
+
+/* ============================================
+   OPCIÓ 2: Tot el header fix (nom + rellotge)
+   ============================================
+   
+   Si vols que TANT el nom COM el rellotge estiguin
+   sempre visibles, descomenta això:
+*/
+
+/*
+.header {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #0f172a;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  margin: 0;
+}
+
+.client-info-sticky {
+  position: relative !important;
+  padding: 0;
+  box-shadow: none;
+  border: none;
+}
+
+.timer-section {
+  position: relative;
+  padding: 8px 0 0 0;
+}
+
+.app {
+  padding-top: 180px;
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding-top: 160px;
+  }
+}
+*/
+
+
+/* ============================================
+   NOTES IMPORTANTS
+   ============================================
+   
+   Diferència entre STICKY i FIXED:
+   
+   STICKY:
+   - El element es mou amb el scroll fins arribar
+     a la posició "top: 0", llavors es queda fix
+   - Pot tenir problemes amb margins/paddings
+   
+   FIXED:
+   - El element SEMPRE està a la mateixa posició
+   - No es mou MAI amb el scroll
+   - No té problemes amb altres elements
+   
+   Amb FIXED, el títol estarà SEMPRE al mateix lloc,
+   garantit al 100%.
+   
+   El padding-top a .app és necessari per fer espai
+   per al header fix, sino el contingut quedaria
+   tapat pel header.
 */
