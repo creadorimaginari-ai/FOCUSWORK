@@ -1804,6 +1804,45 @@ button.secondary:hover,
     margin: 0 auto;
   }
 }
+/* ============================================
+   SOLUCIÓ MILLORADA: Nom sticky sense problemes d'espai
+   ============================================
+   
+   Aquest CSS soluciona:
+   1. El rellotge no xoca amb els botons
+   2. No hi ha barres de colors diferents
+   3. Transició suau
+*/
+
+/* ============================================
+   OPCIÓ 1: Amb fons uniforme (RECOMANAT)
+   ============================================ */
+
+/* El header ocupa tot l'espai però només el nom és sticky */
+.header {
+  background: transparent; /* Sense fons fix */
+  padding: 0;
+  margin: 0;
+}
+
+/* Només el nom del client és sticky */
+.client-info-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #0f172a; /* Fons sòlid */
+  padding: 12px 20px 8px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  margin-bottom: 0; /* IMPORTANT: sense marge */
+}
+
+/* Rellotge i total - SENSE padding-top extra */
+.timer-section {
+  background: #0f172a; /* Mateix color que el sticky */
+  padding: 8px 20px 16px 20px;
+  margin-top: 0; /* IMPORTANT: sense marge */
+}
 
 /* Nom del client */
 .client-name {
@@ -1901,286 +1940,14 @@ window.addEventListener('scroll', () => {
   }
 });
 
-
-/* ============================================
-   1. HEADER COMPLETAMENT INDEPENDENT
-   ============================================ */
-
-/* Header - z-index alt per estar sempre a dalt */
-.header {
-  position: relative;
-  z-index: 100;
-  background: transparent;
-  padding: 0;
-  margin: 0 0 16px 0; /* Només marge inferior */
-  
-  /* Eliminar animació que pot causar problemes */
-  animation: none !important;
-}
-
-
-  
-  /* Forçar GPU acceleration per evitar problemes */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  will-change: transform;
-  
-  /* Aïllar completament */
-  isolation: isolate;
-}
-
-/* Timer section */
-.timer-section {
-  position: relative;
-  background: #0f172a;
-  padding: 8px 20px 16px 20px;
-  margin: 0;
-  z-index: 1;
-}
-
-/* ============================================
-   2. PANEL D'ACTIVITATS - ELIMINAR MARGES
-   ============================================ */
-
-/* IMPORTANT: Forçar eliminació del margin-top */
-#activitiesPanel {
-  position: relative;
-  z-index: 1;
-  margin-top: 0 !important; /* Forçar amb !important */
-  padding-top: 0;
-  pointer-events: auto;
-}
-
-/* La grid interna pot tenir marge */
-#activitiesPanel .grid {
-  margin-top: 12px; /* Aquest marge està bé */
-}
-
-/* Però el grid inline amb style també ha de ser controlat */
-#activitiesPanel .grid[style*="margin-top"] {
-  margin-top: 12px !important; /* Normalitzar */
-}
-
-/* Tots els panels */
-.panel {
-  position: relative;
-  z-index: 1;
-  margin-top: 0;
-  padding-top: 0;
-  pointer-events: auto;
-}
-
-/* ============================================
-   3. ESTRUCTURA GENERAL
-   ============================================ */
-
-body {
-  margin: 0;
-  padding: 0;
-  background: #0f172a;
-  overflow-x: hidden;
-}
-
-.app {
-  position: relative;
-  min-height: 100vh;
-  background: #0f172a;
-  display: block; /* NO flex */
-}
-
-/* ============================================
-   4. ELEMENTS DEL HEADER
-   ============================================ */
-
-.client-name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #f1f5f9;
-  text-align: center;
-  margin: 0 0 4px 0;
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.activity-name {
-  font-size: 0.85rem;
-  color: #94a3b8;
-  text-align: center;
-  font-weight: 500;
-  margin: 0;
-}
-
-.timer {
-  font-size: 2.5rem;
-  font-weight: 700;
-  text-align: center;
-  color: #f1f5f9;
-  margin: 0 0 8px 0;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.05em;
-}
-
-.client-total {
-  font-size: 0.9rem;
-  color: #cbd5e1;
-  text-align: center;
-  font-weight: 500;
-  margin: 0;
-}
-
-/* ============================================
-   5. INTERACTIVITAT
-   ============================================ */
-
-button {
-  position: relative;
-  z-index: 10;
-  pointer-events: auto;
-}
-
-input, textarea, select, a {
-  position: relative;
-  pointer-events: auto;
-}
-/* ============================================
-   SOLUCIÓ RADICAL: Header completament fix
-   ============================================
-   
-   Si les solucions anteriors no han funcionat,
-   aquesta és l'opció més forta: fer el header
-   completament FIXED (no sticky)
-   
-   Això GARANTEIX que el títol sempre estigui
-   a la part superior, sense cap interferència
 */
 
+
 /* ============================================
-   OPCIÓ 1: NOMÉS el nom del client fix
+   RESPONSIVE
    ============================================ */
 
-/* Body i app */
-body {
-  margin: 0;
-  padding: 0;
-  background: #0f172a;
-  overflow-x: hidden;
-}
-
-.app {
-  position: relative;
-  min-height: 100vh;
-  background: #0f172a;
-  /* Afegir padding per fer espai al header fix */
-  padding-top: 60px; /* Ajusta segons necessitis */
-}
-
-/* Header contenidor */
-.header {
-  position: relative;
-  z-index: 50;
-  background: transparent;
-  margin: 0;
-  padding: 0;
-  animation: none !important;
-}
-
-/* NOM DEL CLIENT - POSITION FIXED (no sticky) */
-.client-info-sticky {
-  position: fixed !important; /* FIXED en lloc de sticky */
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: #0f172a;
-  padding: 12px 20px 8px 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-  margin: 0;
-}
-
-/* Timer section - ara ha d'estar just sota el client name fix */
-.timer-section {
-  position: relative;
-  background: #0f172a;
-  padding: 8px 20px 16px 20px;
-  margin: 0;
-  z-index: 1;
-}
-
-/* Panel d'activitats - sense problemes de margin */
-#activitiesPanel {
-  position: relative;
-  z-index: 1;
-  margin-top: 0 !important;
-  padding-top: 0;
-  pointer-events: auto;
-}
-
-.panel {
-  position: relative;
-  z-index: 1;
-  pointer-events: auto;
-}
-
-/* Elements del header */
-.client-name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #f1f5f9;
-  text-align: center;
-  margin: 0 0 4px 0;
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.activity-name {
-  font-size: 0.85rem;
-  color: #94a3b8;
-  text-align: center;
-  font-weight: 500;
-  margin: 0;
-}
-
-.timer {
-  font-size: 2.5rem;
-  font-weight: 700;
-  text-align: center;
-  color: #f1f5f9;
-  margin: 0 0 8px 0;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.05em;
-}
-
-.client-total {
-  font-size: 0.9rem;
-  color: #cbd5e1;
-  text-align: center;
-  font-weight: 500;
-  margin: 0;
-}
-
-/* Botons i interactivitat */
-button {
-  position: relative;
-  z-index: 10;
-  pointer-events: auto;
-}
-
-input, textarea, select, a {
-  position: relative;
-  pointer-events: auto;
-}
-
-/* Responsive */
 @media (max-width: 640px) {
-  .app {
-    padding-top: 55px; /* Menys espai al mòbil */
-  }
-  
   .client-info-sticky {
     padding: 10px 16px 6px 16px;
   }
@@ -2196,488 +1963,22 @@ input, textarea, select, a {
   .timer {
     font-size: 2rem;
   }
+  
+  .activity-name {
+    font-size: 0.8rem;
+  }
 }
 
 
 /* ============================================
-   OPCIÓ 2: Tot el header fix (nom + rellotge)
-   ============================================
-   
-   Si vols que TANT el nom COM el rellotge estiguin
-   sempre visibles, descomenta això:
-*/
-
-/*
-.header {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: #0f172a;
-  padding: 16px 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  margin: 0;
-}
+   MILLORA EXTRA: Animació suau
+   ============================================ */
 
 .client-info-sticky {
-  position: relative !important;
-  padding: 0;
-  box-shadow: none;
-  border: none;
+  transition: box-shadow 0.2s ease;
 }
 
-.timer-section {
-  position: relative;
-  padding: 8px 0 0 0;
+/* Quan fas scroll, l'ombra és més forta */
+body:not([style*="scroll"]) .client-info-sticky {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
-
-.app {
-  padding-top: 180px;
-}
-
-@media (max-width: 640px) {
-  .app {
-    padding-top: 160px;
-  }
-}
-*/
-
-
-/* ============================================
-   NOTES IMPORTANTS
-   ============================================
-   
-   Diferència entre STICKY i FIXED:
-   
-   STICKY:
-   - El element es mou amb el scroll fins arribar
-     a la posició "top: 0", llavors es queda fix
-   - Pot tenir problemes amb margins/paddings
-   
-   FIXED:
-   - El element SEMPRE està a la mateixa posició
-   - No es mou MAI amb el scroll
-   - No té problemes amb altres elements
-   
-   Amb FIXED, el títol estarà SEMPRE al mateix lloc,
-   garantit al 100%.
-   
-   El padding-top a .app és necessari per fer espai
-   per al header fix, sino el contingut quedaria
-   tapat pel header.
-*/
-/* ============================================
-   SOLUCIÓ: Botó de foto que no respon a l'iPad
-   ============================================
-   
-   PROBLEMA: A iOS/iPad, els botons amb backdrop-filter,
-   z-index complex, o certs estils poden no respondre
-   als clicks/taps.
-   
-   SOLUCIÓ: CSS específic per iOS + fixes de touch
-*/
-
-/* ============================================
-   1. FIX GENERAL PER iOS
-   ============================================ */
-
-/* Assegurar que tots els botons són touchables */
-button {
-  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  cursor: pointer;
-  touch-action: manipulation; /* Evita zoom en double-tap */
-  position: relative;
-  z-index: 10;
-  pointer-events: auto !important;
-}
-
-/* Específic per iOS */
-@supports (-webkit-touch-callout: none) {
-  button {
-    /* Forçar hardware acceleration */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    will-change: transform;
-  }
-}
-
-/* ============================================
-   2. FIX ESPECÍFIC DEL BOTÓ DE CÀMERA
-   ============================================ */
-
-#cameraBtn {
-  /* Assegurar que és clickable */
-  pointer-events: auto !important;
-  cursor: pointer !important;
-  touch-action: manipulation !important;
-  
-  /* Forçar a una capa independent (GPU) */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  will-change: transform, opacity;
-  
-  /* Z-index alt per estar per sobre de tot */
-  z-index: 50 !important;
-  position: relative;
-  
-  /* iOS específic: eliminar possibles interferències */
-  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  
-  /* Backdrop filter pot causar problemes a iOS */
-  /* Si el botó segueix sense funcionar, comenta aquestes línies: */
-  /* backdrop-filter: blur(10px); */
-  /* -webkit-backdrop-filter: blur(10px); */
-}
-
-/* Estat actiu més visible a iOS */
-#cameraBtn:active {
-  transform: translateZ(0) scale(0.98);
-  -webkit-transform: translateZ(0) scale(0.98);
-  opacity: 0.9;
-}
-
-/* ============================================
-   3. FIX DEL PANEL CONTENIDOR
-   ============================================ */
-
-/* Assegurar que el panel no bloqueja clicks */
-#clientActionsPanel {
-  position: relative;
-  z-index: 1;
-  pointer-events: auto !important;
-  
-  /* iOS fix */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-}
-
-/* Grid del botó */
-#clientActionsPanel .grid {
-  position: relative;
-  z-index: 10;
-  pointer-events: auto !important;
-}
-
-/* ============================================
-   4. ELIMINAR ELEMENTS QUE PODEN BLOQUEJAR
-   ============================================ */
-
-/* Assegurar que floating layer no bloqueja */
-#floating-layer {
-  pointer-events: none !important;
-}
-
-/* Photo gallery no ha de bloquejar botons */
-#photoGallery {
-  position: relative;
-  z-index: 1;
-  pointer-events: auto;
-  margin-top: 16px;
-}
-
-/* ============================================
-   5. FIX GLOBAL PER TOTS ELS BOTONS PRIMARY
-   ============================================ */
-
-.primary {
-  pointer-events: auto !important;
-  touch-action: manipulation;
-  cursor: pointer;
-  
-  /* iOS hardware acceleration */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  
-  /* Eliminar delays de click a iOS */
-  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.3);
-}
-
-.primary:active {
-  transform: translateZ(0) scale(0.98);
-  -webkit-transform: translateZ(0) scale(0.98);
-}
-
-/* ============================================
-   6. FIX DEL BACKDROP-FILTER (Pot causar problemes)
-   ============================================ */
-
-/* OPCIÓ A: Mantenir backdrop-filter amb fix */
-#cameraBtn,
-#setDeliveryDateBtn,
-#activateFull {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  
-  /* IMPORTANT: Afegir això per iOS */
-  isolation: isolate;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-}
-
-/* OPCIÓ B: Si encara no funciona, desactiva backdrop-filter a iOS */
-@supports (-webkit-touch-callout: none) {
-  /*
-  #cameraBtn,
-  #setDeliveryDateBtn,
-  #activateFull {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(30, 64, 175, 0.9)) !important;
-  }
-}
-
-/* ============================================
-   7. FIX PER CANVAS (pot interferir amb clicks)
-   ============================================ */
-
-#photoCanvas {
-  pointer-events: none !important;
-}
-
-canvas {
-  pointer-events: none !important;
-}
-
-/* ============================================
-   8. MILLORES VISUALS PER iOS
-   ============================================ */
-
-/* Feedback visual més clar a l'iPad */
-#cameraBtn:active,
-button.primary:active {
-  box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.4),
-    0 4px 12px rgba(30, 64, 175, 0.3),
-    inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
-}
-
-/* ============================================
-   9. SAFE AREA per iPad amb notch
-   ============================================ */
-
-@supports (padding: max(0px)) {
-  #clientActionsPanel {
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
-  }
-}
-
-/* ============================================
-   10. DEBUG: Ressaltar botó (temporal)
-   ============================================
-   
-   Descomenta això per veure si el botó està
-   realment on creus que està:
-*/
-
-/*
-#cameraBtn {
-  outline: 3px solid red !important;
-  background: yellow !important;
-}
-*/
-
-/* ============================================
-   NOTES IMPORTANTS
-   ============================================
-   
-   Problemes comuns a iOS/iPad:
-   
-   1. backdrop-filter pot fer que els botons no siguin clickables
-      → Solució: transform: translateZ(0) + isolation: isolate
-   
-   2. z-index complex pot bloquejar clicks
-      → Solució: z-index alt + position: relative
-   
-   3. Elements amb pointer-events: none poden estar per sobre
-      → Solució: Forçar pointer-events: auto al botó
-   
-   4. Hover states no funcionen a touch
-      → Solució: Usar :active en lloc de :hover
-   
-   5. Double-tap pot fer zoom
-      → Solució: touch-action: manipulation
-*/
-
-/* ============================================
-   SOLUCIÓ COMPLETA: Botons i espaiament
-   ============================================
-   
-   Problemes a solucionar:
-   1. Ocultar "Activar client" quan hi ha client actiu
-   2. Ocultar contenidors buits
-   3. Afegir espai entre botons (no estan enganxats)
-   4. Assegurar que "Sortir del client" es veu correctament
-*/
-
-/* ============================================
-   1. OCULTAR CONTENIDORS BUITS
-   ============================================ */
-
-/* Ocultar el grid d'activitats sempre */
-#activitiesGrid {
-  display: none !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-
-/* ============================================
-   2. VISIBILITAT DELS BOTONS SEGONS ESTAT
-   ============================================ */
-
-/* Per defecte, tots els botons visibles */
-#newClientBtn,
-#changeClient,
-#focusPriorityBtn,
-#exitClientBtn {
-  display: block;
-}
-
-/* Quan NO hi ha client actiu */
-body:not(.client-active) #exitClientBtn {
-  display: none !important;
-}
-
-/* Quan SÍ hi ha client actiu */
-body.client-active #changeClient {
-  display: none !important;
-}
-
-body.client-active #newClientBtn {
-  display: none !important;
-}
-
-/* ============================================
-   3. ESPAIAMENT ENTRE BOTONS
-   ============================================ */
-
-/* Grid principal amb espaiament adequat */
-#activitiesPanel .grid.centered {
-  gap: 12px; /* Espai entre botons */
-  margin-bottom: 12px;
-}
-
-/* Espai entre cada botó */
-#newClientBtn,
-#changeClient,
-#focusPriorityBtn {
-  margin-bottom: 0; /* Eliminar marges individuals */
-}
-
-/* Contenidor del botó de sortir amb espai */
-#exitClientContainer {
-  margin-top: 12px;
-  margin-bottom: 12px;
-  width: 100%;
-}
-
-/* ============================================
-   4. ESTIL DEL BOTÓ DE SORTIR (més gran)
-   ============================================ */
-
-#exitClientBtn {
-  width: 100%;
-  padding: 16px 20px; /* Més padding per fer-lo més gran */
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(185, 28, 28, 0.15));
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  
-  /* Per iOS */
-  -webkit-tap-highlight-color: rgba(239, 68, 68, 0.3);
-  touch-action: manipulation;
-  pointer-events: auto;
-  position: relative;
-  z-index: 10;
-  
-  /* Assegurar visibilitat */
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-#exitClientBtn:hover {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.25));
-  border-color: rgba(239, 68, 68, 0.5);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-#exitClientBtn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
-}
-
-/* ============================================
-   5. ASSEGURAR QUE EL GRID USA GAP
-   ============================================ */
-
-/* Si el grid no té gap, forçar-lo */
-.grid.centered {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px !important;
-  margin-top: 12px;
-}
-
-/* El botó full-width ocupa totes les columnes */
-.grid.centered .full-width {
-  grid-column: 1 / -1;
-}
-
-/* ============================================
-   6. RESPONSIVE
-   ============================================ */
-
-@media (max-width: 640px) {
-  #exitClientBtn {
-    font-size: 0.95rem;
-    padding: 14px 18px;
-  }
-  
-  .grid.centered {
-    gap: 10px !important;
-  }
-  
-  #exitClientContainer {
-    margin-top: 10px;
-    margin-bottom: 10px;
-  }
-}
-
-/* ============================================
-   7. DEBUG (Descomenta per veure els botons)
-   ============================================ */
-
-/*
-#newClientBtn { outline: 2px solid green !important; }
-#changeClient { outline: 2px solid blue !important; }
-#focusPriorityBtn { outline: 2px solid purple !important; }
-#exitClientBtn { outline: 2px solid red !important; }
-*/
-
-/* ============================================
-   NOTES IMPORTANTS
-   ============================================
-   
-   Aquest CSS assumeix que el JavaScript afegeix
-   la classe "client-active" al body quan hi ha
-   un client actiu.
-   
-   Si això no passa automàticament, necessitaràs
-   afegir JavaScript per gestionar la visibilitat.
-   
-   Veure fitxer JS adjunt per la solució completa.
-*/
