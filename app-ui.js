@@ -408,8 +408,18 @@ async function updateUI(preloadedClient = null) {
   const exitContainer = $("exitClientContainer");
   const deletePanel = $("deleteClientPanel");
   const clientActionsPanel = $("clientActionsPanel");
+  const clientInfoPanel = $("clientInfoPanel");
   
   updates.push(() => {
+    // Control del panell principal d'informació del client
+    if (clientInfoPanel) {
+      if (client) {
+        clientInfoPanel.style.display = 'block';
+      } else {
+        clientInfoPanel.style.display = 'none';
+      }
+    }
+    
     if (exitContainer) {
       if (client) {
         exitContainer.style.display = "block";
