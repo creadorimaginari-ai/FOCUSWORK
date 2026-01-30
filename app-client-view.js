@@ -119,13 +119,11 @@ function initClientView() {
 async function showClientView(client) {
   const clientView = $('clientInfoPanel');
   const activitiesPanel = $('activitiesPanel');
-  const clientFinalActions = $('clientFinalActions');
 
   if (!clientView) return;
 
   // Ocultar altres seccions
   if (activitiesPanel) activitiesPanel.style.display = 'none';
-  if (clientFinalActions) clientFinalActions.style.display = 'none';
 
   // Mostrar vista de client
   clientView.style.display = 'block';
@@ -138,13 +136,23 @@ async function showClientView(client) {
 }
 
 function closeClientView() {
+  // IMPORTANT: Aquesta funció NO tanca el client, només torna a la vista principal
+  // El client segueix actiu però es pausa el temps
+  
   const clientView = $('clientInfoPanel');
   const activitiesPanel = $('activitiesPanel');
-  const clientFinalActions = $('clientFinalActions');
 
   if (clientView) clientView.style.display = 'none';
   if (activitiesPanel) activitiesPanel.style.display = 'block';
-  if (clientFinalActions) clientFinalActions.style.display = 'block';
+  
+  // Pausar el temps del client (sense perdre el progrés)
+  // El client segueix sent state.currentClientId però s'atura el comptador
+  if (state.currentClientId) {
+    state.currentActivity = null;
+    state.lastTick = null;
+    save();
+    updateUI();
+  }
 }
 
 /* ================= ACTUALITZAR CONTINGUT ================= */
@@ -392,11 +400,12 @@ if (originalUpdateUI) {
   window.updateUI = async function(preloadedClient = null) {
     await originalUpdateUI(preloadedClient);
     
-    // Si hi ha un client actiu, mostrar la nova vista
-    if (state.currentClientId) {
+    // Si hi ha un client actiu i està treballant, mostrar la nova vista
+    if (state.currentClientId && state.currentActivity) {
       const client = preloadedClient || await loadClient(state.currentClientId);
       await showClientView(client);
     } else {
+      // Si no hi ha activitat (temps parat), mostrar la vista principal
       closeClientView();
     }
   };

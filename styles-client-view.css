@@ -551,6 +551,69 @@
 .status-btn svg { color: #22c55e; }
 
 /* ============================================
+   BOTONS D'ACCIÓ FINALS DEL CLIENT
+   ============================================ */
+
+.client-final-actions {
+  margin: 30px 20px 100px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-secondary-large {
+  width: 100%;
+  padding: 16px;
+  background: rgba(51, 65, 85, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #e2e8f0;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-secondary-large:hover {
+  background: rgba(51, 65, 85, 1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-close-client {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-close-client:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.btn-close-client:active {
+  transform: translateY(0);
+}
+
+/* ============================================
    FOTOGRAFIES
    ============================================ */
 
