@@ -19,6 +19,7 @@
 
   <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-client-view.css">
 </head>
 
 <body>
@@ -39,100 +40,287 @@
     </header>
 
     <!-- ACTIVIDADES -->
-<section class="panel" id="activitiesPanel">
-
-  <!-- ACCIÓ PRINCIPAL -->
-  <div class="grid centered" style="margin-top: 12px;">
-   
-<button id="newClientBtn">➕ Nou encàrrec</button>
- <!-- <button id="changeClient">🔄 Canviar d’encàrrec</button> -->
-     <button id="focusPriorityBtn" class="primary full-width">
-      👁️ Revisar encàrrecs
-    </button>
-      </div>
-  <!-- GRID D’ACTIVITATS (si n’hi ha) -->
-  <div class="grid activities" id="activitiesGrid">
-    <!-- aquí ja podràs posar altres activitats més endavant -->
-  </div>
-
-</section>
-
-
-<!-- INFO CLIENTE (CÁMARA + NOTAS) -->
-    <section class="panel" id="clientInfoPanel">
-      
-      <!-- FECHA DE ENTREGA -->
-      <div id="deliveryDateBox" class="delivery-info hidden"></div>
-
-      <!-- WORKPAD (Bloc de notas) -->
-      <div class="workpad-container">
-        <div class="workpad-header">
-          <span class="workpad-icon">📝</span>
-          <span class="workpad-title">Notes del client</span>
-        </div>
-        <textarea 
-          id="clientWorkpad" 
-          class="workpad-area" 
-          placeholder="Apunts, tasques pendents, detalls del projecte…"
-        ></textarea>
-      </div>
-
-      <!-- FEINES PER URGÈNCIA -->
-      <div class="workpad-container">
-        <div class="workpad-header">
-        </div>
-
-        <textarea
-          id="taskUrgent"
-          class="workpad-area urgent"
-          placeholder="🔴 Urgent (avui, bloquejant...)"
-        ></textarea>
-
-        <textarea
-          id="taskImportant"
-          class="workpad-area important"
-          placeholder="🟠 Important (següent pas)"
-        ></textarea>
-
-        <textarea
-          id="taskLater"
-          class="workpad-area later"
-          placeholder="🟢 Quan es pugui (no oblidar)"
-        ></textarea>
-      </div>
-
-      <!-- PANEL D'ACCIONS DEL CLIENT -->
-      <div id="clientActionsPanel" class="client-actions-panel">
-        <div class="grid" style="margin-top: 12px;">
-          <button id="setDeliveryDateBtn" class="primary">
-            📅 Data d'entrega
-          </button>
-        </div> 
-          
-        <div class="grid centered" style="margin-top: 12px;">
-          <button id="addExtraHoursBtn" class="secondary">
-            ⏱️ Afegir hores
-          </button>
-          <button id="viewExtraHoursBtn" class="secondary">
-            📊 Veure resum d'hores
-          </button>
-        </div>
-
-        <div class="grid centered" style="margin-top: 12px;">
-          <button id="generateReportBtn" class="primary">
-            📋 Generar informe
-          </button>
-        </div>
-
-        <div class="grid centered" style="margin-top: 12px;">
-          <button id="cameraBtn" class="primary">
-            📷 Afegir foto al client
-          </button>
-        </div>
+    <section class="panel" id="activitiesPanel">
+      <!-- ACCIÓ PRINCIPAL -->
+      <div class="grid centered" style="margin-top: 12px;">
+        <button id="newClientBtn">➕ Nou encàrrec</button>
+        <button id="changeClient">🔄 Canviar d'encàrrec</button>
+        <button id="focusPriorityBtn" class="primary full-width">
+          👁️ Revisar encàrrecs
+        </button>
       </div>
       
-      <!-- 🔥 GALERÍA DE FOTOS (CRÍTICO - ESTO ESTABA FUERA DE LUGAR) -->
-      <div id="photoGallery" class="photo-gallery"></div>
+      <!-- GRID D'ACTIVITATS (si n'hi ha) -->
+      <div class="grid activities" id="activitiesGrid">
+        <!-- aquí ja podràs posar altres activitats més endavant -->
+      </div>
+    </section>
+
+    <!-- ============================================
+         NOVA VISTA DE CLIENT (ESTIL IMATGE)
+         ============================================ -->
+    <section class="client-detail-view" id="clientInfoPanel" style="display: none;">
+      
+      <!-- CAPÇALERA DEL CLIENT -->
+      <div class="client-header">
+        <button class="back-btn" id="backToMainBtn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <h1 class="client-header-title" id="clientHeaderTitle">Client Example</h1>
+        <span class="urgent-badge" id="urgentBadge" style="display: none;">Urgent</span>
+      </div>
+
+      <!-- ACCIONS RÀPIDES -->
+      <div class="quick-actions">
+        <button class="quick-action-btn" id="quickCallBtn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </button>
+        <button class="quick-action-btn" id="quickEmailBtn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </button>
+        <button class="quick-action-btn" id="quickPhotoBtn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span class="badge-plus">+</span>
+        </button>
+      </div>
+
+      <!-- DATA D'ENTREGA -->
+      <div id="deliveryDateBox" class="delivery-info-card hidden"></div>
+
+      <!-- TASQUES AMB PRIORITATS -->
+      <div class="tasks-section">
+        
+        <!-- TASCA URGENT (AVUI) -->
+        <div class="task-card urgent-task">
+          <div class="task-header" id="urgentTaskHeader">
+            <div class="task-header-left">
+              <span class="task-dot urgent-dot"></span>
+              <span class="task-label">AVUI</span>
+              <span class="task-date" id="urgentTaskDate">30/01/2026</span>
+            </div>
+            <button class="task-toggle" id="urgentTaskToggle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+          </div>
+          <div class="task-content" id="urgentTaskContent">
+            <textarea 
+              id="taskUrgent" 
+              class="task-textarea"
+              placeholder="Notes del client, tasques pendents, detalls del projecte..."
+            ></textarea>
+            <button class="task-edit-btn" id="urgentEditBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- TASCA IMPORTANT (SEGÜENT PAS) -->
+        <div class="task-card important-task">
+          <div class="task-header" id="importantTaskHeader">
+            <div class="task-header-left">
+              <span class="task-dot important-dot"></span>
+              <span class="task-label">Següent pas</span>
+            </div>
+            <button class="task-toggle" id="importantTaskToggle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+          </div>
+          <div class="task-content" id="importantTaskContent" style="display: none;">
+            <div class="task-item">
+              <span class="task-item-dot"></span>
+              <textarea 
+                id="taskImportant" 
+                class="task-textarea-inline"
+                placeholder="Enviar proposta final"
+              ></textarea>
+              <button class="task-item-toggle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TASCA QUAN ES PUGUI -->
+        <div class="task-card later-task">
+          <div class="task-header" id="laterTaskHeader">
+            <div class="task-header-left">
+              <span class="task-dot later-dot"></span>
+              <span class="task-label">Quan es pugui</span>
+              <span class="task-count" id="laterTaskCount">(1 tasca amagada)</span>
+            </div>
+            <button class="task-toggle" id="laterTaskToggle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+          </div>
+          <div class="task-content" id="laterTaskContent" style="display: none;">
+            <div class="task-item">
+              <button class="task-history-btn" id="laterHistoryBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Històric
+              </button>
+              <textarea 
+                id="taskLater" 
+                class="task-textarea-inline"
+                placeholder="Tasques per més endavant..."
+              ></textarea>
+              <button class="task-item-toggle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTÒRIC DE TASQUES -->
+        <div class="task-card history-task">
+          <div class="task-header">
+            <div class="task-header-left">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span class="task-label">Històric</span>
+              <span class="task-count">(2 tasques anteriors)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- HORES DEL CLIENT -->
+      <div class="client-hours-card">
+        <div class="client-hours-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span class="client-hours-title">Hores del client</span>
+          <button class="client-hours-arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
+        <div class="client-hours-actions">
+          <button class="hours-add-btn" id="addHoursBtn">
+            <span class="hours-add-icon">+</span>
+            <span id="clientTotalDisplay">Avui: 1h 30m</span>
+          </button>
+          <button class="hours-resume-btn" id="viewResumeBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Resum
+          </button>
+          <button class="hours-lock-btn" id="lockHoursBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </button>
+          <button class="hours-menu-btn" id="hoursMenuBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- BOTONS D'ACCIÓ -->
+      <div class="client-action-buttons">
+        <button class="action-button note-btn" id="addNoteActionBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Afegir nota
+        </button>
+        <button class="action-button hours-btn" id="addHoursActionBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Afegir hores
+        </button>
+        <button class="action-button photo-btn" id="addPhotoActionBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Afegir foto
+        </button>
+        <button class="action-button status-btn" id="changeStatusBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Canviar estat
+        </button>
+      </div>
+
+      <!-- FOTOGRAFIES DEL CLIENT -->
+      <div class="photos-section">
+        <div class="photos-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span class="photos-title">Fotografies del client</span>
+        </div>
+        
+        <div class="photos-grid" id="photoGallery">
+          <!-- Les fotos es carregaran dinàmicament aquí -->
+        </div>
+      </div>
+
+      <!-- VÍDEO/FOTAU DEL CLIENT -->
+      <div class="video-section">
+        <div class="video-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="23 7 16 12 23 17 23 7"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+          <span class="video-title">Fotau del client</span>
+        </div>
+      </div>
+
+      <!-- BOTÓ FLOTANT D'AFEGIR -->
+      <button class="fab-button" id="fabAddBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
 
     </section>
 
@@ -143,7 +331,6 @@
         <button id="closeClient" class="danger">✅ Tancar</button>
       </div>
     </section>
-
 
     <!-- BACKUP Y GESTIÓN -->
     <section class="panel">
@@ -169,28 +356,28 @@
     </footer>
 
     <!-- VERSIÓN / ACTIVACIÓN -->
-   <div id="versionBox" class="version-box">
-  <div class="lock">
-    🔒 Versió de mostra: fins a 2 clients actius ·
-    ⭐ Llicència completa: clients il·limitats · pagament únic 34€ (Bizum)
-  </div>
+    <div id="versionBox" class="version-box">
+      <div class="lock">
+        🔒 Versió de mostra: fins a 2 clients actius ·
+        ⭐ Llicència completa: clients il·limitats · pagament únic 34€ (Bizum)
+      </div>
 
-  <div class="version-actions">
-    <button id="loadLicenseBtn" type="button">
-      📄 Carregar arxiu amb la llicència
-    </button>
+      <div class="version-actions">
+        <button id="loadLicenseBtn" type="button">
+          📄 Carregar arxiu amb la llicència
+        </button>
 
-    <button id="requestLicenseBtn" type="button">
-      💬 Sol·licitar llicència per WhatsApp
-    </button>
-  </div>
+        <button id="requestLicenseBtn" type="button">
+          💬 Sol·licitar llicència per WhatsApp
+        </button>
+      </div>
 
-  <div id="licenseInfo" style="display:none"></div>
-</div>
+      <div id="licenseInfo" style="display:none"></div>
+    </div>
 
-  <!-- ===============================================
-       MODALES
-       =============================================== -->
+    <!-- ===============================================
+         MODALES
+         =============================================== -->
 
   <!-- MODAL: Nou Client - ID CORREGIT -->
   <div id="modalNewClient" class="modal-overlay hidden">
@@ -613,101 +800,107 @@
     </div>
   </div>
 
-    <!-- ✅ ARA -->
-<script src="app-core.js"></script>
-<script src="app-db.js"></script>
-<script src="app-ui.js"></script>
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/FOCUSWORK/sw-v2.js", {
-        scope: "/FOCUSWORK/"
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="app-core.js"></script>
+  <script src="app-db.js"></script>
+  <script src="app-ui.js"></script>
+  <script src="app-client-view.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/FOCUSWORK/sw-v2.js", {
+          scope: "/FOCUSWORK/"
+        });
       });
-    });
-  }
-</script>
-<!-- BOTÓ FLOTANT PER SORTIR DEL CLIENT -->
-<div id="floating-layer">
-  <button id="exitClientFloating" class="hidden">
-     ↩ Sortir del client
-  </button>
-</div>
-<!-- Lightbox per galeria de fotos -->
-<div class="lightbox-overlay" id="lightbox">
-  <div class="lightbox-header">
-    <div class="lightbox-info">
-      <div class="lightbox-counter" id="lightboxCounter">1 / 1</div>
-      <div class="lightbox-date" id="lightboxDate">—</div>
+    }
+  </script>
+
+  <!-- BOTÓ FLOTANT PER SORTIR DEL CLIENT -->
+  <div id="floating-layer">
+    <button id="exitClientFloating" class="hidden">
+       ↩ Sortir del client
+    </button>
+  </div>
+
+  <!-- Lightbox per galeria de fotos -->
+  <div class="lightbox-overlay" id="lightbox">
+    <div class="lightbox-header">
+      <div class="lightbox-info">
+        <div class="lightbox-counter" id="lightboxCounter">1 / 1</div>
+        <div class="lightbox-date" id="lightboxDate">—</div>
+      </div>
+      <button class="lightbox-close" onclick="closeLightbox()">×</button>
     </div>
-    <button class="lightbox-close" onclick="closeLightbox()">×</button>
+    
+   <div class="lightbox-canvas-container">
+    <button class="lightbox-nav lightbox-nav-prev" onclick="prevPhoto()">‹</button>
+    <canvas id="photoCanvas"></canvas>
+    <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
   </div>
-  
- <div class="lightbox-canvas-container">
-  <button class="lightbox-nav lightbox-nav-prev" onclick="prevPhoto()">‹</button>
-  <canvas id="photoCanvas"></canvas>
-  <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
-</div>
 
-<!-- Toolbar d'edició (just després del canvas) -->
-<div class="editor-toolbar">
-  <button class="color-picker-mini active" style="background: #ef4444;" onclick="setDrawColor('#ef4444')" data-color="#ef4444"></button>
-  <button class="color-picker-mini" style="background: #f59e0b;" onclick="setDrawColor('#f59e0b')" data-color="#f59e0b"></button>
-  <button class="color-picker-mini" style="background: #10b981;" onclick="setDrawColor('#10b981')" data-color="#10b981"></button>
-  <button class="color-picker-mini" style="background: #3b82f6;" onclick="setDrawColor('#3b82f6')" data-color="#3b82f6"></button>
-  <button class="color-picker-mini" style="background: white;" onclick="setDrawColor('#ffffff')" data-color="#ffffff"></button>
-  
-  <div style="width: 2px; height: 25px; background: rgba(255,255,255,0.2);"></div>
-  
-  <input type="range" class="size-slider-mini" min="2" max="8" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
-  
-  <button class="editor-btn-small" onclick="toggleDrawing()" id="drawToggle">
-    <span>✏️</span>
-    <span id="drawToggleText">Dibuixar</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="undoDraw()">
-    <span>↶</span>
-    <span>Desfer</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="clearDrawing()">
-    <span>🗑️</span>
-    <span>Netejar</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="saveEditedPhoto()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
-    <span>💾</span>
-    <span>Guardar canvis</span>
-  </button>
-</div>
-  
-<div class="lightbox-footer">
-  <!-- Camp de comentari NOU -->
-  <div class="lightbox-comment-container">
-    <textarea 
-      id="lightboxComment" 
-      class="lightbox-comment-input" 
-      placeholder="💬 Afegeix un comentari a aquesta foto..."
-      rows="2"
-    ></textarea>
-  </div>
-  
-  <!-- Botons existents -->
-  <div class="lightbox-buttons">
-    <button class="lightbox-btn" onclick="downloadCurrentPhoto()">
-      <span>⬇️</span>
-      <span>Descarregar</span>
+  <!-- Toolbar d'edició (just després del canvas) -->
+  <div class="editor-toolbar">
+    <button class="color-picker-mini active" style="background: #ef4444;" onclick="setDrawColor('#ef4444')" data-color="#ef4444"></button>
+    <button class="color-picker-mini" style="background: #f59e0b;" onclick="setDrawColor('#f59e0b')" data-color="#f59e0b"></button>
+    <button class="color-picker-mini" style="background: #10b981;" onclick="setDrawColor('#10b981')" data-color="#10b981"></button>
+    <button class="color-picker-mini" style="background: #3b82f6;" onclick="setDrawColor('#3b82f6')" data-color="#3b82f6"></button>
+    <button class="color-picker-mini" style="background: white;" onclick="setDrawColor('#ffffff')" data-color="#ffffff"></button>
+    
+    <div style="width: 2px; height: 25px; background: rgba(255,255,255,0.2);"></div>
+    
+    <input type="range" class="size-slider-mini" min="2" max="8" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
+    
+    <button class="editor-btn-small" onclick="toggleDrawing()" id="drawToggle">
+      <span>✏️</span>
+      <span id="drawToggleText">Dibuixar</span>
     </button>
-    <button class="lightbox-btn" onclick="shareCurrentPhoto()">
-      <span>📤</span>
-      <span>Compartir</span>
+    
+    <button class="editor-btn-small" onclick="undoDraw()">
+      <span>↶</span>
+      <span>Desfer</span>
     </button>
-    <button class="lightbox-btn danger" onclick="deleteCurrentPhoto()">
+    
+    <button class="editor-btn-small" onclick="clearDrawing()">
       <span>🗑️</span>
-      <span>Esborrar</span>
+      <span>Netejar</span>
+    </button>
+    
+    <button class="editor-btn-small" onclick="saveEditedPhoto()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
+      <span>💾</span>
+      <span>Guardar canvis</span>
     </button>
   </div>
-</div>
-</body>
+    
+  <div class="lightbox-footer">
+    <!-- Camp de comentari NOU -->
+    <div class="lightbox-comment-container">
+      <textarea 
+        id="lightboxComment" 
+        class="lightbox-comment-input" 
+        placeholder="💬 Afegeix un comentari a aquesta foto..."
+        rows="2"
+      ></textarea>
+    </div>
+    
+    <!-- Botons existents -->
+    <div class="lightbox-buttons">
+      <button class="lightbox-btn" onclick="downloadCurrentPhoto()">
+        <span>⬇️</span>
+        <span>Descarregar</span>
+      </button>
+      <button class="lightbox-btn" onclick="shareCurrentPhoto()">
+        <span>📤</span>
+        <span>Compartir</span>
+      </button>
+      <button class="lightbox-btn danger" onclick="deleteCurrentPhoto()">
+        <span>🗑️</span>
+        <span>Esborrar</span>
+      </button>
+    </div>
+  </div>
+  </div>
 
+</body>
 </html>
