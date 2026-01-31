@@ -352,6 +352,11 @@ async function updateUI(preloadedClient = null) {
     $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Cap encàrrec actiu";
     $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
     $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
+    // Actualitzar títol de la capçalera del panell del client
+    const headerTitle = $("clientHeaderTitle");
+    if (headerTitle) {
+      headerTitle.textContent = client ? client.name : "Client";
+    }
   });
   
   if ($("clientTotal")) {
@@ -2589,4 +2594,3 @@ window.setupStateListeners = setupStateListeners;
 window.setupProgressListeners = setupProgressListeners;
 
 console.log('✅ app-ui.js carregat amb suport per estats i progrés');
-
