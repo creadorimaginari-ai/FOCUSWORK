@@ -20,8 +20,7 @@
   <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-client-view.css">
-  <link rel="stylesheet" href="styles-project-states.css">  
-  <link rel="stylesheet" href="styles-project-states-CORREGIT.css"> <!-- ⬅️ NOU -->
+  <link rel="stylesheet" href="styles-project-states-CORREGIT.css">
 </head>
 
 <body>
@@ -119,7 +118,17 @@
 <!-- INFO CLIENTE (CÁMARA + NOTAS) -->
     <section class="panel" id="clientInfoPanel">
       
-      <!-- ⬇️ AFEGIR AQUÍ LA SECCIÓ D'ESTAT I PROGRÉS ⬇️ -->
+      <!-- CAPÇALERA AMB FLETXA -->
+      <div class="client-header">
+        <button class="back-btn" id="backToMainBtn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <h1 class="client-header-title" id="clientHeaderTitle">Client</h1>
+      </div>
+      
+      <!-- SECCIÓ D'ESTAT I PROGRÉS -->
       <div id="projectStatusSection">
         <!-- Selector d'estat del projecte -->
         <div id="projectStateContainer"></div>
@@ -201,24 +210,19 @@
         </div>
       </div>
       
-      <!-- 🔥 GALERÍA DE FOTOS (CRÍTICO - ESTO ESTABA FUERA DE LUGAR) -->
+      <!-- GALERÍA DE FOTOS -->
       <div id="photoGallery" class="photo-gallery"></div>
-
-    </section>
-
-    <!-- PANEL: ACCIONS FINALS DEL CLIENT -->
-    <section class="panel" id="clientFinalActions">
-      <!-- BOTÓ PER SORTIR DEL CLIENT -->
-      <div class="grid centered" style="margin-top: 12px;">
-        <button id="exitClientBtn" class="secondary full-width">
-          ↩️ Sortir del client
+      
+      <!-- BOTONS FINALS (DINS DEL CLIENT) -->
+      <div class="client-final-actions">
+        <button id="historyBtn" class="btn-secondary-large">
+          📂 Clients tancats
+        </button>
+        <button id="closeClient" class="btn-close-client">
+          ✅ Tancar client
         </button>
       </div>
-      
-      <div class="grid full-actions" style="margin-top: 12px;">
-        <button id="historyBtn">📂 Clients tancats</button>
-        <button id="closeClient" class="danger">✅ Tancar</button>
-      </div>
+
     </section>
 
 
@@ -269,7 +273,7 @@
        MODALES
        =============================================== -->
 
-  <!-- MODAL: Nou Client - ID CORREGIT -->
+  <!-- MODAL: Nou Client -->
   <div id="modalNewClient" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
@@ -608,304 +612,71 @@
     </div>
   </div>
 
-    <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
+<!-- SCRIPTS EN L'ORDRE CORRECTE -->
 <script src="app-core.js"></script>
 <script src="app-db.js"></script>
-<script src="app-project-states.js"></script>  <!-- ⬅️ NOU, ABANS de app-ui.js -->
-<script src="app-ui.js"></script>
 <script src="app-project-states-CORREGIT.js"></script>
+<script src="app-ui.js"></script>
 <script src="estats-listeners-SENSE-PROMPT.js"></script>
-<!-- app-client-view.js només si existeix -->
+
 <script>
-// Verificar si app-client-view.js existeix, sinó ignorar-lo
-if (typeof updateClientViewContent !== 'function') {
-  console.log('ℹ️ app-client-view.js no carregat - funcionarà sense ell');
-}
-</script>
-
-<!-- Scripts de la vista de llista de clients -->
-<script>
-// Variables globals per filtres
-let currentFilter = 'all';
-let currentSort = 'urgency';
-
-// Mostrar vista de clients
-async function showClientsOverview() {
-  const overviewPanel = document.getElementById('clientsOverviewPanel');
-  const activitiesPanel = document.getElementById('activitiesPanel');
-  
-  if (overviewPanel) overviewPanel.style.display = 'block';
-  if (activitiesPanel) activitiesPanel.style.display = 'none';
-  
-  await renderClientsOverview();
-}
-
-// Amagar vista de clients
-function hideClientsOverview() {
-  const overviewPanel = document.getElementById('clientsOverviewPanel');
-  const activitiesPanel = document.getElementById('activitiesPanel');
-  
-  if (overviewPanel) overviewPanel.style.display = 'none';
-  if (activitiesPanel) activitiesPanel.style.display = 'block';
-}
-
-// Renderitzar la vista completa
-async function renderClientsOverview() {
-  const clients = await loadAllClients();
-  const activeClients = Object.values(clients).filter(c => c.active);
-  
-  // Actualitzar comptadors de filtres
-  updateFilterCounts(activeClients);
-  
-  // Filtrar i ordenar
-  let filteredClients = filterClients(activeClients, currentFilter);
-  filteredClients = sortClients(filteredClients, currentSort);
-  
-  // Renderitzar llista
-  const container = document.getElementById('clientsListContainer');
+/**
+ * INICIALITZACIÓ DE LISTENERS PER AL PROGRÉS (⭐⭐⭐⭐⭐)
+ */
+async function initProgressListeners() {
+  const container = document.getElementById('projectProgressContainer');
   if (!container) return;
   
-  if (filteredClients.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🔭</div>
-        <div class="empty-text">No hi ha clients amb aquest filtre</div>
-      </div>
-    `;
-    return;
-  }
-  
-  container.innerHTML = filteredClients.map(client => renderClientCard(client)).join('');
-  
-  // Afegir event listeners
-  document.querySelectorAll('.client-card').forEach(card => {
-    card.addEventListener('click', async () => {
-      const clientId = card.dataset.clientId;
-      await selectClient(clientId);
-      hideClientsOverview();
-    });
-  });
-}
-
-// Actualitzar comptadors de filtres
-function updateFilterCounts(clients) {
-  const counts = {
-    all: clients.length,
-    in_progress: 0,
-    waiting_feedback: 0,
-    waiting_material: 0,
-    paused: 0,
-    urgent: 0
-  };
-  
-  clients.forEach(client => {
-    const state = client.state || 'in_progress';
-    if (counts[state] !== undefined) counts[state]++;
+  // Delegació d'esdeveniments als botons d'estrelles
+  container.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.progress-star-btn');
+    if (!btn) return;
     
-    // Comptar urgents (entrega en <=3 dies)
-    if (client.deliveryDate) {
-      const today = new Date();
-      const delivery = new Date(client.deliveryDate);
-      const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
-      if (diffDays <= 3 && diffDays >= 0) counts.urgent++;
-    }
-  });
-  
-  // Actualitzar UI
-  document.getElementById('filterAllCount').textContent = counts.all;
-  document.getElementById('filterProgressCount').textContent = counts.in_progress;
-  document.getElementById('filterFeedbackCount').textContent = counts.waiting_feedback;
-  document.getElementById('filterWaitingCount').textContent = counts.waiting_material;
-  document.getElementById('filterPausedCount').textContent = counts.paused;
-  document.getElementById('filterUrgentCount').textContent = counts.urgent;
-}
-
-// Filtrar clients
-function filterClients(clients, filter) {
-  if (filter === 'all') return clients;
-  
-  if (filter === 'urgent') {
-    return clients.filter(client => {
-      if (!client.deliveryDate) return false;
-      const today = new Date();
-      const delivery = new Date(client.deliveryDate);
-      const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
-      return diffDays <= 3 && diffDays >= 0;
-    });
-  }
-  
-  return clients.filter(client => (client.state || 'in_progress') === filter);
-}
-
-// Ordenar clients
-function sortClients(clients, sortBy) {
-  const sorted = [...clients];
-  
-  switch (sortBy) {
-    case 'urgency':
-      return sorted.sort((a, b) => {
-        if (!a.deliveryDate && !b.deliveryDate) return 0;
-        if (!a.deliveryDate) return 1;
-        if (!b.deliveryDate) return -1;
-        return new Date(a.deliveryDate) - new Date(b.deliveryDate);
-      });
-      
-    case 'progress':
-      return sorted.sort((a, b) => (a.progress || 1) - (b.progress || 1));
-      
-    case 'time':
-      return sorted.sort((a, b) => (b.total || 0) - (a.total || 0));
-      
-    case 'name':
-      return sorted.sort((a, b) => a.name.localeCompare(b.name));
-      
-    case 'state':
-      const stateOrder = ['blocked', 'waiting_material', 'waiting_feedback', 'paused', 'in_progress', 'ready_to_deliver'];
-      return sorted.sort((a, b) => {
-        const stateA = stateOrder.indexOf(a.state || 'in_progress');
-        const stateB = stateOrder.indexOf(b.state || 'in_progress');
-        return stateA - stateB;
-      });
-      
-    default:
-      return sorted;
-  }
-}
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', () => {
-  // Botó de tornar
-  const backBtn = document.getElementById('backFromOverview');
-  if (backBtn) {
-    backBtn.addEventListener('click', hideClientsOverview);
-  }
-  
-  // Filtres
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentFilter = btn.dataset.filter;
-      await renderClientsOverview();
-    });
-  });
-  
-  // Ordenació
-  const sortingSelect = document.getElementById('clientsSorting');
-  if (sortingSelect) {
-    sortingSelect.addEventListener('change', async (e) => {
-      currentSort = e.target.value;
-      await renderClientsOverview();
-    });
-  }
-  
-  // Botó "Revisar encàrrecs"
-  const reviewBtn = document.getElementById('focusPriorityBtn');
-  if (reviewBtn) {
-    // Eliminar event listener anterior si existeix
-    reviewBtn.onclick = null;
-    reviewBtn.addEventListener('click', showClientsOverview);
-  }
-  
-  // Botó "Sortir del client"
-  const exitBtn = document.getElementById('exitClientBtn');
-  if (exitBtn && typeof exitClient === 'function') {
-    exitBtn.addEventListener('click', exitClient);
-  }
-});
-</script>
-
-<!-- Scripts de la secció d'estat i progrés -->
-<script>
-// Inicialitzar la secció d'estat i progrés
-async function initProjectStatus() {
-  if (!state.currentClientId) return;
-  
-  const client = await loadClient(state.currentClientId);
-  if (!client) return;
-  
-  // Inicialitzar estat per defecte si no existeix
-  if (!client.state) {
-    await setClientState(client.id, 'in_progress', 'Projecte iniciat');
-  }
-  
-  // Inicialitzar progrés per defecte
-  if (!client.progress) {
-    await setClientProgress(client.id, 1);
-  }
-  
-  // Renderitzar estat
-  const stateContainer = document.getElementById('projectStateContainer');
-  if (stateContainer) {
-    stateContainer.innerHTML = renderStateSelector(client);
-    setupStateListeners();
-  }
-  
-  // Renderitzar progrés
-  const progressContainer = document.getElementById('projectProgressContainer');
-  if (progressContainer) {
-    progressContainer.innerHTML = renderProgressSelector(client);
-    setupProgressListeners();
-  }
-  
-  // Renderitzar historial
-  const historyContainer = document.getElementById('projectHistoryContainer');
-  if (historyContainer && client.stateHistory && client.stateHistory.length > 0) {
-    historyContainer.innerHTML = renderStateHistory(client);
-  }
-}
-
-// Event listeners per al selector d'estat
-function setupStateListeners() {
-  const changeStateBtn = document.getElementById('changeStateBtn');
-  const stateDropdown = document.getElementById('stateDropdown');
-  const stateOptions = document.querySelectorAll('.state-option');
-  
-  if (changeStateBtn) {
-    changeStateBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      stateDropdown.classList.toggle('hidden');
-    });
-  }
-  
-  // Tancar dropdown si es clica fora
-  document.addEventListener('click', (e) => {
-    if (stateDropdown && !stateDropdown.contains(e.target) && e.target !== changeStateBtn) {
-      stateDropdown.classList.add('hidden');
-    }
-  });
-  
-  // Canviar estat
-  stateOptions.forEach(option => {
-    option.addEventListener('click', async () => {
-      const stateId = option.dataset.state;
-      
-      // Demanar nota opcional
-      const note = prompt('Afegeix una nota (opcional):');
-      
-      // Actualitzar estat
-      await setClientState(state.currentClientId, stateId, note || '');
+    const level = parseInt(btn.dataset.level, 10);
+    if (!level || !state.currentClientId) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      // Actualitzar progrés
+      await setClientProgress(state.currentClientId, level);
       
       // Actualitzar UI
       await initProjectStatus();
       
-      // Tancar dropdown
-      stateDropdown.classList.add('hidden');
-      
       // Mostrar confirmació
-      const stateName = option.querySelector('.state-option-label').textContent;
-      showAlert('Estat actualitzat', `Projecte marcat com: ${stateName}`, '✅');
-    });
+      const progressLabel = PROGRESS_LEVELS[level].label;
+      showAlert('Progrés actualitzat', `${progressLabel} (${level}/5)`, '⭐');
+    } catch (error) {
+      console.error('Error actualitzant progrés:', error);
+      showAlert('Error', 'No s\'ha pogut actualitzar el progrés', '❌');
+    }
   });
 }
 
-// Event listeners per al selector de progrés
-function setupProgressListeners() {
-  const progressStars = document.querySelectorAll('.progress-star');
+// Cridar aquesta funció després de carregar la UI del projecte
+document.addEventListener('DOMContentLoaded', () => {
+  initProgressListeners();
+});
+</script>
+
+<script>
+// Funció per inicialitzar els listeners dels botons d'estat
+async function initStateListeners() {
+  const stateButtons = document.querySelectorAll('.state-option');
   
-  progressStars.forEach(star => {
-    star.addEventListener('click', async () => {
-      const level = parseInt(star.dataset.level);
+  stateButtons.forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const newState = btn.dataset.state;
+      
+      if (!state.currentClientId || !newState) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Actualitzar estat
+      await setClientState(state.currentClientId, newState);
       
       // Actualitzar progrés
       await setClientProgress(state.currentClientId, level);
@@ -1172,6 +943,72 @@ function setupProgressListeners() {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Estils per la capçalera del client */
+.client-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin: -20px -20px 20px -20px;
+}
+
+.client-header-title {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+/* Estils per als botons finals del client */
+.client-final-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-secondary-large {
+  width: 100%;
+  padding: 14px 20px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #e2e8f0;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary-large:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-close-client {
+  width: 100%;
+  padding: 14px 20px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 12px;
+  color: #ef4444;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-close-client:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.6);
 }
 </style>
 <script src="botons-visibilitat.js"></script>
