@@ -211,13 +211,9 @@
       <div id="photoGallery" class="photo-gallery"></div>
       
       <!-- BOTONS FINALS (DINS DEL CLIENT) -->
-      <div class="client-final-actions">
-        <button id="historyBtn" class="btn-secondary-large">
-          📂 Clients tancats
-        </button>
-        <button id="closeClient" class="btn-close-client">
-          ✅ Tancar client
-        </button>
+      <div class="grid full-actions" style="margin-top: 12px;">
+        <button id="historyBtn">📂 Clients tancats</button>
+        <button id="closeClient" class="danger">✅ Tancar client</button>
       </div>
 
     </section>
@@ -926,11 +922,44 @@ function setupStateListeners() {
 
 // Event listeners per al selector de progrés
 function setupProgressListeners() {
+  const progressContainer = document.getElementById('projectProgressContainer');
+  
+  if (!progressContainer) return;
+  
+  // Usar delegació d'esdeveniments per capturar clics als quadrats
+  progressContainer.addEventListener('click', async (e) => {
+    // Buscar l'element clicat o el seu pare que tingui data-level
+    const target = e.target.closest('[data-level]');
+    
+    if (!target) return;
+    
+    const level = parseInt(target.dataset.level);
+    
+    if (!level || !state.currentClientId) return;
+    
+    try {
+      // Actualitzar progrés
+      await setClientProgress(state.currentClientId, level);
+      
+      // Actualitzar UI
+      await initProjectStatus();
+      
+      // Mostrar confirmació
+      const progressLabel = PROGRESS_LEVELS ? PROGRESS_LEVELS[level].label : `Nivell ${level}`;
+      showAlert('Progrés actualitzat', `${progressLabel} (${level}/5)`, '⭐');
+    } catch (error) {
+      console.error('Error actualitzant progrés:', error);
+    }
+  });
+  
+  // També mantenir el listener original per compatibilitat
   const progressStars = document.querySelectorAll('.progress-star');
   
   progressStars.forEach(star => {
     star.addEventListener('click', async () => {
       const level = parseInt(star.dataset.level);
+      
+      if (!level || !state.currentClientId) return;
       
       // Actualitzar progrés
       await setClientProgress(state.currentClientId, level);
@@ -939,7 +968,7 @@ function setupProgressListeners() {
       await initProjectStatus();
       
       // Mostrar confirmació
-      const progressLabel = PROGRESS_LEVELS[level].label;
+      const progressLabel = PROGRESS_LEVELS ? PROGRESS_LEVELS[level].label : `Nivell ${level}`;
       showAlert('Progrés actualitzat', `${progressLabel} (${level}/5)`, '⭐');
     });
   });
@@ -1224,56 +1253,14 @@ function setupProgressListeners() {
   margin: 0;
 }
 
-/* Estils per als botons finals del client */
-.client-final-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+/* Estils per als botons finals del client - només millorar els existents */
+.grid.full-actions {
+  margin-top: 12px;
 }
 
-.btn-secondary-large {
-  width: 100%;
-  padding: 14px 20px;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: #e2e8f0;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+.grid.full-actions button {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-}
-
-.btn-secondary-large:hover,
-.btn-secondary-large:active {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.btn-close-client {
-  width: 100%;
-  padding: 14px 20px;
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: 12px;
-  color: #ef4444;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-.btn-close-client:hover,
-.btn-close-client:active {
-  background: rgba(239, 68, 68, 0.3);
-  border-color: rgba(239, 68, 68, 0.6);
 }
 </style>
 <script src="botons-visibilitat.js"></script>
