@@ -135,9 +135,6 @@
         
         <!-- Selector de progrés (1-5 estrelles) -->
         <div id="projectProgressContainer"></div>
-        
-        <!-- Historial d'estats (últims 3 canvis) -->
-        <div id="projectHistoryContainer"></div>
       </div>
       
       <!-- FECHA DE ENTREGA -->
@@ -815,6 +812,40 @@ document.addEventListener('DOMContentLoaded', () => {
   if (exitBtn && typeof exitClient === 'function') {
     exitBtn.addEventListener('click', exitClient);
   }
+  
+  // Botó "Clients tancats" (historyBtn)
+  const historyBtn = document.getElementById('historyBtn');
+  if (historyBtn) {
+    historyBtn.addEventListener('click', () => {
+      if (typeof showClosedClients === 'function') {
+        showClosedClients();
+      } else {
+        openModal('modalHistory');
+      }
+    });
+  }
+  
+  // Botó "Tancar client" (closeClient)
+  const closeClientBtn = document.getElementById('closeClient');
+  if (closeClientBtn) {
+    closeClientBtn.addEventListener('click', () => {
+      if (typeof confirmClientClosure === 'function') {
+        confirmClientClosure();
+      } else {
+        openModal('modalCloseClient');
+      }
+    });
+  }
+  
+  // Botó "Generar informe" (generateReportBtn)
+  const generateReportBtn = document.getElementById('generateReportBtn');
+  if (generateReportBtn) {
+    generateReportBtn.addEventListener('click', () => {
+      if (typeof generateClientReport === 'function') {
+        generateClientReport();
+      }
+    });
+  }
 });
 </script>
 
@@ -850,12 +881,6 @@ async function initProjectStatus() {
     progressContainer.innerHTML = renderProgressSelector(client);
     setupProgressListeners();
   }
-  
-  // Renderitzar historial
-  const historyContainer = document.getElementById('projectHistoryContainer');
-  if (historyContainer && client.stateHistory && client.stateHistory.length > 0) {
-    historyContainer.innerHTML = renderStateHistory(client);
-  }
 }
 
 // Event listeners per al selector d'estat
@@ -883,11 +908,8 @@ function setupStateListeners() {
     option.addEventListener('click', async () => {
       const stateId = option.dataset.state;
       
-      // Demanar nota opcional
-      const note = prompt('Afegeix una nota (opcional):');
-      
-      // Actualitzar estat
-      await setClientState(state.currentClientId, stateId, note || '');
+      // Actualitzar estat SENSE demanar nota
+      await setClientState(state.currentClientId, stateId, '');
       
       // Actualitzar UI
       await initProjectStatus();
@@ -1051,9 +1073,14 @@ function setupProgressListeners() {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-width: 44px;
+  min-height: 44px;
 }
 
-.back-btn:hover {
+.back-btn:hover,
+.back-btn:active {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(255, 255, 255, 0.2);
 }
@@ -1218,9 +1245,12 @@ function setupProgressListeners() {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
-.btn-secondary-large:hover {
+.btn-secondary-large:hover,
+.btn-secondary-large:active {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(255, 255, 255, 0.2);
 }
@@ -1236,9 +1266,12 @@ function setupProgressListeners() {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
-.btn-close-client:hover {
+.btn-close-client:hover,
+.btn-close-client:active {
   background: rgba(239, 68, 68, 0.3);
   border-color: rgba(239, 68, 68, 0.6);
 }
