@@ -207,6 +207,13 @@
 
     <!-- PANEL: ACCIONS FINALS DEL CLIENT -->
     <section class="panel" id="clientFinalActions">
+      <!-- BOTÓ PER SORTIR DEL CLIENT -->
+      <div class="grid centered" style="margin-top: 12px;">
+        <button id="exitClientBtn" class="secondary full-width">
+          ↩️ Sortir del client
+        </button>
+      </div>
+      
       <div class="grid full-actions" style="margin-top: 12px;">
         <button id="historyBtn">📂 Clients tancats</button>
         <button id="closeClient" class="danger">✅ Tancar</button>
@@ -350,7 +357,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalCloseClient')">Cancel·lar</button>
-        <button class="btn-primary" onclick="doCloseClient()">Sí, tancar</button>
+        <button class="btn-primary" onclick="confirmCloseClient()">Sí, tancar</button>
       </div>
     </div>
   </div>
@@ -375,7 +382,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalBackup')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmLoadBackup()">Carregar</button>
+        <button class="btn-primary" onclick="confirmImportBackup()">Carregar</button>
       </div>
     </div>
   </div>
@@ -416,7 +423,7 @@
       </div>
       <div class="modal-body">
         <label class="modal-label">Tria la data límit d'entrega:</label>
-        <input type="date" id="deliveryDateInput" class="modal-input">
+        <input type="date" id="inputDeliveryDate" class="modal-input">
         
         <div style="margin-top: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
           <p style="margin: 0; font-size: 13px; color: #93c5fd;">
@@ -425,9 +432,9 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="removeDeliveryDate()">Esborrar data</button>
+        <button class="btn-secondary" onclick="saveDeliveryDate()">Esborrar data</button>
         <button class="btn-secondary" onclick="closeModal('modalDeliveryDate')">Cancel·lar</button>
-        <button class="btn-primary" onclick="setDeliveryDate()">Guardar</button>
+        <button class="btn-primary" onclick="saveDeliveryDate()">Guardar</button>
       </div>
     </div>
   </div>
@@ -444,17 +451,11 @@
           Per a feines fetes fora de l'app (treball extern, reunions, correus...)
         </p>
 
-        <label class="modal-label">Data:</label>
-        <input type="date" id="extraHoursDate" class="modal-input" style="margin-bottom: 15px;">
-
-        <label class="modal-label">Temps:</label>
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-          <input type="number" id="extraHoursHours" placeholder="Hores" min="0" class="modal-input" style="flex: 1;">
-          <input type="number" id="extraHoursMinutes" placeholder="Minuts" min="0" max="59" class="modal-input" style="flex: 1;">
-        </div>
+        <label class="modal-label">Hores:</label>
+        <input type="number" id="inputExtraHours" placeholder="Ex: 2.5" step="0.5" min="0" class="modal-input" style="margin-bottom: 15px;">
 
         <label class="modal-label">Descripció (opcional):</label>
-        <textarea id="extraHoursDescription" class="modal-input" rows="3" placeholder="Ex: Reunió amb client, correcions per correu..."></textarea>
+        <textarea id="inputExtraDescription" class="modal-input" rows="3" placeholder="Ex: Reunió amb client, correccions per correu..."></textarea>
 
         <div style="margin-top: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
           <p style="margin: 0; font-size: 13px; color: #93c5fd;">
@@ -611,7 +612,13 @@
 <script src="app-db.js"></script>
 <script src="app-project-states.js"></script>  <!-- ⬅️ NOU, ABANS de app-ui.js -->
 <script src="app-ui.js"></script>
-<script src="app-client-view.js"></script>
+<!-- app-client-view.js només si existeix -->
+<script>
+// Verificar si app-client-view.js existeix, sinó ignorar-lo
+if (typeof updateClientViewContent !== 'function') {
+  console.log('ℹ️ app-client-view.js no carregat - funcionarà sense ell');
+}
+</script>
 
 <!-- Scripts de la vista de llista de clients -->
 <script>
@@ -792,7 +799,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Botó "Revisar encàrrecs"
   const reviewBtn = document.getElementById('focusPriorityBtn');
   if (reviewBtn) {
+    // Eliminar event listener anterior si existeix
+    reviewBtn.onclick = null;
     reviewBtn.addEventListener('click', showClientsOverview);
+  }
+  
+  // Botó "Sortir del client"
+  const exitBtn = document.getElementById('exitClientBtn');
+  if (exitBtn && typeof exitClient === 'function') {
+    exitBtn.addEventListener('click', exitClient);
   }
 });
 </script>

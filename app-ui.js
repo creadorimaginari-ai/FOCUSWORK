@@ -1731,6 +1731,7 @@ window.exportAndClose = exportAndClose;
 window.showBulkDeleteModal = showBulkDeleteModal;
 window.confirmBulkDelete = confirmBulkDelete;
 window.deleteExtraHour = deleteExtraHour;
+window.exitClient = exitClient;  // ⬅️ AFEGIT
 
 /* ================= LIGHTBOX PER GALERIA ================= */
 let currentLightboxIndex = 0;
