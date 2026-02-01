@@ -4,23 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-  <title>FocusWork</title>
+  <title>FocusWork — Modern Edition</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
-  <meta name="background-color" content="#0f172a">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="background-color" content="#0a0e1a">
 
   <!-- iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FocusWork">
-  <link rel="apple-touch-icon" href="/FOCUSWORK/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="styles-client-view.css">
-  <link rel="stylesheet" href="styles-project-states-CORREGIT.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Styles Modernos -->
+  <link rel="stylesheet" href="styles-modern.css">
+  <link rel="stylesheet" href="styles-client-view-modern.css">
+  <link rel="stylesheet" href="styles-project-states-modern.css">
 </head>
 
 <body>
@@ -28,1304 +33,257 @@
 
     <!-- HEADER -->
     <header class="header">
-      <div id="clientName" class="client-name">Cap encàrrec actiu</div>
-      <div id="activityName" class="activity-name">—</div>
-      <div id="timer" class="timer">00:00:00</div>
-      <div id="clientTotal" class="client-total"></div>
+      <div id="clientName" class="client-name">FocusWork Studio</div>
+      <div id="activityName" class="activity-name">Disseny UI/UX</div>
+      <div id="timer" class="timer">02:34:18</div>
+      <div id="clientTotal" class="client-total">Total avui: 5h 42m</div>
       
       <!-- TIEMPO FACTURABLE -->
-      <div id="billableTimeBox" class="billable-time-box" style="display: none;"></div>
+      <div id="billableTimeBox" class="billable-time-box" style="display: block;">
+        💰 Temps facturable: 4h 30m
+      </div>
       
       <!-- AVISO FUERA DE HORARIO DE ENFOQUE -->
-      <div id="focusScheduleStatus" style="display: none; margin-top: 8px; padding: 6px 12px; background: rgba(251, 191, 36, 0.2); border-radius: 6px; font-size: 0.85rem; color: #fbbf24; text-align: center;"></div>
+      <div id="focusScheduleStatus" style="display: none;">
+        ⚠️ Fora de l'horari de concentració
+      </div>
     </header>
 
     <!-- ACTIVIDADES -->
-<section class="panel" id="activitiesPanel">
+    <section class="panel" id="activitiesPanel">
 
-  <!-- ACCIÓ PRINCIPAL -->
-<div id="clientMainButtons" class="grid centered" style="margin-top: 12px;">
-   
-<button id="newClientBtn">➕ Nou encàrrec</button>
- <!-- <button id="changeClient">🔄 Canviar d'encàrrec</button> -->
-     <button id="focusPriorityBtn" class="primary full-width">
-      👁️ Revisar encàrrecs
-    </button>
-      </div>
-  <!-- GRID D'ACTIVITATS (si n'hi ha) -->
-  <div class="grid activities" id="activitiesGrid">
-    <!-- aquí ja podràs posar altres activitats més endavant -->
-  </div>
-
-</section>
-
-<!-- ⬇️ AFEGIR AQUÍ LA VISTA DE LLISTA DE CLIENTS ⬇️ -->
-<!-- VISTA MILLORADA DE LLISTA DE CLIENTS -->
-<div class="clients-overview-panel" id="clientsOverviewPanel" style="display: none;">
-  
-  <!-- Header -->
-  <div class="overview-header">
-    <button class="back-btn" id="backFromOverview">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6"/>
-      </svg>
-    </button>
-    <h2 class="overview-title">📊 Els meus projectes</h2>
-  </div>
-  
-  <!-- Filtres -->
-  <div class="clients-filters" id="clientsFilters">
-    <button class="filter-btn active" data-filter="all">
-      Tots <span class="filter-badge" id="filterAllCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="in_progress">
-      🔵 En progrés <span class="filter-badge" id="filterProgressCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="waiting_feedback">
-      ✉️ Prova enviada <span class="filter-badge" id="filterFeedbackCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="waiting_material">
-      🟡 Esperant <span class="filter-badge" id="filterWaitingCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="paused">
-      ⸚️ Pausats <span class="filter-badge" id="filterPausedCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="urgent">
-      🔴 Urgents <span class="filter-badge" id="filterUrgentCount">0</span>
-    </button>
-  </div>
-  
-  <!-- Ordenació -->
-  <div class="clients-sorting">
-    <label class="sorting-label">Ordenar per:</label>
-    <select class="sorting-select" id="clientsSorting">
-      <option value="urgency">Urgència (entrega propera)</option>
-      <option value="progress">Progrés (menys avançats)</option>
-      <option value="time">Temps treballat (més hores)</option>
-      <option value="name">Nom (A-Z)</option>
-      <option value="state">Estat</option>
-    </select>
-  </div>
-  
-  <!-- Llista de clients -->
-  <div class="clients-list-container" id="clientsListContainer">
-    <!-- Les targetes es generaran dinàmicament aquí -->
-  </div>
-  
-</div>
-
-
-<!-- INFO CLIENTE (CÁMARA + NOTAS) -->
-    <section class="panel" id="clientInfoPanel">
-      
-      <!-- CAPÇALERA AMB FLETXA -->
-      <div class="client-header">
-        <button class="back-btn" id="exitClientBtn">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
-        </button>
-        <h1 class="client-header-title" id="clientHeaderTitle">Client</h1>
-      </div>
-      
-      <!-- ⬇️ AFEGIR AQUÍ LA SECCIÓ D'ESTAT I PROGRÉS ⬇️ -->
-      <div id="projectStatusSection">
-        <!-- Selector d'estat del projecte -->
-        <div id="projectStateContainer"></div>
-        
-        <!-- Selector de progrés (1-5 estrelles) -->
-        <div id="projectProgressContainer"></div>
-      </div>
-      
-      <!-- FECHA DE ENTREGA -->
-      <div id="deliveryDateBox" class="delivery-info hidden"></div>
-<div id="clientFixedButtons" class="grid centered" style="margin-top: 12px;">
-  <button id="historyBtn">📂 Clients tancats</button>
-  <button id="closeClient" class="danger">✅ Tancar client</button>
-</div>
-    
-
-      <!-- WORKPAD (Bloc de notas) -->
-      <div class="workpad-container">
-        <div class="workpad-header">
-          <span class="workpad-icon">📝</span>
-          <span class="workpad-title">Notes del client</span>
-        </div>
-        <textarea 
-          id="clientWorkpad" 
-          class="workpad-area" 
-          placeholder="Apunts, tasques pendents, detalls del projecte…"
-        ></textarea>
+      <!-- ACCIÓ PRINCIPAL -->
+      <div id="clientMainButtons" class="grid centered" style="margin-top: 12px;">
+        <button id="newClientBtn" class="primary">➕ Nou encàrrec</button>
+        <button id="focusPriorityBtn" class="success">👁️ Revisar encàrrecs</button>
       </div>
 
-      <!-- FEINES PER URGÈNCIA -->
-      <div class="workpad-container">
-        <div class="workpad-header">
-        </div>
-
-        <textarea
-          id="taskUrgent"
-          class="workpad-area urgent"
-          placeholder="🔴 Urgent (avui, bloquejant...)"
-        ></textarea>
-
-        <textarea
-          id="taskImportant"
-          class="workpad-area important"
-          placeholder="🟠 Important (següent pas)"
-        ></textarea>
-
-        <textarea
-          id="taskLater"
-          class="workpad-area later"
-          placeholder="🟢 Quan es pugui (no oblidar)"
-        ></textarea>
+      <!-- GRID D'ACTIVITATS -->
+      <div class="grid activities" id="activitiesGrid" style="margin-top: 24px;">
+        <button class="activity-btn">⏱️ Pausar</button>
+        <button class="activity-btn">✅ Finalitzar</button>
+        <button class="activity-btn">📊 Informe</button>
+        <button class="activity-btn">🕐 Històric</button>
       </div>
-
-      <!-- PANEL D'ACCIONS DEL CLIENT -->
-      <div id="clientActionsPanel" class="client-actions-panel">
-        <div class="grid" style="margin-top: 12px;">
-          <button id="setDeliveryDateBtn" class="primary">
-            📅 Data d'entrega
-          </button>
-        </div> 
-   
-        <div class="grid centered" style="margin-top: 12px;">
-          <button id="addExtraHoursBtn" class="secondary">
-            ⏱️ Afegir hores
-          </button>
-          <button id="viewExtraHoursBtn" class="secondary">
-            📊 Veure resum d'hores
-          </button>
-        </div>
-
-        <div class="grid centered" style="margin-top: 12px;">
-          <button id="generateReportBtn" class="primary">
-            📋 Generar informe
-          </button>
-        </div>
-
-        <div class="grid centered" style="margin-top: 12px;">
-          <button id="cameraBtn" class="primary">
-            📷 Afegir foto al client
-          </button>
-        </div>
-      </div>
-      
-      <!-- 🔥 GALERÍA DE FOTOS (CRÍTICO - ESTO ESTABA FUERA DE LUGAR) -->
-      <div id="photoGallery" class="photo-gallery"></div>
-      
-      <!-- BOTONS FINALS (DINS DEL CLIENT) -->
-   
 
     </section>
 
-
-    <!-- BACKUP Y GESTIÓN -->
+    <!-- DEMO: Vista de Estadísticas Rápidas -->
     <section class="panel">
-      <div class="grid">
-        <button id="exportWorkBtn">💾 Guardar sessió</button>
-        <button id="importWorkBtn">📂 Carregar treball</button>
-        <button id="exportAllBtn" class="full-width">📦 Còpia de seguretat</button>
+      <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: rgba(248, 250, 252, 0.7); text-transform: uppercase; letter-spacing: 0.5px;">📈 Resum setmanal</h3>
+      
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+        <div style="text-align: center; padding: 16px; background: rgba(255, 255, 255, 0.03); border-radius: 12px;">
+          <div style="font-size: 32px; font-weight: 900; background: linear-gradient(135deg, #4facfe, #00f2fe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px;">24</div>
+          <div style="font-size: 12px; font-weight: 600; color: rgba(248, 250, 252, 0.6);">HORES</div>
+        </div>
+        <div style="text-align: center; padding: 16px; background: rgba(255, 255, 255, 0.03); border-radius: 12px;">
+          <div style="font-size: 32px; font-weight: 900; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px;">8</div>
+          <div style="font-size: 12px; font-weight: 600; color: rgba(248, 250, 252, 0.6);">PROJECTES</div>
+        </div>
       </div>
     </section>
 
-    <!-- BORRAR CLIENT (només visible per a clients tancats) -->
-    <section class="panel" id="deleteClientPanel" style="display: none;">
-      <button id="deleteClientBtn" class="danger">
-        🗑️ Esborrar aquest client
+    <!-- Botón de salir -->
+    <button class="exit-client-btn">
+      🚪 Sortir de l'encàrrec
+    </button>
+
+  </div>
+
+  <!-- VISTA DE LLISTA DE CLIENTS (DEMO) -->
+  <div class="clients-overview-panel" id="clientsOverviewPanel" style="display: none;">
+    
+    <!-- Header -->
+    <div class="overview-header">
+      <button class="back-btn" id="backFromOverview">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
       </button>
-    </section>
-
-    <!-- FOOTER -->
-    <footer class="footer">
-      <button id="focusBtn">🎯 Focus</button>
-      <button id="scheduleBtn">⏰ Activar Horari</button>
-      <button id="todayBtn">📄 Report CSV</button>
-    </footer>
-
-    <!-- VERSIÓN / ACTIVACIÓN -->
-   <div id="versionBox" class="version-box">
-  <div class="lock">
-    🔒 Versió de mostra: fins a 2 clients actius ·
-    ⭐ Llicència completa: clients il·limitats · pagament únic 34€ (Bizum)
-  </div>
-
-  <div class="version-actions">
-    <button id="loadLicenseBtn" type="button">
-      📄 Carregar arxiu amb la llicència
-    </button>
-
-    <button id="requestLicenseBtn" type="button">
-      💬 Sol·licitar llicència per WhatsApp
-    </button>
-  </div>
-
-  <div id="licenseInfo" style="display:none"></div>
-</div>
-
-  <!-- ===============================================
-       MODALES
-       =============================================== -->
-
-  <!-- MODAL: Nou Client - ID CORREGIT -->
-  <div id="modalNewClient" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">➕</span>
-        <h2 class="modal-title">Nou client</h2>
-      </div>
-      <div class="modal-body">
-        <label class="modal-label">Client + descripció de la feina</label>
-        <textarea
-  id="newClientInput"
-  class="workpad-area"
-  placeholder="Ex: Joan - Targetes presentació"
-  rows="2"
-  autocomplete="off"
-  autocorrect="off"
-  autocapitalize="sentences"
-  spellcheck="false"
-></textarea>
-
-      </div>
-     
+      <h2 class="overview-title">📊 Els meus projectes</h2>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="clients-filters" id="clientsFilters">
+      <button class="filter-btn active" data-filter="all">
+        Tots <span class="filter-badge">12</span>
+      </button>
+      <button class="filter-btn" data-filter="in_progress">
+        🔵 En progrés <span class="filter-badge">5</span>
+      </button>
+      <button class="filter-btn" data-filter="waiting_feedback">
+        ✉️ Prova enviada <span class="filter-badge">3</span>
+      </button>
+      <button class="filter-btn" data-filter="urgent">
+        🔴 Urgents <span class="filter-badge">2</span>
+      </button>
+    </div>
+    
+    <!-- Ordenació -->
+    <div class="clients-sorting">
+      <label class="sorting-label">Ordenar per:</label>
+      <select id="sortBy">
+        <option value="recent">Més recents</option>
+        <option value="time">Més temps</option>
+        <option value="name">Nom (A-Z)</option>
+        <option value="urgent">Urgència</option>
+      </select>
+    </div>
+    
+    <!-- Lista de clientes -->
+    <div class="clients-list-container">
       
-      
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalNewClient')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmNewClient()">Crear</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Canviar Client -->
-  <div id="modalChangeClient" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">🔄</span>
-        <h2 class="modal-title">Canviar d'encàrrec</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text" style="opacity: 0.7; margin-bottom: 15px;">
-          Tria un dels teus encàrrecs actius:
-        </p>
-        <div id="activeClientsList" class="clients-list"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalChangeClient')">Cancel·lar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Clients tancats -->
-  <div id="modalHistory" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">📂</span>
-        <h2 class="modal-title">Clients tancats</h2>
-      </div>
-      <div class="modal-body">
-        <input type="text" id="searchHistory" class="modal-input" placeholder="🔍 Buscar client o feina...">
-        <div id="historyClientsList" class="clients-list"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-danger" onclick="showBulkDeleteModal()">🗑️ Esborrar antics</button>
-        <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Esborrar clients antics (MASSIU) -->
-  <div id="modalBulkDelete" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">🗑️</span>
-        <h2 class="modal-title">Esborrar clients antics</h2>
-      </div>
-      <div class="modal-body">
-        <div id="bulkDeleteList"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalBulkDelete')">Cancel·lar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Confirmar tancament de client -->
-  <div id="modalCloseClient" class="modal-overlay hidden">
-    <div class="modal modal-confirm">
-      <div class="modal-header">
-        <span class="modal-icon">✅</span>
-        <h2 class="modal-title">Tancar client</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text" id="closeClientText"></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalCloseClient')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmCloseClient()">Tancar client</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Exportar abans de tancar -->
-  <div id="modalExportBeforeClose" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">💾</span>
-        <h2 class="modal-title">Guardar abans de tancar</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text" id="exportBeforeCloseText"></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="confirmCloseClient()">No, tancar sense guardar</button>
-        <button class="btn-primary" onclick="exportAndClose()">Sí, guardar i tancar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Informe/Report -->
-  <div id="modalReport" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">📋</span>
-        <h2 class="modal-title">Informe del Projecte</h2>
-      </div>
-      <div class="modal-body">
-        <pre id="reportContent" class="report-content"></pre>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalReport')">Tancar</button>
-        <button class="btn-primary" onclick="copyReport()">📋 Copiar</button>
-        <button class="btn-primary" onclick="shareReport()">📤 Compartir</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Importar Feina -->
-  <div id="modalImportWork" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">📂</span>
-        <h2 class="modal-title">Importar Feina</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text">Vols importar aquest treball?</p>
-        <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
-          <p style="margin: 8px 0;"><strong>Client:</strong> <span id="importClientName"></span></p>
-          <p style="margin: 8px 0;"><strong>Temps total:</strong> <span id="importClientTime"></span></p>
-          <p style="margin: 8px 0;"><strong>Fotos:</strong> <span id="importClientPhotos"></span></p>
-          <p style="margin: 8px 0;"><strong>Notes:</strong> <span id="importClientNotes"></span></p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalImportWork')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmImport()">Importar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Importar còpia completa -->
-  <div id="modalImportBackup" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">📦</span>
-        <h2 class="modal-title">Restaurar còpia completa</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text" style="color: #fbbf24;">⚠️ ATENCIÓ: això restaurarà TOTES les teves dades des de la còpia de seguretat.</p>
-        <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
-          <p style="margin: 8px 0;"><strong>Total clients:</strong> <span id="importBackupClients"></span></p>
-          <p style="margin: 8px 0;"><strong>Clients actius:</strong> <span id="importBackupActive"></span></p>
-          <p style="margin: 8px 0;"><strong>Data de la còpia:</strong> <span id="importBackupDate"></span></p>
-          <p style="margin: 8px 0;"><strong>Llicència inclosa:</strong> <span id="importBackupLicense"></span></p>
-        </div>
-        <p class="modal-text" style="font-size: 13px; opacity: 0.8;">La pàgina es recarregarà automàticament després de restaurar.</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalImportBackup')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmImportBackup()">Restaurar còpia</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Focus diari -->
-  <div id="modalEnfoque" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">🎯</span>
-        <div>
-          <h2 class="modal-title">Focus diari</h2>
-          <p class="modal-subtitle" id="modalUserName"></p>
-        </div>
-      </div>
-      <div class="modal-body">
-        <div class="activity-list" id="modalActivityList"></div>
-        <div class="total-stats">
-          <div class="total-time">
-            Total treballat: <strong id="modalTotalTime"></strong>
+      <!-- Client Card 1 -->
+      <div class="client-card">
+        <div class="client-card-header">
+          <div class="client-info">
+            <div class="client-card-name">FocusWork Studio</div>
+            <div class="client-card-description">Redisseny complet de la plataforma web i app mòbil</div>
           </div>
+          <div class="client-card-status in_progress">En progrés</div>
         </div>
-        <div id="modalFocusState" class="focus-state"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalEnfoque')">Acceptar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Eliminar client -->
-  <div id="modalDeleteClient" class="modal-overlay hidden">
-    <div class="modal modal-confirm">
-      <div class="modal-header">
-        <span class="modal-icon">🗑️</span>
-        <h2 class="modal-title">Esborrar client</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text" id="deleteClientText"></p>
-        <label class="modal-label">Escriu ESBORRAR per confirmar</label>
-        <input type="text" id="inputDeleteConfirm" class="modal-input" placeholder="ESBORRAR">
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalDeleteClient')">Cancel·lar</button>
-        <button class="btn-danger" onclick="confirmDeleteClient()">Esborrar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Data d'entrega -->
-  <div id="modalDeliveryDate" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">📅</span>
-        <h2 class="modal-title">Data d'entrega</h2>
-      </div>
-      <div class="modal-body">
-        <label class="modal-label">Tria la data límit d'entrega:</label>
-        <input type="date" id="inputDeliveryDate" class="modal-input">
         
-        <div style="margin-top: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
-          <p style="margin: 0; font-size: 13px; color: #93c5fd;">
-            ℹ️ Podràs veure quants dies falten a la pantalla principal
-          </p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="saveDeliveryDate()">Esborrar data</button>
-        <button class="btn-secondary" onclick="closeModal('modalDeliveryDate')">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveDeliveryDate()">Guardar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Afegir hores manuals -->
-  <div id="modalExtraHours" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">⏱️</span>
-        <h2 class="modal-title">Afegir hores manuals</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
-          Per a feines fetes fora de l'app (treball extern, reunions, correus...)
-        </p>
-
-        <label class="modal-label">Hores:</label>
-        <input type="number" id="inputExtraHours" placeholder="Ex: 2.5" step="0.5" min="0" class="modal-input" style="margin-bottom: 15px;">
-
-        <label class="modal-label">Descripció (opcional):</label>
-        <textarea id="inputExtraDescription" class="modal-input" rows="3" placeholder="Ex: Reunió amb client, correccions per correu..."></textarea>
-
-        <div style="margin-top: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
-          <p style="margin: 0; font-size: 13px; color: #93c5fd;">
-            💡 Aquestes hores s'afegiran al temps total del client
-          </p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalExtraHours')">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveExtraHours()">Afegir hores</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Veure Hores Extra -->
-  <div id="modalViewExtraHours" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">📊</span>
-        <h2 class="modal-title">Hores Extra Registrades</h2>
-      </div>
-      <div class="modal-body">
-        <div id="extraHoursList" class="extra-hours-list"></div>
-        <div class="total-stats" style="margin-top: 16px;">
-          <div class="total-time">
-            Total hores extra: <strong id="extraHoursTotal">00:00:00</strong>
+        <div class="client-card-details">
+          <div class="client-card-detail">
+            <div class="detail-label">Temps total</div>
+            <div class="detail-value highlight">24h 30m</div>
+          </div>
+          <div class="client-card-detail">
+            <div class="detail-label">Última activitat</div>
+            <div class="detail-value">Avui</div>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalViewExtraHours')">Tancar</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- MODAL: Configurar horari Focus diari -->
-  <div id="modalSchedule" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">⏰</span>
-        <h2 class="modal-title">Horari de Focus diari</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
-          L'enfocament només comptabilitza el temps dins de l'horari configurat. Fora d'aquest horari pots continuar treballant, però no afecta les mètriques d'enfocament.
-        </p>
-
-        <label class="modal-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
-          <input type="checkbox" id="scheduleEnabled" style="width: 20px; height: 20px; cursor: pointer;">
-          <span>Activar Horari de Focus diari</span>
-        </label>
-
-        <div id="scheduleConfig" style="display: none;">
-          <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
-            <div style="flex: 1;">
-              <label class="modal-label">Hora inici</label>
-              <input type="time" id="scheduleStart" class="modal-input" value="09:00">
-            </div>
-            <div style="flex: 1;">
-              <label class="modal-label">Hora fi</label>
-              <input type="time" id="scheduleEnd" class="modal-input" value="17:00">
-            </div>
+      <!-- Client Card 2 -->
+      <div class="client-card">
+        <div class="client-card-header">
+          <div class="client-info">
+            <div class="client-card-name">TechCorp Solutions</div>
+            <div class="client-card-description">Desenvolupament d'aplicació empresarial amb IA</div>
           </div>
-
-          <div class="schedule-presets">
-            <p class="modal-label" style="margin-bottom: 10px;">Predefinits ràpids:</p>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-              <button class="btn-secondary" onclick="applyPreset('07:00', '14:00')">🌅 Matí<br><small>07:00 - 14:00</small></button>
-              <button class="btn-secondary" onclick="applyPreset('15:00', '22:00')">🌆 Tarda<br><small>15:00 - 22:00</small></button>
-              <button class="btn-secondary" onclick="applyPreset('09:00', '17:00')">🏢 Oficina<br><small>09:00 - 17:00</small></button>
-              <button class="btn-secondary" onclick="applyPreset('09:00', '18:00')">💼 Complet<br><small>09:00 - 18:00</small></button>
-            </div>
+          <div class="client-card-status urgent">Urgent</div>
+        </div>
+        
+        <div class="client-card-details">
+          <div class="client-card-detail">
+            <div class="detail-label">Temps total</div>
+            <div class="detail-value highlight">18h 45m</div>
           </div>
-
-          <div style="margin-top: 20px; padding: 12px; background: rgba(0, 255, 136, 0.1); border-radius: 8px; border-left: 3px solid #00ff88;">
-            <p style="margin: 0; font-size: 13px; color: #00ff88;">
-              <strong id="schedulePreview">09:00 - 17:00</strong>
-            </p>
-            <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.7;">
-              Duració: <span id="scheduleDuration">8h 0m</span>
-            </p>
+          <div class="client-card-detail">
+            <div class="detail-label">Última activitat</div>
+            <div class="detail-value">Fa 2h</div>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalSchedule')">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveScheduleConfig()">Guardar</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- MODAL: Configuración de còpies automàtiques -->
-  <div id="modalBackupConfig" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <span class="modal-icon">⚙️</span>
-        <h2 class="modal-title">Configuració de còpies</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
-          Configura les còpies de seguretat automàtiques a Google Drive. Es faran cada mitjanit.
-        </p>
-
-        <label class="modal-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
-          <input type="checkbox" id="autoDriveBackupCheckbox" style="width: 20px; height: 20px; cursor: pointer;">
-          <span>Activar còpies automàtiques a Drive</span>
-        </label>
-
-        <div style="padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
-          <p style="margin: 0; font-size: 0.9rem; color: #93c5fd;">
-            ℹ️ Els backups es guardaran automàticament al teu Google Drive cada dia a mitjanit
-          </p>
+      <!-- Client Card 3 -->
+      <div class="client-card">
+        <div class="client-card-header">
+          <div class="client-info">
+            <div class="client-card-name">Creative Agency</div>
+            <div class="client-card-description">Branding i identitat visual per nova campanya</div>
+          </div>
+          <div class="client-card-status waiting_feedback">Prova enviada</div>
+        </div>
+        
+        <div class="client-card-details">
+          <div class="client-card-detail">
+            <div class="detail-label">Temps total</div>
+            <div class="detail-value highlight">12h 15m</div>
+          </div>
+          <div class="client-card-detail">
+            <div class="detail-label">Última activitat</div>
+            <div class="detail-value">Ahir</div>
+          </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalBackupConfig')">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveBackupConfig()">Guardar</button>
+
+      <!-- Client Card 4 -->
+      <div class="client-card">
+        <div class="client-card-header">
+          <div class="client-info">
+            <div class="client-card-name">StartupHub</div>
+            <div class="client-card-description">Consultoria estratègica i desenvolupament MVP</div>
+          </div>
+          <div class="client-card-status waiting_material">Esperant</div>
+        </div>
+        
+        <div class="client-card-details">
+          <div class="client-card-detail">
+            <div class="detail-label">Temps total</div>
+            <div class="detail-value highlight">8h 20m</div>
+          </div>
+          <div class="client-card-detail">
+            <div class="detail-label">Última activitat</div>
+            <div class="detail-value">Fa 3 dies</div>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 
-  <!-- MODAL: Eliminar Foto -->
-  <div id="modalDeletePhoto" class="modal-overlay hidden">
-    <div class="modal modal-confirm">
-      <div class="modal-header">
-        <span class="modal-icon">🗑️</span>
-        <h2 class="modal-title">Eliminar foto</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text">Eliminar aquesta foto del client?</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalDeletePhoto')">Cancel·lar</button>
-        <button class="btn-danger" onclick="confirmDeletePhoto()">Eliminar</button>
-      </div>
-    </div>
-  </div>
+  <!-- Scripts originales -->
+  <script>
+    // Script de demostración básico
+    document.addEventListener('DOMContentLoaded', function() {
+      // Toggle vista de clientes
+      const focusPriorityBtn = document.getElementById('focusPriorityBtn');
+      const clientsPanel = document.getElementById('clientsOverviewPanel');
+      const backBtn = document.getElementById('backFromOverview');
+      
+      if (focusPriorityBtn) {
+        focusPriorityBtn.addEventListener('click', function() {
+          clientsPanel.style.display = 'block';
+        });
+      }
+      
+      if (backBtn) {
+        backBtn.addEventListener('click', function() {
+          clientsPanel.style.display = 'none';
+        });
+      }
 
-  <!-- MODAL: Avisos (substitueix alert genèric) -->
-  <div id="modalAlert" class="modal-overlay hidden">
-    <div class="modal modal-alert">
-      <div class="modal-header">
-        <span class="modal-icon" id="alertIcon">ℹ️</span>
-        <h2 class="modal-title" id="alertTitle">Avís</h2>
-      </div>
-      <div class="modal-body">
-        <p class="modal-text" id="alertText"></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalAlert')">Acceptar</button>
-      </div>
-    </div>
-  </div>
-
-    <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
-<script src="app-core.js"></script>
-<script src="app-db.js"></script>
-<script src="app-project-states-CORREGIT.js"></script>
-<script src="app-ui.js"></script>
-<script src="estats-listeners-SENSE-PROMPT.js"></script>
-<!-- app-client-view.js només si existeix -->
-<script>
-// Verificar si app-client-view.js existeix, sinó ignorar-lo
-if (typeof updateClientViewContent !== 'function') {
-  console.log('ℹ️ app-client-view.js no carregat - funcionarà sense ell');
-}
-</script>
-
-<!-- Scripts de la vista de llista de clients -->
-<script>
-// Variables globals per filtres
-let currentFilter = 'all';
-let currentSort = 'urgency';
-
-// Mostrar vista de clients
-async function showClientsOverview() {
-  const overviewPanel = document.getElementById('clientsOverviewPanel');
-  const activitiesPanel = document.getElementById('activitiesPanel');
-  
-  if (overviewPanel) overviewPanel.style.display = 'block';
-  if (activitiesPanel) activitiesPanel.style.display = 'none';
-  
-  await renderClientsOverview();
-}
-
-// Amagar vista de clients
-function hideClientsOverview() {
-  const overviewPanel = document.getElementById('clientsOverviewPanel');
-  const activitiesPanel = document.getElementById('activitiesPanel');
-  const clientInfoPanel = document.getElementById('clientInfoPanel');
-
-  if (overviewPanel) overviewPanel.style.display = 'none';
-  if (activitiesPanel) activitiesPanel.style.display = 'block';
-
-  // 🔧 assegurar que el client es veu sempre
-  if (clientInfoPanel && state.currentClientId) {
-    clientInfoPanel.style.display = 'block';
-  }
-
-  if (typeof updateUI === "function") {
-    updateUI();
-  }
-}
-
-// Renderitzar la vista completa
-async function renderClientsOverview() {
-  const clients = await loadAllClients();
-  const activeClients = Object.values(clients).filter(c => c.active);
-  
-  // Actualitzar comptadors de filtres
-  updateFilterCounts(activeClients);
-  
-  // Filtrar i ordenar
-  let filteredClients = filterClients(activeClients, currentFilter);
-  filteredClients = sortClients(filteredClients, currentSort);
-  
-  // Renderitzar llista
-  const container = document.getElementById('clientsListContainer');
-  if (!container) return;
-  
-  if (filteredClients.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🔭</div>
-        <div class="empty-text">No hi ha clients amb aquest filtre</div>
-      </div>
-    `;
-    return;
-  }
-  
-  container.innerHTML = filteredClients.map(client => renderClientCard(client)).join('');
-  
-  // Afegir event listeners
-  document.querySelectorAll('.client-card').forEach(card => {
-    card.addEventListener('click', async () => {
-      const clientId = card.dataset.clientId;
-      await selectClient(clientId);
-      hideClientsOverview();
-    });
-  });
-}
-
-// Actualitzar comptadors de filtres
-function updateFilterCounts(clients) {
-  const counts = {
-    all: clients.length,
-    in_progress: 0,
-    waiting_feedback: 0,
-    waiting_material: 0,
-    paused: 0,
-    urgent: 0
-  };
-  
-  clients.forEach(client => {
-    const state = client.state || 'in_progress';
-    if (counts[state] !== undefined) counts[state]++;
-    
-    // Comptar urgents (entrega en <=3 dies)
-    if (client.deliveryDate) {
-      const today = new Date();
-      const delivery = new Date(client.deliveryDate);
-      const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
-      if (diffDays <= 3 && diffDays >= 0) counts.urgent++;
-    }
-  });
-  
-  // Actualitzar UI
-  document.getElementById('filterAllCount').textContent = counts.all;
-  document.getElementById('filterProgressCount').textContent = counts.in_progress;
-  document.getElementById('filterFeedbackCount').textContent = counts.waiting_feedback;
-  document.getElementById('filterWaitingCount').textContent = counts.waiting_material;
-  document.getElementById('filterPausedCount').textContent = counts.paused;
-  document.getElementById('filterUrgentCount').textContent = counts.urgent;
-}
-
-// Filtrar clients
-function filterClients(clients, filter) {
-  if (filter === 'all') return clients;
-  
-  if (filter === 'urgent') {
-    return clients.filter(client => {
-      if (!client.deliveryDate) return false;
-      const today = new Date();
-      const delivery = new Date(client.deliveryDate);
-      const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
-      return diffDays <= 3 && diffDays >= 0;
-    });
-  }
-  
-  return clients.filter(client => (client.state || 'in_progress') === filter);
-}
-
-// Ordenar clients
-function sortClients(clients, sortBy) {
-  const sorted = [...clients];
-  
-  switch (sortBy) {
-    case 'urgency':
-      return sorted.sort((a, b) => {
-        if (!a.deliveryDate && !b.deliveryDate) return 0;
-        if (!a.deliveryDate) return 1;
-        if (!b.deliveryDate) return -1;
-        return new Date(a.deliveryDate) - new Date(b.deliveryDate);
+      // Filtros
+      const filterBtns = document.querySelectorAll('.filter-btn');
+      filterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+          filterBtns.forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+        });
       });
-      
-    case 'progress':
-      return sorted.sort((a, b) => (a.progress || 1) - (b.progress || 1));
-      
-    case 'time':
-      return sorted.sort((a, b) => (b.total || 0) - (a.total || 0));
-      
-    case 'name':
-      return sorted.sort((a, b) => a.name.localeCompare(b.name));
-      
-    case 'state':
-      const stateOrder = ['blocked', 'waiting_material', 'waiting_feedback', 'paused', 'in_progress', 'ready_to_deliver'];
-      return sorted.sort((a, b) => {
-        const stateA = stateOrder.indexOf(a.state || 'in_progress');
-        const stateB = stateOrder.indexOf(b.state || 'in_progress');
-        return stateA - stateB;
-      });
-      
-    default:
-      return sorted;
-  }
-}
 
-// Event listeners
-document.addEventListener('DOMContentLoaded', () => {
-  // Botó de tornar
-  const backBtn = document.getElementById('backFromOverview');
-  if (backBtn) {
-    backBtn.addEventListener('click', hideClientsOverview);
-  }
-  
-  // Filtres
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentFilter = btn.dataset.filter;
-      await renderClientsOverview();
+      // Animación del timer
+      setInterval(() => {
+        const timer = document.getElementById('timer');
+        if (timer) {
+          const time = timer.textContent.split(':');
+          let hours = parseInt(time[0]);
+          let minutes = parseInt(time[1]);
+          let seconds = parseInt(time[2]);
+          
+          seconds++;
+          if (seconds >= 60) {
+            seconds = 0;
+            minutes++;
+          }
+          if (minutes >= 60) {
+            minutes = 0;
+            hours++;
+          }
+          
+          timer.textContent = 
+            String(hours).padStart(2, '0') + ':' + 
+            String(minutes).padStart(2, '0') + ':' + 
+            String(seconds).padStart(2, '0');
+        }
+      }, 1000);
     });
-  });
-  
-  // Ordenació
-  const sortingSelect = document.getElementById('clientsSorting');
-  if (sortingSelect) {
-    sortingSelect.addEventListener('change', async (e) => {
-      currentSort = e.target.value;
-      await renderClientsOverview();
-    });
-  }
-  
-  // Botó "Revisar encàrrecs"
-  const reviewBtn = document.getElementById('focusPriorityBtn');
-  if (reviewBtn) {
-    // Eliminar event listener anterior si existeix
-    reviewBtn.onclick = null;
-    reviewBtn.addEventListener('click', showClientsOverview);
-  }
-  
-  // Botó "Sortir del client"
-  const exitBtn = document.getElementById('exitClientBtn');
-  if (exitBtn && typeof exitClient === 'function') {
-    exitBtn.addEventListener('click', exitClient);
-  }
-});
-</script>
+  </script>
 
-<!-- Scripts de la secció d'estat i progrés -->
-<script>
-// Inicialitzar la secció d'estat i progrés
-async function initProjectStatus() {
-  if (!state.currentClientId) return;
-  
-  const client = await loadClient(state.currentClientId);
-  if (!client) return;
-  
-  // Inicialitzar estat per defecte si no existeix
-  if (!client.state) {
-    await setClientState(client.id, 'in_progress', 'Projecte iniciat');
-  }
-  
-  // Inicialitzar progrés per defecte
-  if (!client.progress) {
-    await setClientProgress(client.id, 1);
-  }
-  
-  // Renderitzar estat
-  const stateContainer = document.getElementById('projectStateContainer');
-  if (stateContainer) {
-    stateContainer.innerHTML = renderStateSelector(client);
-    setupStateListeners();
-  }
-  
-  // Renderitzar progrés
-  const progressContainer = document.getElementById('projectProgressContainer');
-  if (progressContainer) {
-    progressContainer.innerHTML = renderProgressSelector(client);
-    setupProgressListeners();
-  }
-}
-
-// Event listeners per al selector d'estat
-function setupStateListeners() {
-  const changeStateBtn = document.getElementById('changeStateBtn');
-  const stateDropdown = document.getElementById('stateDropdown');
-  const stateOptions = document.querySelectorAll('.state-option');
-  
-  if (changeStateBtn) {
-    changeStateBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      stateDropdown.classList.toggle('hidden');
-    });
-  }
-  
-  // Tancar dropdown si es clica fora
-  document.addEventListener('click', (e) => {
-    if (stateDropdown && !stateDropdown.contains(e.target) && e.target !== changeStateBtn) {
-      stateDropdown.classList.add('hidden');
-    }
-  });
-  
-  // Canviar estat
-  stateOptions.forEach(option => {
-    option.addEventListener('click', async () => {
-      const stateId = option.dataset.state;
-      
-      // Actualitzar estat SENSE demanar nota
-      await setClientState(state.currentClientId, stateId, '');
-      
-      // Actualitzar UI
-      await initProjectStatus();
-      
-      // Tancar dropdown
-      stateDropdown.classList.add('hidden');
-      
-      // Mostrar confirmació
-      const stateName = option.querySelector('.state-option-label').textContent;
-      showAlert('Estat actualitzat', `Projecte marcat com: ${stateName}`, '✅');
-    });
-  });
-}
-
-// Event listeners per al selector de progrés
-function setupProgressListeners() {
-  const progressContainer = document.getElementById('projectProgressContainer');
-  
-  if (!progressContainer) return;
-  
-  // Usar delegació d'esdeveniments per capturar clics als quadrats
-  progressContainer.addEventListener('click', async (e) => {
-    // Buscar l'element clicat o el seu pare que tingui data-level
-    const target = e.target.closest('[data-level]');
-    
-    if (!target) return;
-    
-    const level = parseInt(target.dataset.level);
-    
-    if (!level || !state.currentClientId) return;
-    
-    try {
-      // Actualitzar progrés
-      await setClientProgress(state.currentClientId, level);
-      
-      // Actualitzar UI
-      await initProjectStatus();
-      
-      // Mostrar confirmació
-      const progressLabel = PROGRESS_LEVELS ? PROGRESS_LEVELS[level].label : `Nivell ${level}`;
-      showAlert('Progrés actualitzat', `${progressLabel} (${level}/5)`, '⭐');
-    } catch (error) {
-      console.error('Error actualitzant progrés:', error);
-    }
-  });
-  
-  // També mantenir el listener original per compatibilitat
-  const progressStars = document.querySelectorAll('.progress-star');
-  
-  progressStars.forEach(star => {
-    star.addEventListener('click', async () => {
-      const level = parseInt(star.dataset.level);
-      
-      if (!level || !state.currentClientId) return;
-      
-      // Actualitzar progrés
-      await setClientProgress(state.currentClientId, level);
-      
-      // Actualitzar UI
-      await initProjectStatus();
-      
-      // Mostrar confirmació
-      const progressLabel = PROGRESS_LEVELS ? PROGRESS_LEVELS[level].label : `Nivell ${level}`;
-      showAlert('Progrés actualitzat', `${progressLabel} (${level}/5)`, '⭐');
-    });
-  });
-}
-</script>
-
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/FOCUSWORK/sw-v2.js", {
-        scope: "/FOCUSWORK/"
-      });
-    });
-  }
-</script>
-<!-- BOTÓ FLOTANT PER SORTIR DEL CLIENT -->
-<div id="floating-layer">
-  <button id="exitClientFloating" class="hidden">
-     ↩ Sortir del client
-  </button>
-</div>
-<!-- Lightbox per galeria de fotos -->
-<div class="lightbox-overlay" id="lightbox">
-  <div class="lightbox-header">
-    <div class="lightbox-info">
-      <div class="lightbox-counter" id="lightboxCounter">1 / 1</div>
-      <div class="lightbox-date" id="lightboxDate">—</div>
-    </div>
-    <button class="lightbox-close" onclick="closeLightbox()">×</button>
-  </div>
-  
- <div class="lightbox-canvas-container">
-  <button class="lightbox-nav lightbox-nav-prev" onclick="prevPhoto()">‹</button>
-  <canvas id="photoCanvas"></canvas>
-  <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
-</div>
-
-<!-- Toolbar d'edició (just després del canvas) -->
-<div class="editor-toolbar">
-  <button class="color-picker-mini active" style="background: #ef4444;" onclick="setDrawColor('#ef4444')" data-color="#ef4444"></button>
-  <button class="color-picker-mini" style="background: #f59e0b;" onclick="setDrawColor('#f59e0b')" data-color="#f59e0b"></button>
-  <button class="color-picker-mini" style="background: #10b981;" onclick="setDrawColor('#10b981')" data-color="#10b981"></button>
-  <button class="color-picker-mini" style="background: #3b82f6;" onclick="setDrawColor('#3b82f6')" data-color="#3b82f6"></button>
-  <button class="color-picker-mini" style="background: white;" onclick="setDrawColor('#ffffff')" data-color="#ffffff"></button>
-  
-  <div style="width: 2px; height: 25px; background: rgba(255,255,255,0.2);"></div>
-  
-  <input type="range" class="size-slider-mini" min="2" max="8" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
-  
-  <button class="editor-btn-small" onclick="toggleDrawing()" id="drawToggle">
-    <span>✏️</span>
-    <span id="drawToggleText">Dibuixar</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="undoDraw()">
-    <span>↶</span>
-    <span>Desfer</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="clearDrawing()">
-    <span>🗑️</span>
-    <span>Netejar</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="saveEditedPhoto()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
-    <span>💾</span>
-    <span>Guardar canvis</span>
-  </button>
-</div>
-  
-<div class="lightbox-footer">
-  <!-- Camp de comentari NOU -->
-  <div class="lightbox-comment-container">
-    <textarea 
-      id="lightboxComment" 
-      class="lightbox-comment-input" 
-      placeholder="💬 Afegeix un comentari a aquesta foto..."
-      rows="2"
-    ></textarea>
-  </div>
-  
-  <!-- Botons existents -->
-  <div class="lightbox-buttons">
-    <button class="lightbox-btn" onclick="downloadCurrentPhoto()">
-      <span>⬇️</span>
-      <span>Descarregar</span>
-    </button>
-    <button class="lightbox-btn" onclick="shareCurrentPhoto()">
-      <span>📤</span>
-      <span>Compartir</span>
-    </button>
-    <button class="lightbox-btn danger" onclick="deleteCurrentPhoto()">
-      <span>🗑️</span>
-      <span>Esborrar</span>
-    </button>
-  </div>
-</div>
-
-<!-- Estils addicionals per la vista de llista -->
-<style>
-/* Header de la vista */
-.clients-overview-panel {
-  position: fixed;
-  inset: 0;
-  background: #1e293b;
-  z-index: 200;
-  overflow-y: auto;
-}
-
-.overview-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(10px);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.back-btn {
-  padding: 8px;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #e2e8f0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  min-width: 44px;
-  min-height: 44px;
-}
-
-.back-btn:hover,
-.back-btn:active {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.overview-title {
-  flex: 1;
-  font-size: 20px;
-  font-weight: 600;
-  color: #e2e8f0;
-  margin: 0;
-}
-
-/* Filtres */
-.clients-filters {
-  display: flex;
-  gap: 8px;
-  padding: 12px 20px;
-  background: rgba(15, 23, 42, 0.4);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  overflow-x: auto;
-}
-
-.filter-btn {
-  padding: 8px 16px;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  color: #94a3b8;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s;
-}
-
-.filter-btn:hover {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #e2e8f0;
-}
-
-.filter-btn.active {
-  background: rgba(96, 165, 250, 0.2);
-  border-color: rgba(96, 165, 250, 0.4);
-  color: #60a5fa;
-}
-
-.filter-badge {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-/* Ordenació */
-.clients-sorting {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  background: rgba(15, 23, 42, 0.4);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.sorting-label {
-  font-size: 13px;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.sorting-select {
-  flex: 1;
-  padding: 8px 12px;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #e2e8f0;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.sorting-select:focus {
-  outline: none;
-  border-color: rgba(96, 165, 250, 0.5);
-}
-
-/* Llista de clients */
-.clients-list-container {
-  padding: 20px;
-}
-
-/* Estat buit */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.empty-text {
-  font-size: 16px;
-  color: #64748b;
-}
-
-/* Separació visual de la secció d'estat */
-#projectStatusSection {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* Estils per la capçalera del client */
-.client-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  margin: -20px -20px 20px -20px;
-}
-
-.client-header-title {
-  flex: 1;
-  font-size: 20px;
-  font-weight: 600;
-  color: #e2e8f0;
-  margin: 0;
-}
-
-/* Estils per als botons finals del client - només millorar els existents */
-.grid.full-actions {
-  margin-top: 12px;
-}
-
-.grid.full-actions button {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-</style>
-<script src="botons-visibilitat.js"></script>
+  <!-- Aquí irían tus scripts originales de app.js, etc. -->
+  <!-- <script src="app.js"></script> -->
 </body>
-
 </html>
