@@ -662,7 +662,9 @@ const btns = $("clientFixedButtons");
 if (btns) btns.style.display = "grid";
 
 closeModal('modalChangeClient');
-}
+
+}   // ← aquesta clau faltava
+
 async function closeClient() {
   const client = await loadClient(state.currentClientId);
   if (!client) return;
@@ -790,6 +792,7 @@ setTimeout(() => {
 
 closeModal('modalHistory');
 
+}   // ← tanca selectClient
 
 /* ================= ESBORRAR CLIENT ================= */
 async function deleteCurrentClient() {
