@@ -662,7 +662,7 @@ const btns = $("clientFixedButtons");
 if (btns) btns.style.display = "grid";
 
 closeModal('modalChangeClient');
-
+}
 async function closeClient() {
   const client = await loadClient(state.currentClientId);
   if (!client) return;
