@@ -653,9 +653,12 @@ async function selectClient(clientId) {
   
   const client = await loadClient(clientId);
   
-  await updateUI(client);
-  
-  closeModal('modalChangeClient');
+await updateUI(client);
+
+const btns = $("clientFixedButtons");
+if (btns) btns.style.display = "grid";
+
+closeModal('modalChangeClient');
 }
 
 async function closeClient() {
@@ -770,7 +773,8 @@ async function selectHistoryClient(clientId) {
   
   const client = await loadClient(clientId);
   await updateUI(client);
-  
+  const btns = $("clientFixedButtons");
+if (btns) btns.style.display = "grid";
   setTimeout(() => {
     renderPhotoGallery(client);
   }, 100);
