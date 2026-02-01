@@ -417,12 +417,18 @@ async function updateUI(preloadedClient = null) {
   
   updates.push(() => {
     // Control del panell principal d'informació del client
-    if (clientInfoPanel) {
-      if (client) {
-        clientInfoPanel.style.display = 'block';
-      } else {
-        clientInfoPanel.style.display = 'none';
-      }
+if (clientInfoPanel) {
+  if (client) {
+    clientInfoPanel.style.display = 'block';
+  } else {
+    clientInfoPanel.style.display = 'none';
+  }
+}
+
+const mainButtons = $("clientMainButtons");
+if (mainButtons) {
+  mainButtons.style.display = client ? "grid" : "none";
+}
     }
     
     if (exitContainer) {
