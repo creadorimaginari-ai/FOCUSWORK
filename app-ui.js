@@ -655,11 +655,13 @@ async function selectClient(clientId) {
   
 await updateUI(client);
 
+const clientInfoPanel = document.getElementById('clientInfoPanel');
+if (clientInfoPanel) clientInfoPanel.style.display = 'block';
+
 const btns = $("clientFixedButtons");
 if (btns) btns.style.display = "grid";
 
 closeModal('modalChangeClient');
-}
 
 async function closeClient() {
   const client = await loadClient(state.currentClientId);
