@@ -205,16 +205,15 @@
             📷 Afegir foto al client
           </button>
         </div>
+
+        <div class="grid centered" style="margin-top: 12px;">
+          <button id="historyBtn">📂 Clients tancats</button>
+          <button id="closeClient" class="danger">✅ Tancar client</button>
+        </div>
       </div>
       
       <!-- 🔥 GALERÍA DE FOTOS (CRÍTICO - ESTO ESTABA FUERA DE LUGAR) -->
       <div id="photoGallery" class="photo-gallery"></div>
-      
-      <!-- BOTONS FINALS (DINS DEL CLIENT) -->
-      <div class="grid full-actions" style="margin-top: 12px;">
-        <button id="historyBtn">📂 Clients tancats</button>
-        <button id="closeClient" class="danger">✅ Tancar client</button>
-      </div>
 
     </section>
 
@@ -324,10 +323,8 @@
         <h2 class="modal-title">Clients tancats</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text" style="opacity: 0.7; margin-bottom: 15px;">
-          Clients dels quals ja has cobrat:
-        </p>
-        <div id="closedClientsListDiv" class="clients-list"></div>
+        <input type="text" id="searchHistory" class="modal-input" placeholder="🔍 Buscar client o feina...">
+        <div id="historyClientsList" class="clients-list"></div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
