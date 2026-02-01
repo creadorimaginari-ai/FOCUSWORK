@@ -774,15 +774,22 @@ async function selectHistoryClient(clientId) {
   areTasksInitialized = false;
   
   const client = await loadClient(clientId);
-  await updateUI(client);
-  const btns = $("clientFixedButtons");
+await updateUI(client);
+
+// assegurar panell del client visible
+const clientInfoPanel = document.getElementById('clientInfoPanel');
+if (clientInfoPanel) clientInfoPanel.style.display = 'block';
+
+// assegurar botons visibles
+const btns = $("clientFixedButtons");
 if (btns) btns.style.display = "grid";
-  setTimeout(() => {
-    renderPhotoGallery(client);
-  }, 100);
-  
-  closeModal('modalHistory');
-}
+
+setTimeout(() => {
+  renderPhotoGallery(client);
+}, 100);
+
+closeModal('modalHistory');
+
 
 /* ================= ESBORRAR CLIENT ================= */
 async function deleteCurrentClient() {
