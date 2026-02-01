@@ -347,35 +347,15 @@ async function updateUI(preloadedClient = null) {
   } else {
     updates.push(() => activitiesPanel?.classList.remove('single-activity'));
   }
-  
-updates.push(() => {
-  // Panel principal del cliente
-  if (clientInfoPanel) {
-    clientInfoPanel.style.display = client ? 'block' : 'none';
-  }
 
-  // Botones debajo de fecha
-  const mainButtons = $("clientMainButtons");
-  if (mainButtons) {
-    mainButtons.style.display = client ? "grid" : "none";
-  }
+  updates.push(() => {
+    $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Cap encàrrec actiu";
+    $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
+    $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
+    const headerTitle = $("clientHeaderTitle");
+    if (headerTitle) headerTitle.textContent = client ? client.name : "Client";
+  });
 
-  if (exitContainer) {
-    exitContainer.style.display = client ? "block" : "none";
-  }
-
-  if (deletePanel) {
-    deletePanel.style.display =
-      client && !client.active ? "block" : "none";
-  }
-
-  if (clientActionsPanel) {
-    clientActionsPanel.style.display =
-      client && client.active ? "block" : "none";
-  }
-});
-
-  
   if ($("clientTotal")) {
     updates.push(() => {
       $("clientTotal").textContent = client ? `Total client: ${formatTime(client.total)}` : "";
@@ -433,21 +413,10 @@ updates.push(() => {
   const clientInfoPanel = $("clientInfoPanel");
   
   updates.push(() => {
-    // Control del panell principal d'informació del client
-if (clientInfoPanel) {
-  if (client) {
-    clientInfoPanel.style.display = 'block';
-  } else {
-    clientInfoPanel.style.display = 'none';
-  }
-}
-
-const mainButtons = $("clientMainButtons");
-if (mainButtons) {
-  mainButtons.style.display = client ? "grid" : "none";
-}
+    if (clientInfoPanel) {
+      clientInfoPanel.style.display = client ? 'block' : 'none';
     }
-    
+
     if (exitContainer) {
       if (client) {
         exitContainer.style.display = "block";
@@ -1652,7 +1621,7 @@ async function confirmBulkDelete(period) {
 
 /* ================= EVENT LISTENERS ================= */
 document.addEventListener('DOMContentLoaded', () => {
-  if ($('focusPriorityBtn')) $('focusPriorityBtn').onclick = changeClient;
+  if ($('focusPriorityBtn')) $('focusPriorityBtn').onclick = () => { if (typeof showClientsOverview === 'function') showClientsOverview(); else changeClient(); };
   if ($('newClientBtn')) $('newClientBtn').onclick = newClient;
   if ($('changeClient')) $('changeClient').onclick = changeClient;
   if ($('historyBtn')) $('historyBtn').onclick = showHistory;
