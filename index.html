@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <title>FocusWork — Modern Edition</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="background-color" content="#0a0e1a">
+
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FocusWork">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Styles Modernos -->
+  <link rel="stylesheet" href="styles-modern.css">
+  <link rel="stylesheet" href="styles-client-view-modern.css">
+  <link rel="stylesheet" href="styles-project-states-modern.css">
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div id="clientName" class="client-name">FocusWork Studio</div>
+      <div id="activityName" class="activity-name">Disseny UI/UX</div>
+      <div id="timer" class="timer">02:34:18</div>
+      <div id="clientTotal" class="client-total">Total avui: 5h 42m</div>
+      
+      <!-- TIEMPO FACTURABLE -->
+      <div id="billableTimeBox" class="billable-time-box" style="display: block;">
+        💰 Temps facturable: 4h 30m
+      </div>
+      
+      <!-- AVISO FUERA DE HORARIO DE ENFOQUE -->
+      <div id="focusScheduleStatus" style="display: none;">
+        ⚠️ Fora de l'horari de concentració
+      </div>
+    </header>
+
+    <!-- ACTIVIDADES -->
+    <section class="panel" id="activitiesPanel">
+
+      <!-- ACCIÓ PRINCIPAL -->
+      <div id="clientMainButtons" class="grid centered" style="margin-top: 12px;">
+        <button id="newClientBtn" class="primary">➕ Nou encàrrec</button>
+        <button id="focusPriorityBtn" class="success">👁️ Revisar encàrrecs</button>
+      </div>
+
+      <!-- GRID D'ACTIVITATS -->
+      <div class="grid activities" id="activitiesGrid" style="margin-top: 24px;">
+        <button class="activity-btn">⏱️ Pausar</button>
+        <button class="activity-btn">✅ Finalitzar</button>
+        <button class="activity-btn">📊 Informe</button>
+        <button class="activity-btn">🕐 Històric</button>
+      </div>
+
+    </section>
+
+    <!-- DEMO: Vista de Estadísticas Rápidas -->
+    <section class="panel">
+      <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: rgba(248, 250, 252, 0.7); text-transform: uppercase; letter-spacing: 0.5px;">📈 Resum setmanal</h3>
+      
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+        <div style="text-align: center; padding: 16px; background: rgba(255, 255, 255, 0.03); border-radius: 12px;">
+          <div style="font-size: 32px; font-weight: 900; background: linear-gradient(135deg, #4facfe, #00f2fe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px;">24</div>
+          <div style="font-size: 12px; font-weight: 600; color: rgba(248, 250, 252, 0.6);">HORES</div>
+        </div>
+        <div style="text-align: center; padding: 16px; background: rgba(255, 255, 255, 0.03); border-radius: 12px;">
+          <div style="font-size: 32px; font-weight: 900; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px;">8</div>
+          <div style="font-size: 12px; font-weight: 600; color: rgba(248, 250, 252, 0.6);">PROJECTES</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Botón de salir -->
+    <button class="exit-client-btn">
+      🚪 Sortir de l'encàrrec
+    </button>
+
+  </div>
+
+  <!-- VISTA DE LLISTA DE CLIENTS (DEMO) -->
+  <div class="clients-overview-panel" id="clientsOverviewPanel" style="display: none;">
+    
+    <!-- Header -->
+    <div class="overview-header">
+      <button class="back-btn" id="backFromOverview">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      <h2 class="overview-title">📊 Els meus projectes</h2>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="clients-filters" id="clientsFilters">
+      <button class="filter-btn active" data-filter="all">
+        Tots <span class="filter-badge">12</span>
+      </button>
+      <button class="filter-btn" data-filter="in_progress">
+        🔵 En progrés <span class="filter-badge">5</span>
+      </button>
+      <button class="filter-btn" data-filter="waiting_feedback">
+        ✉️ Prova enviada <span class="filter-badge">3</span>
+      </button>
+      <button class="filter-btn" data-filter="urgent">
+        🔴 Urgents <span class="filter-badge">2</span>
+      </button>
+    </div>
+    
+    <!-- Ordenació -->
+    <div class="clients-sorting">
+      <label class="sorting-label">Ordenar per:</label>
+      <select id="sortBy">
+        <option value="recent">Més recents</option>
+        <option value="time">Més temps</option>
+        <option value="name">Nom (A-Z)</option>
+        <option value="urgent">Urgència</option>
+      </select>
+    </div>
+    
+    <!-- Lista de clientes -->
+    <div class="clients-list-container">
+      
+      <!-- Client Card 1 -->
+      <div class="client-card">
+        <div class="client-card-header">
+          <div class="client-info">
+            <div class="client-card-name">FocusWork Studio</div>
+            <div class="client-card-description">Redisseny complet de la plataforma web i app mòbil</div>
+          </div>
+          <div class="client-card-status in_progress">En progrés</div>
+        </div>
+        
+        <div class="client-card-details">
+          <div class="client-card-detail">
+            <div class="detail-label">Temps total</div>
+            <div class="detail-value highlight">24h 30m</div>
+          </div>
+          <div class="client-card-detail">
+            <div class="detail-label">Última activitat</div>
+            <div class="detail-value">Avui</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Client Card 2 -->
+      <div class="client-card">
+        <div class="client-card-header">
+          <div class="client-info">
+            <div class="client-card-name">TechCorp Solutions</div>
+            <div class="client-card-description">Desenvolupament d'aplicació empresarial amb IA</div>
+          </div>
+          <div class="client-card-status urgent">Urgent</div>
+        </div>
+        
+        <div class="client-card-details">
+          <div class="client-card-detail">
+            <div class="detail-label">Temps total</div>
+            <div class="detail-value highlight">18h 45m</div>
+          </div>
+          <div class="client-card-detail">
+            <div class="detail-label">Última activitat</div>
+            <div class="detail-value">Fa 2h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Client Card 3 -->
+      <div class="client-card">
+        <div class="client-card-header">
+          <div class="client-info">
+            <div class="client-card-name">Creative Agency</div>
+            <div class="client-card-description">Branding i identitat visual per nova campanya</div>
+          </div>
+          <div class="client-card-status waiting_feedback">Prova enviada</div>
+        </div>
+        
+        <div class="client-card-details">
+          <div class="client-card-detail">
+            <div class="detail-label">Temps total</div>
+            <div class="detail-value highlight">12h 15m</div>
+          </div>
+          <div class="client-card-detail">
+            <div class="detail-label">Última activitat</div>
+            <div class="detail-value">Ahir</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Client Card 4 -->
+      <div class="client-card">
+        <div class="client-card-header">
+          <div class="client-info">
+            <div class="client-card-name">StartupHub</div>
+            <div class="client-card-description">Consultoria estratègica i desenvolupament MVP</div>
+          </div>
+          <div class="client-card-status waiting_material">Esperant</div>
+        </div>
+        
+        <div class="client-card-details">
+          <div class="client-card-detail">
+            <div class="detail-label">Temps total</div>
+            <div class="detail-value highlight">8h 20m</div>
+          </div>
+          <div class="client-card-detail">
+            <div class="detail-label">Última activitat</div>
+            <div class="detail-value">Fa 3 dies</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts originales -->
+  <script>
+    // Script de demostración básico
+    document.addEventListener('DOMContentLoaded', function() {
+      // Toggle vista de clientes
+      const focusPriorityBtn = document.getElementById('focusPriorityBtn');
+      const clientsPanel = document.getElementById('clientsOverviewPanel');
+      const backBtn = document.getElementById('backFromOverview');
+      
+      if (focusPriorityBtn) {
+        focusPriorityBtn.addEventListener('click', function() {
+          clientsPanel.style.display = 'block';
+        });
+      }
+      
+      if (backBtn) {
+        backBtn.addEventListener('click', function() {
+          clientsPanel.style.display = 'none';
+        });
+      }
+
+      // Filtros
+      const filterBtns = document.querySelectorAll('.filter-btn');
+      filterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+          filterBtns.forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+
+      // Animación del timer
+      setInterval(() => {
+        const timer = document.getElementById('timer');
+        if (timer) {
+          const time = timer.textContent.split(':');
+          let hours = parseInt(time[0]);
+          let minutes = parseInt(time[1]);
+          let seconds = parseInt(time[2]);
+          
+          seconds++;
+          if (seconds >= 60) {
+            seconds = 0;
+            minutes++;
+          }
+          if (minutes >= 60) {
+            minutes = 0;
+            hours++;
+          }
+          
+          timer.textContent = 
+            String(hours).padStart(2, '0') + ':' + 
+            String(minutes).padStart(2, '0') + ':' + 
+            String(seconds).padStart(2, '0');
+        }
+      }, 1000);
+    });
+  </script>
+
+  <!-- Aquí irían tus scripts originales de app.js, etc. -->
+  <!-- <script src="app.js"></script> -->
+</body>
+</html>
