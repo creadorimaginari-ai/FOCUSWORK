@@ -879,20 +879,6 @@ document.addEventListener('DOMContentLoaded', () => {
       await renderClientsOverview();
     });
   }
-  
-  // Botó "Revisar encàrrecs"
-  const reviewBtn = document.getElementById('focusPriorityBtn');
-  if (reviewBtn) {
-    // Eliminar event listener anterior si existeix
-    reviewBtn.onclick = null;
-    reviewBtn.addEventListener('click', showClientsOverview);
-  }
-  
-  // Botó "Sortir del client"
-  const exitBtn = document.getElementById('exitClientBtn');
-  if (exitBtn && typeof exitClient === 'function') {
-    exitBtn.addEventListener('click', exitClient);
-  }
 });
 </script>
 
