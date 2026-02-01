@@ -348,16 +348,33 @@ async function updateUI(preloadedClient = null) {
     updates.push(() => activitiesPanel?.classList.remove('single-activity'));
   }
   
-  updates.push(() => {
-    $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Cap encàrrec actiu";
-    $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
-    $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
-    // Actualitzar títol de la capçalera del panell del client
-    const headerTitle = $("clientHeaderTitle");
-    if (headerTitle) {
-      headerTitle.textContent = client ? client.name : "Client";
-    }
-  });
+updates.push(() => {
+  // Panel principal del cliente
+  if (clientInfoPanel) {
+    clientInfoPanel.style.display = client ? 'block' : 'none';
+  }
+
+  // Botones debajo de fecha
+  const mainButtons = $("clientMainButtons");
+  if (mainButtons) {
+    mainButtons.style.display = client ? "grid" : "none";
+  }
+
+  if (exitContainer) {
+    exitContainer.style.display = client ? "block" : "none";
+  }
+
+  if (deletePanel) {
+    deletePanel.style.display =
+      client && !client.active ? "block" : "none";
+  }
+
+  if (clientActionsPanel) {
+    clientActionsPanel.style.display =
+      client && client.active ? "block" : "none";
+  }
+});
+
   
   if ($("clientTotal")) {
     updates.push(() => {
