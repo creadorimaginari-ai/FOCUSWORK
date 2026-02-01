@@ -205,15 +205,16 @@
             📷 Afegir foto al client
           </button>
         </div>
-
-        <div class="grid centered" style="margin-top: 12px;">
-          <button id="historyBtn">📂 Clients tancats</button>
-          <button id="closeClient" class="danger">✅ Tancar client</button>
-        </div>
       </div>
       
       <!-- 🔥 GALERÍA DE FOTOS (CRÍTICO - ESTO ESTABA FUERA DE LUGAR) -->
       <div id="photoGallery" class="photo-gallery"></div>
+      
+      <!-- BOTONS FINALS (DINS DEL CLIENT) -->
+      <div class="grid full-actions" style="margin-top: 12px;">
+        <button id="historyBtn">📂 Clients tancats</button>
+        <button id="closeClient" class="danger">✅ Tancar client</button>
+      </div>
 
     </section>
 
@@ -307,7 +308,7 @@
         <p class="modal-text" style="opacity: 0.7; margin-bottom: 15px;">
           Tria un dels teus encàrrecs actius:
         </p>
-        <div id="clientsListDiv" class="clients-list"></div>
+        <div id="activeClientsList" class="clients-list"></div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalChangeClient')">Cancel·lar</button>
@@ -327,7 +328,24 @@
         <div id="historyClientsList" class="clients-list"></div>
       </div>
       <div class="modal-footer">
+        <button class="btn-danger" onclick="showBulkDeleteModal()">🗑️ Esborrar antics</button>
         <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Esborrar clients antics (MASSIU) -->
+  <div id="modalBulkDelete" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-icon">🗑️</span>
+        <h2 class="modal-title">Esborrar clients antics</h2>
+      </div>
+      <div class="modal-body">
+        <div id="bulkDeleteList"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('modalBulkDelete')">Cancel·lar</button>
       </div>
     </div>
   </div>
@@ -337,39 +355,121 @@
     <div class="modal modal-confirm">
       <div class="modal-header">
         <span class="modal-icon">✅</span>
-        <h2 class="modal-title">Tancar encàrrec</h2>
+        <h2 class="modal-title">Tancar client</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="closeClientText"></p>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalCloseClient')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmCloseClient()">Sí, tancar</button>
+        <button class="btn-primary" onclick="confirmCloseClient()">Tancar client</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Llegir fitxer (còpia) -->
-  <div id="modalBackup" class="modal-overlay hidden">
+  <!-- MODAL: Exportar abans de tancar -->
+  <div id="modalExportBeforeClose" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-icon">💾</span>
+        <h2 class="modal-title">Guardar abans de tancar</h2>
+      </div>
+      <div class="modal-body">
+        <p class="modal-text" id="exportBeforeCloseText"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="confirmCloseClient()">No, tancar sense guardar</button>
+        <button class="btn-primary" onclick="exportAndClose()">Sí, guardar i tancar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Informe/Report -->
+  <div id="modalReport" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-icon">📋</span>
+        <h2 class="modal-title">Informe del Projecte</h2>
+      </div>
+      <div class="modal-body">
+        <pre id="reportContent" class="report-content"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('modalReport')">Tancar</button>
+        <button class="btn-primary" onclick="copyReport()">📋 Copiar</button>
+        <button class="btn-primary" onclick="shareReport()">📤 Compartir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Importar Feina -->
+  <div id="modalImportWork" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📂</span>
-        <h2 class="modal-title">Carregar treball</h2>
+        <h2 class="modal-title">Importar Feina</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
-          Tria un fitxer de còpia per restaurar les teves dades:
-        </p>
-        <input type="file" id="backupInput" accept=".json" class="modal-input" style="width: 100%;">
-        <div style="margin-top: 20px; padding: 12px; background: rgba(251, 191, 36, 0.1); border-radius: 8px; border-left: 3px solid #fbbf24;">
-          <p style="margin: 0; font-size: 13px; color: #fbbf24;">
-            ⚠️ Aquesta acció pot sobreescriure les teves dades actuals
-          </p>
+        <p class="modal-text">Vols importar aquest treball?</p>
+        <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
+          <p style="margin: 8px 0;"><strong>Client:</strong> <span id="importClientName"></span></p>
+          <p style="margin: 8px 0;"><strong>Temps total:</strong> <span id="importClientTime"></span></p>
+          <p style="margin: 8px 0;"><strong>Fotos:</strong> <span id="importClientPhotos"></span></p>
+          <p style="margin: 8px 0;"><strong>Notes:</strong> <span id="importClientNotes"></span></p>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalBackup')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmImportBackup()">Carregar</button>
+        <button class="btn-secondary" onclick="closeModal('modalImportWork')">Cancel·lar</button>
+        <button class="btn-primary" onclick="confirmImport()">Importar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Importar còpia completa -->
+  <div id="modalImportBackup" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-icon">📦</span>
+        <h2 class="modal-title">Restaurar còpia completa</h2>
+      </div>
+      <div class="modal-body">
+        <p class="modal-text" style="color: #fbbf24;">⚠️ ATENCIÓ: això restaurarà TOTES les teves dades des de la còpia de seguretat.</p>
+        <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
+          <p style="margin: 8px 0;"><strong>Total clients:</strong> <span id="importBackupClients"></span></p>
+          <p style="margin: 8px 0;"><strong>Clients actius:</strong> <span id="importBackupActive"></span></p>
+          <p style="margin: 8px 0;"><strong>Data de la còpia:</strong> <span id="importBackupDate"></span></p>
+          <p style="margin: 8px 0;"><strong>Llicència inclosa:</strong> <span id="importBackupLicense"></span></p>
+        </div>
+        <p class="modal-text" style="font-size: 13px; opacity: 0.8;">La pàgina es recarregarà automàticament després de restaurar.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('modalImportBackup')">Cancel·lar</button>
+        <button class="btn-primary" onclick="confirmImportBackup()">Restaurar còpia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Focus diari -->
+  <div id="modalEnfoque" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-icon">🎯</span>
+        <div>
+          <h2 class="modal-title">Focus diari</h2>
+          <p class="modal-subtitle" id="modalUserName"></p>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="activity-list" id="modalActivityList"></div>
+        <div class="total-stats">
+          <div class="total-time">
+            Total treballat: <strong id="modalTotalTime"></strong>
+          </div>
+        </div>
+        <div id="modalFocusState" class="focus-state"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="closeModal('modalEnfoque')">Acceptar</button>
       </div>
     </div>
   </div>
@@ -382,17 +482,9 @@
         <h2 class="modal-title">Esborrar client</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text">
-          <strong id="deleteClientName"></strong>
-        </p>
-        <p class="modal-text" style="opacity: 0.7; margin-top: 8px;">
-          Aquesta acció no es pot desfer. Tot el registre d'hores i fotos es perdran per sempre.
-        </p>
-        <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 3px solid #ef4444;">
-          <p style="margin: 0; font-size: 13px; color: #ef4444;">
-            ⚠️ ADVERTÈNCIA: Aquesta acció és irreversible
-          </p>
-        </div>
+        <p class="modal-text" id="deleteClientText"></p>
+        <label class="modal-label">Escriu ESBORRAR per confirmar</label>
+        <input type="text" id="inputDeleteConfirm" class="modal-input" placeholder="ESBORRAR">
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalDeleteClient')">Cancel·lar</button>
@@ -457,20 +549,23 @@
     </div>
   </div>
 
-  <!-- MODAL: Veure resum d'hores -->
-  <div id="modalHoursSummary" class="modal-overlay hidden">
+  <!-- MODAL: Veure Hores Extra -->
+  <div id="modalViewExtraHours" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📊</span>
-        <h2 class="modal-title">Resum d'hores</h2>
+        <h2 class="modal-title">Hores Extra Registrades</h2>
       </div>
       <div class="modal-body">
-        <div id="hoursSummaryContent" style="max-height: 60vh; overflow-y: auto;">
-          <!-- Es generarà dinàmicament -->
+        <div id="extraHoursList" class="extra-hours-list"></div>
+        <div class="total-stats" style="margin-top: 16px;">
+          <div class="total-time">
+            Total hores extra: <strong id="extraHoursTotal">00:00:00</strong>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalHoursSummary')">Tancar</button>
+        <button class="btn-primary" onclick="closeModal('modalViewExtraHours')">Tancar</button>
       </div>
     </div>
   </div>
@@ -784,6 +879,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // Botó "Revisar encàrrecs"
+  const reviewBtn = document.getElementById('focusPriorityBtn');
+  if (reviewBtn) {
+    // Eliminar event listener anterior si existeix
+    reviewBtn.onclick = null;
+    reviewBtn.addEventListener('click', showClientsOverview);
+  }
+  
+  // Botó "Sortir del client"
+  const exitBtn = document.getElementById('exitClientBtn');
+  if (exitBtn && typeof exitClient === 'function') {
+    exitBtn.addEventListener('click', exitClient);
+  }
 });
 </script>
 
