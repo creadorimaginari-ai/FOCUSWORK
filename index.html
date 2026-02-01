@@ -726,9 +726,14 @@ async function showClientsOverview() {
 function hideClientsOverview() {
   const overviewPanel = document.getElementById('clientsOverviewPanel');
   const activitiesPanel = document.getElementById('activitiesPanel');
-  
+
   if (overviewPanel) overviewPanel.style.display = 'none';
   if (activitiesPanel) activitiesPanel.style.display = 'block';
+
+  // 🔧 Forçar repintat del client
+  if (typeof updateUI === "function") {
+    updateUI();
+  }
 }
 
 // Renderitzar la vista completa
