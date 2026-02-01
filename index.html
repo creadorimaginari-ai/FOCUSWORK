@@ -726,11 +726,16 @@ async function showClientsOverview() {
 function hideClientsOverview() {
   const overviewPanel = document.getElementById('clientsOverviewPanel');
   const activitiesPanel = document.getElementById('activitiesPanel');
+  const clientInfoPanel = document.getElementById('clientInfoPanel');
 
   if (overviewPanel) overviewPanel.style.display = 'none';
   if (activitiesPanel) activitiesPanel.style.display = 'block';
 
-  // 🔧 Forçar repintat del client
+  // 🔧 assegurar que el client es veu sempre
+  if (clientInfoPanel && state.currentClientId) {
+    clientInfoPanel.style.display = 'block';
+  }
+
   if (typeof updateUI === "function") {
     updateUI();
   }
