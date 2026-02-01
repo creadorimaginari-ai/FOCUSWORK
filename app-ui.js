@@ -415,13 +415,10 @@ async function updateUI(preloadedClient = null) {
   updates.push(() => {
     if (clientInfoPanel) {
       clientInfoPanel.style.display = client ? 'block' : 'none';
-   const fixedButtons = $("clientFixedButtons");
-if (fixedButtons) {
-  fixedButtons.style.display = client ? "grid" : "none";
+const alwaysBtns = $("clientAlwaysButtons");
+if (alwaysBtns) {
+  alwaysBtns.style.display = client ? "grid" : "none";
 }
-
-    }
-
     if (exitContainer) {
       if (client) {
         exitContainer.style.display = "block";
