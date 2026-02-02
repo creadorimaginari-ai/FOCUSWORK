@@ -1,0 +1,273 @@
+/* ===============================
+   BOTONES PRINCIPALES - NUEVA PALETA
+   =============================== */
+
+/* Variables de colores alternativos */
+:root {
+  /* Paleta Coral-Turquesa */
+  --btn-primary: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+  --btn-secondary: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+  --btn-accent: linear-gradient(135deg, #A8E6CF 0%, #3BB78F 100%);
+  --btn-warning: linear-gradient(135deg, #FFD93D 0%, #FFA62B 100%);
+  
+  /* Efectos de luz */
+  --glow-coral: 0 0 25px rgba(255, 107, 107, 0.5);
+  --glow-turquoise: 0 0 25px rgba(78, 205, 196, 0.5);
+  --glow-green: 0 0 25px rgba(168, 230, 207, 0.5);
+  --glow-yellow: 0 0 25px rgba(255, 217, 61, 0.5);
+}
+
+/* ===============================
+   ESTILOS BASE DE BOTONES
+   =============================== */
+button {
+  position: relative;
+  padding: 16px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Efecto de brillo deslizante */
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: left 0.5s ease;
+}
+
+button:hover::before {
+  left: 100%;
+}
+
+/* Efecto ripple al hacer clic */
+button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+button:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ===============================
+   BOTÓN PRINCIPAL (Nou encàrrec)
+   =============================== */
+#newClientBtn,
+button.btn-primary {
+  background: var(--btn-primary);
+  color: #ffffff;
+  border: 2px solid rgba(255, 107, 107, 0.3);
+  font-size: 16px;
+  padding: 18px 32px;
+  border-radius: 16px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+#newClientBtn:hover,
+button.btn-primary:hover {
+  box-shadow: 
+    0 10px 35px rgba(255, 107, 107, 0.4),
+    var(--glow-coral);
+  border-color: rgba(255, 107, 107, 0.5);
+  transform: translateY(-4px) scale(1.03);
+}
+
+#newClientBtn:active,
+button.btn-primary:active {
+  transform: translateY(-1px) scale(0.97);
+}
+
+/* ===============================
+   BOTÓN SECUNDARIO (Revisar encàrrecs)
+   =============================== */
+#focusPriorityBtn,
+button.btn-secondary {
+  background: var(--btn-secondary);
+  color: #ffffff;
+  border: 2px solid rgba(78, 205, 196, 0.3);
+  font-size: 16px;
+  padding: 18px 32px;
+  border-radius: 16px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+#focusPriorityBtn:hover,
+button.btn-secondary:hover {
+  box-shadow: 
+    0 10px 35px rgba(78, 205, 196, 0.4),
+    var(--glow-turquoise);
+  border-color: rgba(78, 205, 196, 0.5);
+  transform: translateY(-4px) scale(1.03);
+}
+
+#focusPriorityBtn:active,
+button.btn-secondary:active {
+  transform: translateY(-1px) scale(0.97);
+}
+
+/* ===============================
+   BOTÓN DE ACENTO (para acciones positivas)
+   =============================== */
+button.btn-accent {
+  background: var(--btn-accent);
+  color: #ffffff;
+  border: 2px solid rgba(168, 230, 207, 0.3);
+  font-size: 15px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+button.btn-accent:hover {
+  box-shadow: 
+    0 8px 30px rgba(168, 230, 207, 0.4),
+    var(--glow-green);
+  border-color: rgba(168, 230, 207, 0.5);
+}
+
+/* ===============================
+   BOTÓN DE ADVERTENCIA (para alertas)
+   =============================== */
+button.btn-warning {
+  background: var(--btn-warning);
+  color: #2d3436;
+  border: 2px solid rgba(255, 217, 61, 0.3);
+  font-size: 15px;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+button.btn-warning:hover {
+  box-shadow: 
+    0 8px 30px rgba(255, 217, 61, 0.4),
+    var(--glow-yellow);
+  border-color: rgba(255, 217, 61, 0.5);
+}
+
+/* ===============================
+   BOTÓN DE SALIR
+   =============================== */
+.exit-client-btn {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 16px 36px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+  color: #ffffff;
+  border: 3px solid rgba(255, 107, 107, 0.4);
+  z-index: 9999;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(255, 107, 107, 0.35),
+    0 0 0 3px rgba(255, 107, 107, 0.15);
+}
+
+.exit-client-btn:hover {
+  transform: translateX(-50%) translateY(-5px) scale(1.05);
+  box-shadow:
+    0 12px 48px rgba(255, 107, 107, 0.5),
+    0 0 0 4px rgba(255, 107, 107, 0.25),
+    var(--glow-coral);
+  border-color: rgba(255, 107, 107, 0.6);
+}
+
+.exit-client-btn:active {
+  transform: translateX(-50%) translateY(-2px) scale(0.98);
+  box-shadow:
+    0 6px 24px rgba(255, 107, 107, 0.4),
+    0 0 0 2px rgba(255, 107, 107, 0.2);
+}
+
+.exit-client-btn.hidden {
+  display: none !important;
+}
+
+/* ===============================
+   ESTADOS DISABLED
+   =============================== */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+button:disabled:hover {
+  transform: none !important;
+}
+
+/* ===============================
+   FULL WIDTH (para botones que ocupan todo el ancho)
+   =============================== */
+button.full-width {
+  width: 100%;
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+@media (max-width: 480px) {
+  button {
+    padding: 14px 24px;
+    font-size: 14px;
+  }
+  
+  #newClientBtn,
+  #focusPriorityBtn,
+  button.btn-primary,
+  button.btn-secondary {
+    padding: 16px 28px;
+    font-size: 15px;
+  }
+  
+  .exit-client-btn {
+    padding: 14px 30px;
+    font-size: 15px;
+  }
+}
+
+/* ===============================
+   EJEMPLO DE USO EN HTML:
+   
+   <button id="newClientBtn">➕ Nou encàrrec</button>
+   <button id="focusPriorityBtn">👁️ Revisar encàrrecs</button>
+   <button class="btn-accent">✅ Confirmar</button>
+   <button class="btn-warning">⚠️ Advertència</button>
+   <button class="exit-client-btn">🚪 Sortir</button>
+   
+   =============================== */
