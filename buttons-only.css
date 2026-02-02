@@ -1,336 +1,152 @@
 /* ===============================
-   BOTONES PRINCIPALES - NUEVA PALETA
-   IMPORTANTE: Este archivo debe cargarse DESPUÉS de styles.css
+   BOTONES - SOBRESCRITURA FORZADA
+   COLGAR ESTE ARCHIVO AL FINAL DE TODOS LOS CSS
    =============================== */
 
-/* Variables de colores alternativos */
+/* ⚠️ IMPORTANTE: Añadir ?v=3 al final del enlace para forzar recarga
+   <link rel="stylesheet" href="buttons-only.css?v=3">
+*/
+
+/* Paleta de colores */
 :root {
-  /* Paleta Coral-Turquesa */
-  --btn-primary: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-  --btn-secondary: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
-  --btn-accent: linear-gradient(135deg, #A8E6CF 0%, #3BB78F 100%);
-  --btn-warning: linear-gradient(135deg, #FFD93D 0%, #FFA62B 100%);
-  
-  /* Efectos de luz */
-  --glow-coral: 0 0 25px rgba(255, 107, 107, 0.5);
-  --glow-turquoise: 0 0 25px rgba(78, 205, 196, 0.5);
-  --glow-green: 0 0 25px rgba(168, 230, 207, 0.5);
-  --glow-yellow: 0 0 25px rgba(255, 217, 61, 0.5);
+  --coral-start: #FF6B6B;
+  --coral-end: #FF8E53;
+  --turquoise-start: #4ECDC4;
+  --turquoise-end: #44A08D;
 }
 
 /* ===============================
-   BOTÓN PRINCIPAL (Nou encàrrec)
+   SOBRESCRIBIR TODOS LOS BOTONES DEL GRID
    =============================== */
+
+/* Selector súper específico para el botón "Nou encàrrec" */
+.grid.centered button:first-child,
+#clientMainButtons button:first-child,
+button[id*="new"],
+button[id*="New"],
 #newClientBtn,
 #newClient {
-  background: var(--btn-primary) !important;
+  background: linear-gradient(135deg, #FF6B6B, #FF8E53) !important;
   color: #ffffff !important;
-  border: 2px solid rgba(255, 107, 107, 0.5) !important;
-  font-size: 16px !important;
-  padding: 18px 32px !important;
-  border-radius: 18px !important;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  border: 2px solid rgba(255, 107, 107, 0.6) !important;
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4) !important;
+  font-weight: 700 !important;
+  animation: none !important;
   position: relative !important;
-  box-shadow: 
-    0 8px 24px rgba(255, 107, 107, 0.35),
-    0 0 0 3px rgba(255, 107, 107, 0.15) !important;
-  animation: none !important; /* Desactivar la animación verde del original */
-  backdrop-filter: blur(10px) !important;
+  overflow: hidden !important;
 }
 
-#newClientBtn::before,
-#newClient::before {
-  content: '' !important;
-  position: absolute !important;
-  top: 0 !important;
-  left: -100% !important;
-  width: 100% !important;
-  height: 100% !important;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent) !important;
-  transition: left 0.6s ease !important;
-  border-radius: 50% !important;
-}
-
-#newClientBtn:hover::before,
-#newClient:hover::before {
-  left: 100% !important;
-}
-
+.grid.centered button:first-child:hover,
+#clientMainButtons button:first-child:hover,
+button[id*="new"]:hover,
+button[id*="New"]:hover,
 #newClientBtn:hover,
 #newClient:hover {
-  background: linear-gradient(135deg, #FF8E53 0%, #FF6B6B 100%) !important;
-  box-shadow: 
-    0 12px 40px rgba(255, 107, 107, 0.5),
-    0 0 0 4px rgba(255, 107, 107, 0.25),
-    var(--glow-coral) !important;
-  border-color: rgba(255, 107, 107, 0.7) !important;
-  transform: translateY(-4px) scale(1.03) !important;
+  background: linear-gradient(135deg, #FF8E53, #FF6B6B) !important;
+  border-color: rgba(255, 107, 107, 0.8) !important;
+  box-shadow: 0 12px 35px rgba(255, 107, 107, 0.6) !important;
+  transform: translateY(-3px) !important;
 }
 
-#newClientBtn:active,
-#newClient:active {
-  transform: translateY(-1px) scale(0.97) !important;
-  box-shadow: 
-    0 6px 20px rgba(255, 107, 107, 0.4),
-    0 0 0 2px rgba(255, 107, 107, 0.2) !important;
+/* Selector súper específico para el botón "Revisar encàrrecs" */
+.grid.centered button:last-child,
+#clientMainButtons button:last-child,
+button[id*="focus"],
+button[id*="Focus"],
+button[id*="priority"],
+button[id*="Priority"],
+#focusPriorityBtn {
+  background: linear-gradient(135deg, #4ECDC4, #44A08D) !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(78, 205, 196, 0.6) !important;
+  box-shadow: 0 8px 25px rgba(78, 205, 196, 0.4) !important;
+  font-weight: 700 !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.grid.centered button:last-child:hover,
+#clientMainButtons button:last-child:hover,
+button[id*="focus"]:hover,
+button[id*="Focus"]:hover,
+button[id*="priority"]:hover,
+button[id*="Priority"]:hover,
+#focusPriorityBtn:hover {
+  background: linear-gradient(135deg, #44A08D, #4ECDC4) !important;
+  border-color: rgba(78, 205, 196, 0.8) !important;
+  box-shadow: 0 12px 35px rgba(78, 205, 196, 0.6) !important;
+  transform: translateY(-3px) !important;
 }
 
 /* ===============================
-   BOTÓN SECUNDARIO (Revisar encàrrecs / Focus Priority)
+   CLASE PRIMARY (por si acaso)
    =============================== */
-#focusPriorityBtn,
-button.primary {
-  background: var(--btn-secondary) !important;
+button.primary,
+.primary {
+  background: linear-gradient(135deg, #4ECDC4, #44A08D) !important;
   color: #ffffff !important;
-  border: 2px solid rgba(78, 205, 196, 0.5) !important;
-  font-size: 16px !important;
-  padding: 18px 32px !important;
-  border-radius: 18px !important;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
-  box-shadow: 
-    0 8px 24px rgba(78, 205, 196, 0.35),
-    0 0 0 3px rgba(78, 205, 196, 0.15) !important;
-  backdrop-filter: blur(10px) !important;
+  border: 2px solid rgba(78, 205, 196, 0.6) !important;
+  box-shadow: 0 8px 25px rgba(78, 205, 196, 0.4) !important;
 }
 
-#focusPriorityBtn::before,
-button.primary::before {
-  content: '' !important;
+button.primary:hover,
+.primary:hover {
+  background: linear-gradient(135deg, #44A08D, #4ECDC4) !important;
+  box-shadow: 0 12px 35px rgba(78, 205, 196, 0.6) !important;
+  transform: translateY(-3px) !important;
+}
+
+/* ===============================
+   EFECTO DE BRILLO (común para todos)
+   =============================== */
+.grid.centered button::before,
+#clientMainButtons button::before {
+  content: "" !important;
   position: absolute !important;
   top: 0 !important;
   left: -100% !important;
   width: 100% !important;
   height: 100% !important;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent) !important;
-  transition: left 0.6s ease !important;
-  border-radius: 50% !important;
+  transition: left 0.7s ease !important;
+  pointer-events: none !important;
 }
 
-#focusPriorityBtn:hover::before,
-button.primary:hover::before {
+.grid.centered button:hover::before,
+#clientMainButtons button:hover::before {
   left: 100% !important;
 }
 
-#focusPriorityBtn:hover,
-button.primary:hover {
-  background: linear-gradient(135deg, #44A08D 0%, #4ECDC4 100%) !important;
-  box-shadow: 
-    0 12px 40px rgba(78, 205, 196, 0.5),
-    0 0 0 4px rgba(78, 205, 196, 0.25),
-    var(--glow-turquoise) !important;
-  border-color: rgba(78, 205, 196, 0.7) !important;
-  transform: translateY(-4px) scale(1.03) !important;
-}
-
-#focusPriorityBtn:active,
-button.primary:active {
-  transform: translateY(-1px) scale(0.97) !important;
-  box-shadow: 
-    0 6px 20px rgba(78, 205, 196, 0.4),
-    0 0 0 2px rgba(78, 205, 196, 0.2) !important;
-}
-
 /* ===============================
-   OTROS BOTONES DE ACTIVIDAD (opcional - estilo verde menta)
+   PRUEBA DE DIAGNÓSTICO
+   Si ves un borde rojo grueso, significa que este CSS se está cargando
    =============================== */
-.activity,
-button:not(#newClientBtn):not(#newClient):not(#focusPriorityBtn):not(.primary):not(#closeClient):not(.danger) {
-  background: linear-gradient(135deg, rgba(168, 230, 207, 0.25), rgba(59, 187, 143, 0.25)) !important;
-  border: 1px solid rgba(168, 230, 207, 0.3) !important;
-  backdrop-filter: blur(10px) !important;
-}
-
-.activity:hover,
-button:not(#newClientBtn):not(#newClient):not(#focusPriorityBtn):not(.primary):not(#closeClient):not(.danger):hover {
-  background: linear-gradient(135deg, rgba(168, 230, 207, 0.4), rgba(59, 187, 143, 0.4)) !important;
-  border-color: rgba(168, 230, 207, 0.5) !important;
-  box-shadow: 0 4px 20px rgba(168, 230, 207, 0.3) !important;
+.grid.centered,
+#clientMainButtons {
+  /* Si ves esto, el CSS funciona */
+  outline: 3px solid red !important;
+  outline-offset: 5px !important;
 }
 
 /* ===============================
-   BOTÓN DE CERRAR/SALIR (si existe)
-   =============================== */
-#closeClient,
-.danger {
-  background: linear-gradient(135deg, #FF6B6B, #EE5A6F) !important;
-  color: #ffffff !important;
-  border: 2px solid rgba(255, 107, 107, 0.4) !important;
-  box-shadow: 0 4px 16px rgba(255, 107, 107, 0.3) !important;
-}
-
-#closeClient:hover,
-.danger:hover {
-  background: linear-gradient(135deg, #EE5A6F, #FF6B6B) !important;
-  box-shadow: 0 8px 28px rgba(255, 107, 107, 0.5) !important;
-  border-color: rgba(255, 107, 107, 0.6) !important;
-}
-
-/* ===============================
-   RESPONSIVE
-   =============================== */
-@media (max-width: 480px) {
-  #newClientBtn,
-  #newClient,
-  #focusPriorityBtn,
-  button.primary {
-    padding: 16px 28px !important;
-    font-size: 15px !important;
-  }
-}
-
-/* ===============================
-   NOTAS DE IMPLEMENTACIÓN:
+   INSTRUCCIONES:
    
-   1. Este archivo debe cargarse DESPUÉS de styles.css en tu HTML:
+   1. Guarda este archivo como buttons-only.css
+   
+   2. En tu index.html, añade AL FINAL de todos los CSS:
+      <link rel="stylesheet" href="buttons-only.css?v=3">
       
-      <link rel="stylesheet" href="styles.css">
-      <link rel="stylesheet" href="buttons-only.css">
+   3. LIMPIA LA CACHÉ:
+      - Chrome: Ctrl + Shift + Delete → Borrar caché
+      - O abre en ventana incógnito (Ctrl + Shift + N)
    
-   2. Los botones afectados son:
-      - #newClientBtn o #newClient (botón coral/naranja)
-      - #focusPriorityBtn o .primary (botón turquesa)
-      - .activity y otros botones (verde menta suave)
-      - #closeClient o .danger (rojo coral)
+   4. Si ves un BORDE ROJO alrededor de los botones,
+      significa que el CSS se está cargando correctamente.
+      Una vez confirmado, elimina la sección de diagnóstico.
    
-   3. Si no ves los cambios, limpia la caché del navegador:
-      - Chrome/Edge: Ctrl + Shift + Delete
-      - Safari: Cmd + Option + E
-      - O abre en modo incógnito para probar
-   
-   =============================== */
-
-/* ===============================
-   BOTÓN DE ACENTO (para acciones positivas)
-   =============================== */
-button.btn-accent {
-  background: var(--btn-accent);
-  color: #ffffff;
-  border: 2px solid rgba(168, 230, 207, 0.3);
-  font-size: 15px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-button.btn-accent:hover {
-  box-shadow: 
-    0 8px 30px rgba(168, 230, 207, 0.4),
-    var(--glow-green);
-  border-color: rgba(168, 230, 207, 0.5);
-}
-
-/* ===============================
-   BOTÓN DE ADVERTENCIA (para alertas)
-   =============================== */
-button.btn-warning {
-  background: var(--btn-warning);
-  color: #2d3436;
-  border: 2px solid rgba(255, 217, 61, 0.3);
-  font-size: 15px;
-  font-weight: 800;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
-}
-
-button.btn-warning:hover {
-  box-shadow: 
-    0 8px 30px rgba(255, 217, 61, 0.4),
-    var(--glow-yellow);
-  border-color: rgba(255, 217, 61, 0.5);
-}
-
-/* ===============================
-   BOTÓN DE SALIR
-   =============================== */
-.exit-client-btn {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 16px 36px;
-  border-radius: 999px;
-  font-size: 16px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
-  color: #ffffff;
-  border: 3px solid rgba(255, 107, 107, 0.4);
-  z-index: 9999;
-  cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  box-shadow: 
-    0 8px 32px rgba(255, 107, 107, 0.35),
-    0 0 0 3px rgba(255, 107, 107, 0.15);
-}
-
-.exit-client-btn:hover {
-  transform: translateX(-50%) translateY(-5px) scale(1.05);
-  box-shadow:
-    0 12px 48px rgba(255, 107, 107, 0.5),
-    0 0 0 4px rgba(255, 107, 107, 0.25),
-    var(--glow-coral);
-  border-color: rgba(255, 107, 107, 0.6);
-}
-
-.exit-client-btn:active {
-  transform: translateX(-50%) translateY(-2px) scale(0.98);
-  box-shadow:
-    0 6px 24px rgba(255, 107, 107, 0.4),
-    0 0 0 2px rgba(255, 107, 107, 0.2);
-}
-
-.exit-client-btn.hidden {
-  display: none !important;
-}
-
-/* ===============================
-   ESTADOS DISABLED
-   =============================== */
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-}
-
-button:disabled:hover {
-  transform: none !important;
-}
-
-/* ===============================
-   FULL WIDTH (para botones que ocupan todo el ancho)
-   =============================== */
-button.full-width {
-  width: 100%;
-}
-
-/* ===============================
-   RESPONSIVE
-   =============================== */
-@media (max-width: 480px) {
-  button {
-    padding: 14px 24px;
-    font-size: 14px;
-  }
-  
-  #newClientBtn,
-  #focusPriorityBtn,
-  button.btn-primary,
-  button.btn-secondary {
-    padding: 16px 28px;
-    font-size: 15px;
-  }
-  
-  .exit-client-btn {
-    padding: 14px 30px;
-    font-size: 15px;
-  }
-}
-
-/* ===============================
-   EJEMPLO DE USO EN HTML:
-   
-   <button id="newClientBtn">➕ Nou encàrrec</button>
-   <button id="focusPriorityBtn">👁️ Revisar encàrrecs</button>
-   <button class="btn-accent">✅ Confirmar</button>
-   <button class="btn-warning">⚠️ Advertència</button>
-   <button class="exit-client-btn">🚪 Sortir</button>
+   5. Si NO ves el borde rojo:
+      - Verifica que el archivo esté en la misma carpeta que index.html
+      - Verifica que el nombre sea exactamente "buttons-only.css"
+      - Verifica que se cargue en Network (F12 → Network → Reload)
    
    =============================== */
