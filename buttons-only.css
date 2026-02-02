@@ -1,5 +1,6 @@
 /* ===============================
    BOTONES PRINCIPALES - NUEVA PALETA
+   IMPORTANTE: Este archivo debe cargarse DESPUÉS de styles.css
    =============================== */
 
 /* Variables de colores alternativos */
@@ -18,123 +19,185 @@
 }
 
 /* ===============================
-   ESTILOS BASE DE BOTONES
-   =============================== */
-button {
-  position: relative;
-  padding: 16px 28px;
-  font-size: 15px;
-  font-weight: 700;
-  border: none;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  letter-spacing: 0.3px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* Efecto de brillo deslizante */
-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-  transition: left 0.5s ease;
-}
-
-button:hover::before {
-  left: 100%;
-}
-
-/* Efecto ripple al hacer clic */
-button::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-button:active::after {
-  width: 300px;
-  height: 300px;
-}
-
-button:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-button:active {
-  transform: translateY(-1px) scale(0.98);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-/* ===============================
    BOTÓN PRINCIPAL (Nou encàrrec)
    =============================== */
 #newClientBtn,
-button.btn-primary {
-  background: var(--btn-primary);
-  color: #ffffff;
-  border: 2px solid rgba(255, 107, 107, 0.3);
-  font-size: 16px;
-  padding: 18px 32px;
-  border-radius: 16px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  position: relative;
+#newClient {
+  background: var(--btn-primary) !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(255, 107, 107, 0.5) !important;
+  font-size: 16px !important;
+  padding: 18px 32px !important;
+  border-radius: 18px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  position: relative !important;
+  box-shadow: 
+    0 8px 24px rgba(255, 107, 107, 0.35),
+    0 0 0 3px rgba(255, 107, 107, 0.15) !important;
+  animation: none !important; /* Desactivar la animación verde del original */
+  backdrop-filter: blur(10px) !important;
+}
+
+#newClientBtn::before,
+#newClient::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent) !important;
+  transition: left 0.6s ease !important;
+  border-radius: 50% !important;
+}
+
+#newClientBtn:hover::before,
+#newClient:hover::before {
+  left: 100% !important;
 }
 
 #newClientBtn:hover,
-button.btn-primary:hover {
+#newClient:hover {
+  background: linear-gradient(135deg, #FF8E53 0%, #FF6B6B 100%) !important;
   box-shadow: 
-    0 10px 35px rgba(255, 107, 107, 0.4),
-    var(--glow-coral);
-  border-color: rgba(255, 107, 107, 0.5);
-  transform: translateY(-4px) scale(1.03);
+    0 12px 40px rgba(255, 107, 107, 0.5),
+    0 0 0 4px rgba(255, 107, 107, 0.25),
+    var(--glow-coral) !important;
+  border-color: rgba(255, 107, 107, 0.7) !important;
+  transform: translateY(-4px) scale(1.03) !important;
 }
 
 #newClientBtn:active,
-button.btn-primary:active {
-  transform: translateY(-1px) scale(0.97);
+#newClient:active {
+  transform: translateY(-1px) scale(0.97) !important;
+  box-shadow: 
+    0 6px 20px rgba(255, 107, 107, 0.4),
+    0 0 0 2px rgba(255, 107, 107, 0.2) !important;
 }
 
 /* ===============================
-   BOTÓN SECUNDARIO (Revisar encàrrecs)
+   BOTÓN SECUNDARIO (Revisar encàrrecs / Focus Priority)
    =============================== */
 #focusPriorityBtn,
-button.btn-secondary {
-  background: var(--btn-secondary);
-  color: #ffffff;
-  border: 2px solid rgba(78, 205, 196, 0.3);
-  font-size: 16px;
-  padding: 18px 32px;
-  border-radius: 16px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+button.primary {
+  background: var(--btn-secondary) !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(78, 205, 196, 0.5) !important;
+  font-size: 16px !important;
+  padding: 18px 32px !important;
+  border-radius: 18px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 
+    0 8px 24px rgba(78, 205, 196, 0.35),
+    0 0 0 3px rgba(78, 205, 196, 0.15) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+#focusPriorityBtn::before,
+button.primary::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent) !important;
+  transition: left 0.6s ease !important;
+  border-radius: 50% !important;
+}
+
+#focusPriorityBtn:hover::before,
+button.primary:hover::before {
+  left: 100% !important;
 }
 
 #focusPriorityBtn:hover,
-button.btn-secondary:hover {
+button.primary:hover {
+  background: linear-gradient(135deg, #44A08D 0%, #4ECDC4 100%) !important;
   box-shadow: 
-    0 10px 35px rgba(78, 205, 196, 0.4),
-    var(--glow-turquoise);
-  border-color: rgba(78, 205, 196, 0.5);
-  transform: translateY(-4px) scale(1.03);
+    0 12px 40px rgba(78, 205, 196, 0.5),
+    0 0 0 4px rgba(78, 205, 196, 0.25),
+    var(--glow-turquoise) !important;
+  border-color: rgba(78, 205, 196, 0.7) !important;
+  transform: translateY(-4px) scale(1.03) !important;
 }
 
 #focusPriorityBtn:active,
-button.btn-secondary:active {
-  transform: translateY(-1px) scale(0.97);
+button.primary:active {
+  transform: translateY(-1px) scale(0.97) !important;
+  box-shadow: 
+    0 6px 20px rgba(78, 205, 196, 0.4),
+    0 0 0 2px rgba(78, 205, 196, 0.2) !important;
 }
+
+/* ===============================
+   OTROS BOTONES DE ACTIVIDAD (opcional - estilo verde menta)
+   =============================== */
+.activity,
+button:not(#newClientBtn):not(#newClient):not(#focusPriorityBtn):not(.primary):not(#closeClient):not(.danger) {
+  background: linear-gradient(135deg, rgba(168, 230, 207, 0.25), rgba(59, 187, 143, 0.25)) !important;
+  border: 1px solid rgba(168, 230, 207, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.activity:hover,
+button:not(#newClientBtn):not(#newClient):not(#focusPriorityBtn):not(.primary):not(#closeClient):not(.danger):hover {
+  background: linear-gradient(135deg, rgba(168, 230, 207, 0.4), rgba(59, 187, 143, 0.4)) !important;
+  border-color: rgba(168, 230, 207, 0.5) !important;
+  box-shadow: 0 4px 20px rgba(168, 230, 207, 0.3) !important;
+}
+
+/* ===============================
+   BOTÓN DE CERRAR/SALIR (si existe)
+   =============================== */
+#closeClient,
+.danger {
+  background: linear-gradient(135deg, #FF6B6B, #EE5A6F) !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(255, 107, 107, 0.4) !important;
+  box-shadow: 0 4px 16px rgba(255, 107, 107, 0.3) !important;
+}
+
+#closeClient:hover,
+.danger:hover {
+  background: linear-gradient(135deg, #EE5A6F, #FF6B6B) !important;
+  box-shadow: 0 8px 28px rgba(255, 107, 107, 0.5) !important;
+  border-color: rgba(255, 107, 107, 0.6) !important;
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+@media (max-width: 480px) {
+  #newClientBtn,
+  #newClient,
+  #focusPriorityBtn,
+  button.primary {
+    padding: 16px 28px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* ===============================
+   NOTAS DE IMPLEMENTACIÓN:
+   
+   1. Este archivo debe cargarse DESPUÉS de styles.css en tu HTML:
+      
+      <link rel="stylesheet" href="styles.css">
+      <link rel="stylesheet" href="buttons-only.css">
+   
+   2. Los botones afectados son:
+      - #newClientBtn o #newClient (botón coral/naranja)
+      - #focusPriorityBtn o .primary (botón turquesa)
+      - .activity y otros botones (verde menta suave)
+      - #closeClient o .danger (rojo coral)
+   
+   3. Si no ves los cambios, limpia la caché del navegador:
+      - Chrome/Edge: Ctrl + Shift + Delete
+      - Safari: Cmd + Option + E
+      - O abre en modo incógnito para probar
+   
+   =============================== */
 
 /* ===============================
    BOTÓN DE ACENTO (para acciones positivas)
