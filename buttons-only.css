@@ -116,37 +116,3 @@ button.primary:hover,
 #clientMainButtons button:hover::before {
   left: 100% !important;
 }
-
-/* ===============================
-   PRUEBA DE DIAGNÓSTICO
-   Si ves un borde rojo grueso, significa que este CSS se está cargando
-   =============================== */
-.grid.centered,
-#clientMainButtons {
-  /* Si ves esto, el CSS funciona */
-  outline: 3px solid red !important;
-  outline-offset: 5px !important;
-}
-
-/* ===============================
-   INSTRUCCIONES:
-   
-   1. Guarda este archivo como buttons-only.css
-   
-   2. En tu index.html, añade AL FINAL de todos los CSS:
-      <link rel="stylesheet" href="buttons-only.css?v=3">
-      
-   3. LIMPIA LA CACHÉ:
-      - Chrome: Ctrl + Shift + Delete → Borrar caché
-      - O abre en ventana incógnito (Ctrl + Shift + N)
-   
-   4. Si ves un BORDE ROJO alrededor de los botones,
-      significa que el CSS se está cargando correctamente.
-      Una vez confirmado, elimina la sección de diagnóstico.
-   
-   5. Si NO ves el borde rojo:
-      - Verifica que el archivo esté en la misma carpeta que index.html
-      - Verifica que el nombre sea exactamente "buttons-only.css"
-      - Verifica que se cargue en Network (F12 → Network → Reload)
-   
-   =============================== */
