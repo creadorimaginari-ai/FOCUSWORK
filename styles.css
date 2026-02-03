@@ -7,6 +7,15 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Eliminar outline vermell dels botons al fer clic */
+button:focus,
+button:active,
+.btn:focus,
+.btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -234,6 +243,20 @@ button:active,
   transform: scale(0.96);
 }
 
+/* ✅ ELIMINAR OUTLINE/FOCUS VERMELL */
+button:focus,
+button:active,
+.activity:focus,
+.activity:active,
+.primary:focus,
+.primary:active,
+.danger:focus,
+.danger:active {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
 button:hover,
 .activity:hover {
   background: rgba(51, 65, 85, 0.8);
@@ -293,6 +316,17 @@ button:hover,
     0 0 0 3px rgba(59, 130, 246, 0.3),
     0 12px 32px rgba(37, 99, 235, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ✅ ELIMINAR OUTLINE dels botons primaris específicament */
+.activity.primary:focus,
+.activity.primary:active,
+#newClientBtn:focus,
+#newClientBtn:active,
+#focusPriorityBtn:focus,
+#focusPriorityBtn:active {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
 }
 
 /* ===============================
