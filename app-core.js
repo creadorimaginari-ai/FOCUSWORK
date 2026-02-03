@@ -635,7 +635,22 @@ async function updateClientTotal() {
 }
 
 // Timer principal: tick cada segon
-setInterval(tick, 1000);
+// ✅ SOLUCIÓ AL DRIFT
+let lastPreciseTickTime = Date.now();
+
+function preciseTickLoop() {
+  const now = Date.now();
+  const elapsed = now - lastPreciseTickTime;
+  
+  if (elapsed >= 1000) {
+    lastPreciseTickTime = now - (elapsed % 1000); // Compensar drift
+    tick();
+  }
+  
+  requestAnimationFrame(preciseTickLoop);
+}
+
+preciseTickLoop();
 
 // Timer secundari: actualitzar total client cada 5 segons
 setInterval(updateClientTotal, 5000);
