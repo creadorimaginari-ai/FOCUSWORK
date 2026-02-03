@@ -135,10 +135,75 @@ function isWithinFocusSchedule(date = new Date()) {
   if (!state.focusSchedule || !state.focusSchedule.enabled) return true;
   const [sh, sm] = state.focusSchedule.start.split(":").map(Number);
   const [eh, em] = state.focusSchedule.end.split(":").map(Number);
-  const minutesNow = date.getHours() * 60 + date.getMinutes();
-  const minutesStart = sh * 60 + sm;
-  const minutesEnd = eh * 60 + em;
-  return minutesNow >= minutesStart && minutesNow <= minutesEnd;
+  
+  // Càlcul amb precisió de segons (no només minuts)
+  const secondsNow = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+  const secondsStart = sh * 3600 + sm * 60;
+  const secondsEnd = eh * 3600 + em * 60;
+  
+  return secondsNow >= secondsStart && secondsNow <= secondsEnd;
+}
+
+// Nova funció: Obtenir el següent canvi d'horari (inici o fi)
+function getNextScheduleChange(date = new Date()) {
+  if (!state.focusSchedule || !state.focusSchedule.enabled) return Infinity;
+  
+  const [sh, sm] = state.focusSchedule.start.split(":").map(Number);
+  const [eh, em] = state.focusSchedule.end.split(":").map(Number);
+  
+  const secondsNow = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+  const secondsStart = sh * 3600 + sm * 60;
+  const secondsEnd = eh * 3600 + em * 60;
+  
+  // Si estem abans de l'inici, el proper canvi és l'inici
+  if (secondsNow < secondsStart) {
+    const nextChange = new Date(date);
+    nextChange.setHours(sh, sm, 0, 0);
+    return nextChange.getTime();
+  }
+  
+  // Si estem dins l'horari, el proper canvi és la fi
+  if (secondsNow < secondsEnd) {
+    const nextChange = new Date(date);
+    nextChange.setHours(eh, em, 0, 0);
+    return nextChange.getTime();
+  }
+  
+  // Si estem després de la fi, el proper canvi és l'inici del següent dia
+  const nextChange = new Date(date);
+  nextChange.setDate(nextChange.getDate() + 1);
+  nextChange.setHours(sh, sm, 0, 0);
+  return nextChange.getTime();
+}
+
+// Nova funció: Calcular temps facturable amb precisió absoluta
+function calculateBillableSeconds(startTime, endTime) {
+  if (!state.focusSchedule || !state.focusSchedule.enabled) {
+    // Si no hi ha horari, tot el temps és facturable
+    return Math.floor((endTime - startTime) / 1000);
+  }
+  
+  let billableSeconds = 0;
+  let currentTime = startTime;
+  
+  // Iterar per segments de temps que respectin els límits de l'horari
+  while (currentTime < endTime) {
+    const currentDate = new Date(currentTime);
+    const isWithin = isWithinFocusSchedule(currentDate);
+    
+    // Calcular el següent canvi d'horari (inici o fi)
+    const nextChange = getNextScheduleChange(currentDate);
+    const segmentEnd = Math.min(endTime, nextChange);
+    
+    // Si aquest segment és dins l'horari facturable, comptar-lo
+    if (isWithin) {
+      billableSeconds += Math.floor((segmentEnd - currentTime) / 1000);
+    }
+    
+    currentTime = segmentEnd;
+  }
+  
+  return billableSeconds;
 }
 
 /* ================= MODALS ================= */
@@ -485,10 +550,10 @@ function resetTodayFocus() {
   showAlert('Enfocament reiniciat', 'Dades reiniciades', '✅');
 }
 
-/* ================= MOTOR DE TEMPS (OPTIMITZAT) ================= */
+/* ================= MOTOR DE TEMPS (OPTIMITZAT I PRECÍS) ================= */
 let lastSaveTime = 0;
 
-// FUNCIÓ PRINCIPAL: Actualitza temps cada segon
+// FUNCIÓ PRINCIPAL: Actualitza temps cada segon amb PRECISIÓ ABSOLUTA
 async function tick() {
   resetDayIfNeeded();
   
@@ -513,6 +578,11 @@ async function tick() {
     return;
   }
   
+  // ✅ CORRECCIÓ CRÍTICA: Calcular temps facturable amb precisió absoluta
+  // En lloc de només comprovar si "ara" estem dins l'horari, calculem
+  // exactament quants segons del període (lastTick → now) són facturables
+  const billableElapsed = calculateBillableSeconds(state.lastTick, now);
+  
   // Actualitzar temps
   state.lastTick = now;
   state.sessionElapsed += elapsed;
@@ -520,16 +590,9 @@ async function tick() {
   client.activities = client.activities || {};
   client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + elapsed;
   
-  // Temps facturable
-  if (state.focusSchedule.enabled) {
-    if (isWithinFocusSchedule()) {
-      client.billableTime = (client.billableTime || 0) + elapsed;
-      state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
-    }
-  } else {
-    client.billableTime = (client.billableTime || 0) + elapsed;
-    state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + elapsed;
-  }
+  // ✅ Temps facturable: només sumar els segons que són realment facturables
+  client.billableTime = (client.billableTime || 0) + billableElapsed;
+  state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + billableElapsed;
   
   // Guardar cada 5 segons (no cada segon)
   if (Date.now() - lastSaveTime > 5000) {
@@ -577,10 +640,9 @@ setInterval(tick, 1000);
 // Timer secundari: actualitzar total client cada 5 segons
 setInterval(updateClientTotal, 5000);
 
-// ... setInterval(tick, 1000);
-// ... setInterval(updateClientTotal, 5000);
-
-// 🔽 AQUÍ ÉS PERFECTE
+// ✅ RENDERITZAT SUAU DEL CRONÒMETRE
+// Aquesta funció s'executa a 60fps per mostrar el temps en temps real
+// NOTA: Aquest càlcul és només visual, el càlcul real i precís es fa a tick()
 function smoothTimerRender() {
   const timerEl = $("timer");
   if (!timerEl) {
