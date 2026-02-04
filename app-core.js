@@ -658,15 +658,19 @@ function updateTimerDisplay() {
 
   if (state.currentClientId && state.currentActivity && state.lastTick) {
     const now = Date.now();
-    const extra = Math.floor((now - state.lastTick) / 1000);
+
+    // usar temps real acumulat, no floor visual
+    const extraMs = now - state.lastTick;
+    const extraSeconds = Math.round(extraMs / 1000);
 
     timerEl.textContent = formatTime(
-      state.sessionElapsed + Math.max(0, extra)
+      state.sessionElapsed + Math.max(0, extraSeconds)
     );
   } else {
     timerEl.textContent = "00:00:00";
   }
 }
+
 
 
 // ================= ACTUALITZAR TOTAL CLIENT =================
