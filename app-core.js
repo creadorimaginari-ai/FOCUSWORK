@@ -549,131 +549,141 @@ function resetTodayFocus() {
   showAlert('Enfocament reiniciat', 'Dades reiniciades', '✅');
 }
 
-/* ================= MOTOR DE TEMPS (OPTIMITZAT I PRECÍS) ================= */
+/* ================= MOTOR DE TEMPS (PRECISIÓ ABSOLUTA) ================= */
+
 let lastSaveTime = 0;
 
-// FUNCIÓ PRINCIPAL: Actualitza temps cada segon amb PRECISIÓ ABSOLUTA
-async function tick() {
-  resetDayIfNeeded();
-  
-  // ❌ No reiniciar lastTick aquí (fa perdre segons)
-  if (!state.currentClientId || !state.currentActivity || !state.lastTick) {
-    updateTimerDisplay();
-    return;
-  }
-  
-  const client = await loadClient(state.currentClientId);
-  
-  // ❌ Tampoc reiniciar lastTick aquí
-  if (!client || !client.active) {
-    updateTimerDisplay();
-    return;
-  }
-  
-  const now = Date.now();
-  const elapsed = Math.floor((now - state.lastTick) / 1000);
-  
-  if (elapsed <= 0) {
-    updateTimerDisplay();
-    return;
-  }
-  // ✅ CORRECCIÓ CRÍTICA: Calcular temps facturable amb precisió absoluta
-  // En lloc de només comprovar si "ara" estem dins l'horari, calculem
-  // exactament quants segons del període (lastTick → now) són facturables
-  const billableElapsed = calculateBillableSeconds(state.lastTick, now);
-  
-  // Actualitzar temps
-  state.lastTick = now;
-  state.sessionElapsed += elapsed;
-  client.total = (client.total || 0) + elapsed;
-  client.activities = client.activities || {};
-  client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + elapsed;
-  
-  // ✅ Temps facturable: només sumar els segons que són realment facturables
-  client.billableTime = (client.billableTime || 0) + billableElapsed;
-  state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + billableElapsed;
-  
-  // Guardar cada 5 segons (no cada segon)
-  if (Date.now() - lastSaveTime > 5000) {
-    await saveClient(client);
-    await save();
-    lastSaveTime = Date.now();
-  }
-  
-  // Actualitzar NOMÉS el cronòmetre (no tota la UI)
-  updateTimerDisplay();
-}
-
-// FUNCIÓ NOVA: Actualitza només el display del cronòmetre (no re-renderitza res més)
-function updateTimerDisplay() {
-  const timerEl = $("timer");
-  if (!timerEl) return;
-  
-  if (state.currentClientId && state.currentActivity && state.lastTick) {
-    // Calcular temps actual amb precisió
-    const now = Date.now();
-    const extraElapsed = Math.floor((now - state.lastTick) / 1000);
-    const currentElapsed = state.sessionElapsed + extraElapsed;
-    timerEl.textContent = formatTime(currentElapsed);
-  } else {
-    timerEl.textContent = "00:00:00";
-  }
-}
-
-// NOVA FUNCIÓ: Actualitza total del client (crida cada 5 segons)
-async function updateClientTotal() {
-  if (!state.currentClientId) return;
-  
-  const client = await loadClient(state.currentClientId);
-  if (!client) return;
-  
-  const clientTotalEl = $("clientTotal");
-  if (clientTotalEl) {
-    clientTotalEl.textContent = `Total client: ${formatTime(client.total)}`;
-  }
-}
-
-// Timer principal: tick cada segon
-// ✅ SOLUCIÓ AL DRIFT
+// Loop precís que evita drift
 let lastPreciseTickTime = Date.now();
 
 function preciseTickLoop() {
   const now = Date.now();
   const elapsed = now - lastPreciseTickTime;
-  
+
   if (elapsed >= 1000) {
-    lastPreciseTickTime = now - (elapsed % 1000); // Compensar drift
+    // Compensar retard acumulat
+    lastPreciseTickTime = now - (elapsed % 1000);
     tick();
   }
-  
+
   requestAnimationFrame(preciseTickLoop);
 }
 
 preciseTickLoop();
 
-// Timer secundari: actualitzar total client cada 5 segons
-setInterval(updateClientTotal, 5000);
 
-// ✅ RENDERITZAT SUAU DEL CRONÒMETRE
-// Aquesta funció s'executa a 60fps per mostrar el temps en temps real
-// NOTA: Aquest càlcul és només visual, el càlcul real i precís es fa a tick()
-function smoothTimerRender() {
-  const timerEl = $("timer");
-  if (!timerEl) {
-    requestAnimationFrame(smoothTimerRender);
+// ================= TICK PRINCIPAL =================
+async function tick() {
+  resetDayIfNeeded();
+
+  if (!state.currentClientId || !state.currentActivity || !state.lastTick) {
+    updateTimerDisplay();
     return;
   }
+
+  const client = await loadClient(state.currentClientId);
+  if (!client || !client.active) {
+    updateTimerDisplay();
+    return;
+  }
+
+  const now = Date.now();
+
+  // Inicialitzar acumulador de mil·lisegons
+  if (!state._msRemainder) state._msRemainder = 0;
+
+  const deltaMs = now - state.lastTick;
+
+  if (deltaMs <= 0) {
+    updateTimerDisplay();
+    return;
+  }
+
+  // Acumular temps real
+  state._msRemainder += deltaMs;
+
+  // Segons complets disponibles
+  const elapsedSeconds = Math.floor(state._msRemainder / 1000);
+
+  if (elapsedSeconds <= 0) {
+    updateTimerDisplay();
+    return;
+  }
+
+  // Restar ms ja convertits
+  state._msRemainder -= elapsedSeconds * 1000;
+
+  // Actualitzar tick
+  state.lastTick = now;
+
+  // Temps sessió
+  state.sessionElapsed += elapsedSeconds;
+
+  // Temps client
+  client.total = (client.total || 0) + elapsedSeconds;
+
+  client.activities = client.activities || {};
+  client.activities[state.currentActivity] =
+    (client.activities[state.currentActivity] || 0) + elapsedSeconds;
+
+  // Temps facturable exacte
+  const billableElapsed = calculateBillableSeconds(
+    now - elapsedSeconds * 1000,
+    now
+  );
+
+  client.billableTime =
+    (client.billableTime || 0) + billableElapsed;
+
+  state.focus[state.currentActivity] =
+    (state.focus[state.currentActivity] || 0) + billableElapsed;
+
+  // Guardar cada 5 segons
+  if (Date.now() - lastSaveTime > 5000) {
+    await saveClient(client);
+    await save();
+    lastSaveTime = Date.now();
+  }
+
+  updateTimerDisplay();
+}
+
+
+// ================= DISPLAY DEL CRONÒMETRE =================
+function updateTimerDisplay() {
+  const timerEl = $("timer");
+  if (!timerEl) return;
 
   if (state.currentClientId && state.currentActivity && state.lastTick) {
     const now = Date.now();
     const extra = Math.floor((now - state.lastTick) / 1000);
-    timerEl.textContent = formatTime(state.sessionElapsed + extra);
+
+    timerEl.textContent = formatTime(
+      state.sessionElapsed + Math.max(0, extra)
+    );
+  } else {
+    timerEl.textContent = "00:00:00";
+  }
+}
+
+
+// ================= ACTUALITZAR TOTAL CLIENT =================
+async function updateClientTotal() {
+  if (!state.currentClientId) return;
+
+  const client = await loadClient(state.currentClientId);
+  if (!client) return;
+
+  const el = $("clientTotal");
+  if (el) el.textContent = `Total client: ${formatTime(client.total)}`;
+}
+
+setInterval(updateClientTotal, 5000);
+
   }
 
   requestAnimationFrame(smoothTimerRender);
-}
 
-requestAnimationFrame(smoothTimerRender);
 
 
 async function setActivity(activity) {
