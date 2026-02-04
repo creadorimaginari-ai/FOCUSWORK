@@ -680,10 +680,12 @@ async function updateClientTotal() {
 
 setInterval(updateClientTotal, 5000);
 
-  }
-
+function smoothTimerRender() {
+  updateTimerDisplay();
   requestAnimationFrame(smoothTimerRender);
+}
 
+requestAnimationFrame(smoothTimerRender);
 
 
 async function setActivity(activity) {
