@@ -614,7 +614,7 @@ async function tick() {
   state._msRemainder -= elapsedSeconds * 1000;
 
   // Actualitzar tick
-  state.lastTick = now;
+  state.lastTick += elapsedSeconds * 1000;
 
   // Temps sessió
   state.sessionElapsed += elapsedSeconds;
