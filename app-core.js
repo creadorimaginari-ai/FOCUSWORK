@@ -195,15 +195,14 @@ function calculateBillableSeconds(startTime, endTime) {
     const nextChange = getNextScheduleChange(currentDate);
     const segmentEnd = Math.min(endTime, nextChange);
     
-    // Si aquest segment és dins l'horari facturable, comptar-lo
-    if (isWithin) {
-      billableSeconds += Math.floor((segmentEnd - currentTime) / 1000);
-    }
-    
-    currentTime = segmentEnd;
-  }
-  
-  return billableSeconds;
+if (isWithin) {
+  billableSeconds += (segmentEnd - currentTime);
+}
+
+currentTime = segmentEnd;
+}
+
+return Math.floor(billableSeconds / 1000);
 }
 
 /* ================= MODALS ================= */
