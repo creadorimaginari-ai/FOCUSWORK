@@ -141,7 +141,7 @@ function isWithinFocusSchedule(date = new Date()) {
   const secondsStart = sh * 3600 + sm * 60;
   const secondsEnd = eh * 3600 + em * 60;
   
-  return secondsNow >= secondsStart && secondsNow <= secondsEnd;
+  return secondsNow >= secondsStart && secondsNow < secondsEnd;
 }
 
 // Nova funció: Obtenir el següent canvi d'horari (inici o fi)
