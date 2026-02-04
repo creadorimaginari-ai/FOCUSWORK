@@ -589,10 +589,13 @@ async function tick() {
 
   const now = Date.now();
 
-  // Inicialitzar acumulador de mil·lisegons
+  // Inicialitzar acumuladors si no existeixen
   if (!state._msRemainder) state._msRemainder = 0;
+  if (!state._tickClock) state._tickClock = now;
 
-  const deltaMs = now - state.lastTick;
+  // Temps real passat des de l'últim tick real
+  const deltaMs = now - state._tickClock;
+  state._tickClock = now;
 
   if (deltaMs <= 0) {
     updateTimerDisplay();
@@ -613,7 +616,7 @@ async function tick() {
   // Restar ms ja convertits
   state._msRemainder -= elapsedSeconds * 1000;
 
-  // Actualitzar tick
+  // Avançar lastTick només pel temps real consumit
   state.lastTick += elapsedSeconds * 1000;
 
   // Temps sessió
@@ -628,8 +631,8 @@ async function tick() {
 
   // Temps facturable exacte
   const billableElapsed = calculateBillableSeconds(
-    now - elapsedSeconds * 1000,
-    now
+    state.lastTick - elapsedSeconds * 1000,
+    state.lastTick
   );
 
   client.billableTime =
@@ -647,7 +650,6 @@ async function tick() {
 
   updateTimerDisplay();
 }
-
 
 // ================= DISPLAY DEL CRONÒMETRE =================
 function updateTimerDisplay() {
