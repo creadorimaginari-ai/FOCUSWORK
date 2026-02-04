@@ -556,15 +556,16 @@ let lastSaveTime = 0;
 async function tick() {
   resetDayIfNeeded();
   
+  // ❌ No reiniciar lastTick aquí (fa perdre segons)
   if (!state.currentClientId || !state.currentActivity || !state.lastTick) {
-    state.lastTick = Date.now();
-    updateTimerDisplay(); // Actualitzar display
+    updateTimerDisplay();
     return;
   }
   
   const client = await loadClient(state.currentClientId);
+  
+  // ❌ Tampoc reiniciar lastTick aquí
   if (!client || !client.active) {
-    state.lastTick = Date.now();
     updateTimerDisplay();
     return;
   }
@@ -573,10 +574,9 @@ async function tick() {
   const elapsed = Math.floor((now - state.lastTick) / 1000);
   
   if (elapsed <= 0) {
-    updateTimerDisplay(); // Actualitzar display fins i tot si elapsed=0
+    updateTimerDisplay();
     return;
   }
-  
   // ✅ CORRECCIÓ CRÍTICA: Calcular temps facturable amb precisió absoluta
   // En lloc de només comprovar si "ara" estem dins l'horari, calculem
   // exactament quants segons del període (lastTick → now) són facturables
