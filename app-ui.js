@@ -1269,7 +1269,27 @@ async function generateReport() {
   }
   
   const scheduleInfo = state.focusSchedule.enabled ? `\n⏰ HORARI FACTURABLE: ${state.focusSchedule.start} - ${state.focusSchedule.end}\n` : '\n⏰ Sense horari facturable configurat (tot el temps compta)\n';
-  
+
+  let photosSection = '';
+
+if (client.photos && client.photos.length > 0) {
+  photosSection += '\n📷 FOTOGRAFIES\n\n';
+
+  client.photos.forEach((photo, index) => {
+    photosSection += `Foto ${index + 1}\n`;
+
+    if (photo.data) {
+      photosSection += photo.data + '\n';
+    }
+
+    if (photo.comment && photo.comment.trim() !== '') {
+      photosSection += photo.comment.trim() + '\n';
+    }
+
+    photosSection += '\n';
+  });
+}
+
   const reportText = 
     `┌────────────────────────────────┐\n` +
     `       📋 INFORME DE PROJECTE\n` +
@@ -1282,7 +1302,8 @@ async function generateReport() {
     `⏱️ TEMPS TOTAL TREBALLAT: ${formatTime(client.total)}\n` +
     `💰 TEMPS FACTURABLE: ${formatTime(billableTime)}\n` +
     `${extraHoursSection}` + activitiesBreakdown +
-    `\n📷 FOTOGRAFIES: ${client.photos.length}\n` + notesSection +
+    photosSection + notesSection +
+
     `\n────────────────────────────────\n` +
     `Generat amb FocoWork v${APP_VERSION}\n` +
     `────────────────────────────────`;
