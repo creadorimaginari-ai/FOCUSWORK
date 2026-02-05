@@ -1857,7 +1857,31 @@ if (photoCanvas && photoCtx) {
 }
   const commentInput = $('lightboxComment');
 if (commentInput) {
-  commentInput.value = photo.comment || '';
+  const template =
+`Projecte:
+Lloc:
+Mides:
+Disseny:
+Material:
+Hores:
+Entrega:
+`;
+
+let commentText = photo.comment || '';
+
+// Només posar plantilla si:
+// 1) no hi ha comentari
+// 2) és la primera foto del client
+if (!commentText.trim()) {
+  const client = state.currentClient;
+  if (client && client.photos && client.photos[0] === photo) {
+    commentText = template;
+    photo.comment = template;
+  }
+}
+
+commentInput.value = commentText;
+
   commentInput.oninput = () => savePhotoComment(commentInput.value);
 }
   
