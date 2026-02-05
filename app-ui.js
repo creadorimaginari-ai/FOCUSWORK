@@ -1278,10 +1278,7 @@ if (client.photos && client.photos.length > 0) {
   client.photos.forEach((photo, index) => {
     photosSection += `Foto ${index + 1}\n`;
 
-    if (photo.data) {
-      photosSection += photo.data + '\n';
-    }
-
+    // només el comentari, no la imatge
     if (photo.comment && photo.comment.trim() !== '') {
       photosSection += photo.comment.trim() + '\n';
     }
@@ -1289,6 +1286,7 @@ if (client.photos && client.photos.length > 0) {
     photosSection += '\n';
   });
 }
+
 
   const reportText = 
     `┌────────────────────────────────┐\n` +
