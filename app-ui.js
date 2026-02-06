@@ -1856,6 +1856,7 @@ if (photoCanvas && photoCtx) {
   img.src = photo.data;
 }
   const commentInput = $('lightboxComment');
+
 if (commentInput) {
   const template =
 `Projecte:
@@ -1867,21 +1868,15 @@ Hores:
 Entrega:
 `;
 
-let commentText = photo.comment || '';
+  let commentText = photo.comment || '';
 
-// Només posar plantilla si:
-// 1) no hi ha comentari
-// 2) és la primera foto del client
-if (!commentText.trim()) {
-  const client = state.currentClient;
-  if (client && client.photos && client.photos[0] === photo) {
+  // només plantilla a la primera foto visible
+  if (!commentText.trim() && currentLightboxIndex === 0) {
     commentText = template;
     photo.comment = template;
   }
-}
 
-commentInput.value = commentText;
-
+  commentInput.value = commentText;
   commentInput.oninput = () => savePhotoComment(commentInput.value);
 }
   
