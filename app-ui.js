@@ -823,7 +823,7 @@ async function confirmDeleteClient() {
   showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
 }
 
-/* ================= FOTOS OPTIMIZADO Y CORREGIDO - VERSIÓ iOS COMPATIBLE ================= */
+/* ================= FOTOS OPTIMIZADO Y CORREGIDO - VERSIÓ iPAD 6 ================= */
 let photoToDelete = null;
 
 async function addPhotoToClient() {
@@ -838,34 +838,27 @@ async function addPhotoToClient() {
     return;
   }
   
-  // ✅ Crear input amb atributs compatibles iOS
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/*";
-  input.setAttribute('capture', 'environment'); // ← FIX iOS
   
-  // ✅ Afegir al DOM (important per iOS)
+  // ✅ AFEGIT: Necessari per iOS
   input.style.display = 'none';
   document.body.appendChild(input);
   
   input.onchange = async () => {
     const file = input.files[0];
     
-    // ✅ Cleanup del DOM
+    // ✅ AFEGIT: Netejar del DOM
     if (input.parentNode) {
       document.body.removeChild(input);
     }
     
     if (!file) return;
     
-    // ✅ Validacions
+    // ✅ AFEGIT: Validació de tipus
     if (!file.type.startsWith('image/')) {
       showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
-      return;
-    }
-    
-    if (file.size > 10 * 1024 * 1024) {
-      showAlert('Error', 'La imatge és massa gran (màx 10MB)', '⚠️');
       return;
     }
     
@@ -873,74 +866,55 @@ async function addPhotoToClient() {
     reader.onload = async () => {
       const img = new Image();
       img.onload = async () => {
+        const MAX = 1920;  // ✅ CANVIAT: Era 1024
+        let width = img.width;
+        let height = img.height;
+        
+        // ✅ MILLORAT: Redimensionar mantenint proporció
+        if (width > MAX || height > MAX) {
+          const ratio = Math.min(MAX / width, MAX / height);
+          width = Math.floor(width * ratio);
+          height = Math.floor(height * ratio);
+        }
+        
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        
+        // ✅ AFEGIT: Fons blanc
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const dataURL = canvas.toDataURL("image/jpeg", 0.85);  // ✅ CANVIAT: Era 0.7
+        
+        const photoObj = {
+          id: uid(),
+          date: new Date().toISOString(),
+          data: dataURL,
+          comment: ""
+        };
+        
+        const currentClient = await loadClient(state.currentClientId);
+        if (!currentClient) {
+          showAlert('Error', 'S\'ha perdut la referència al client', '⚠️');
+          return;
+        }
+        
+        currentClient.photos.push(photoObj);
+        
         try {
-          const MAX = 1920; // ← Mida més gran
-          let width = img.width;
-          let height = img.height;
-          
-          // Redimensionar mantenint proporció
-          if (width > MAX || height > MAX) {
-            const ratio = Math.min(MAX / width, MAX / height);
-            width = Math.floor(width * ratio);
-            height = Math.floor(height * ratio);
-          }
-          
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext("2d", {
-            alpha: false,
-            willReadFrequently: false
-          });
-          
-          if (!ctx) {
-            throw new Error('No s\'ha pogut crear el context del canvas');
-          }
-          
-          // ✅ Fons blanc
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, width, height);
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // ✅ Convertir amb gestió d'errors
-          let dataURL;
-          try {
-            dataURL = canvas.toDataURL("image/jpeg", 0.85);
-          } catch (e) {
-            dataURL = canvas.toDataURL("image/jpeg", 0.7);
-          }
-          
-          // ✅ Reduir si és massa gran
-          if (dataURL.length > 5 * 1024 * 1024 * 1.33) {
-            dataURL = canvas.toDataURL("image/jpeg", 0.6);
-          }
-          
-          const photoObj = {
-            id: uid(),
-            date: new Date().toISOString(),
-            data: dataURL,
-            comment: ""
-          };
-          
-          const currentClient = await loadClient(state.currentClientId);
-          if (!currentClient) {
-            throw new Error('S\'ha perdut la referència al client');
-          }
-          
-          currentClient.photos.push(photoObj);
           await saveClient(currentClient);
           renderPhotoGallery(currentClient);
-          
-          showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
-        } catch (error) {
-          console.error('Error:', error);
-          showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
+          showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');  // ✅ AFEGIT: Missatge de confirmació
+        } catch (e) {
+          showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
         }
       };
       
       img.onerror = () => {
-        showAlert('Error', 'No s\'ha pogut carregar la imatge', '❌');
+        showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
       };
       
       img.src = reader.result;
@@ -953,14 +927,14 @@ async function addPhotoToClient() {
     reader.readAsDataURL(file);
   };
   
-  // ✅ Cleanup si es cancel·la
+  // ✅ AFEGIT: Gestió de cancel·lació
   input.oncancel = () => {
     if (input.parentNode) {
       document.body.removeChild(input);
     }
   };
   
-  // ✅ Timeout per iOS
+  // ✅ AFEGIT: Timeout per iOS (IMPORTANT)
   setTimeout(() => {
     input.click();
   }, 100);
@@ -981,7 +955,7 @@ async function renderPhotoGallery(preloadedClient = null) {
     [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
       const container = document.createElement("div");
       container.style.cssText = "position: relative; cursor: pointer;";
-      container.onclick = () => openLightbox(window.currentClientPhotos, index);
+      container.onclick = () => openLightbox(index);
       
       const img = document.createElement("img");
       img.src = p.data;
@@ -991,7 +965,6 @@ async function renderPhotoGallery(preloadedClient = null) {
       // Mostrar badge si hi ha comentari
       if (p.comment && p.comment.trim()) {
         const badge = document.createElement("div");
-        badge.className = 'comment-badge';
         badge.style.cssText = `
           position: absolute;
           bottom: 5px;
