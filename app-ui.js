@@ -993,6 +993,68 @@ async function renderPhotoGallery(preloadedClient = null) {
 }
 
 async function confirmDeletePhoto() {
+ async function handlePhotoInputiPad(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  if (!state.currentClientId) {
+    showAlert('Error', 'Selecciona un client primer', '⚠️');
+    input.value = '';
+    return;
+  }
+  
+  if (!file.type.startsWith('image/')) {
+    showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
+    input.value = '';
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const img = new Image();
+    img.onload = async () => {
+      const MAX = 1920;
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > MAX || height > MAX) {
+        const ratio = Math.min(MAX / width, MAX / height);
+        width = Math.floor(width * ratio);
+        height = Math.floor(height * ratio);
+      }
+      
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      const dataURL = canvas.toDataURL("image/jpeg", 0.85);
+      
+      const photoObj = {
+        id: uid(),
+        date: new Date().toISOString(),
+        data: dataURL,
+        comment: ""
+      };
+      
+      const client = await loadClient(state.currentClientId);
+      if (client) {
+        client.photos.push(photoObj);
+        await saveClient(client);
+        await renderPhotoGallery(client);
+        showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
+      }
+      
+      input.value = '';
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
   if (!photoToDelete) return;
   
   const client = await loadClient(state.currentClientId);
@@ -1021,6 +1083,7 @@ async function confirmDeletePhoto() {
     showAlert('Error', 'No s\'ha pogut esborrar la foto: ' + e.message, '❌');
     closeModal('modalDeletePhoto');
   }
+
 }
 /*************************************************
  * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 4/5
