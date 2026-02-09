@@ -208,6 +208,12 @@
         </div>
 
       <!-- ✅ AFEGEIX AQUEST INPUT (OBLIGATORI!) -->
+<!-- ============================================ -->
+<!-- BOTONS PER AFEGIR FOTOS I ARXIUS -->
+<!-- Substitueix la secció dels botons amb això -->
+<!-- ============================================ -->
+
+<!-- Input per fotos (mantenim el sistema antic) -->
 <input 
   type="file" 
   id="photoInputiPad" 
@@ -216,7 +222,7 @@
   onchange="handlePhotoInputiPad(this)"
 >
 
-<!-- ✅ LABEL CENTRAT dins d'un div -->
+<!-- Botó per afegir fotos (sistema antic) -->
 <div class="grid centered" style="margin-top: 12px;">
   <label for="photoInputiPad" class="primary" style="
     display: inline-block;
@@ -224,15 +230,18 @@
     text-align: center;
     padding: 12px 24px;
   ">
-    📷 Afegir foto al client
+    📷 Afegir foto
   </label>
 </div>
+
+<!-- Botó per afegir qualsevol arxiu (sistema nou) -->
 <div class="grid centered" style="margin-top: 12px;">
   <button class="primary" onclick="addFileToClient()">
-    📎 Afegir arxiu
+    📎 Afegir arxiu (PDF, vídeo, àudio...)
   </button>
 </div>
-<!-- 🔥 GALERÍA DE FOTOS -->
+
+<!-- Galeria d'arxius -->
 <div id="photoGallery" class="photo-gallery"></div>
    
 
