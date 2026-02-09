@@ -207,34 +207,14 @@
           </button>
         </div>
 
-        <div class="grid centered" style="margin-top: 12px;">
-          <button id="cameraBtn" class="primary">
-            📷 Afegir foto al client
-          </button>
-        </div>
-        <!-- Input ocult -->
-<input 
-  type="file" 
-  id="photoInputiPad" 
-  accept="image/*" 
-  style="position: absolute; left: -9999px; opacity: 0.01;"
-  onchange="handlePhotoInputiPad(this)"
->
-
-<!-- Label que actua com a botó -->
-<label for="photoInputiPad" class="grid centered" style="margin-top: 12px;" class="primary"
+       <label for="photoInputiPad" class="primary" style="
   display: inline-block;
-  padding: 12px 24px;
-  background: #007AFF;
-  color: white;
-  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
   text-align: center;
 ">
-  📷 Afegir foto
+  📷 Afegir foto al client
 </label>
-      </div>
+     
       
       <!-- 🔥 GALERÍA DE FOTOS (CRÍTICO - ESTO ESTABA FUERA DE LUGAR) -->
       <div id="photoGallery" class="photo-gallery"></div>
