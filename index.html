@@ -207,19 +207,29 @@
           </button>
         </div>
 
-       <label for="photoInputiPad" class="primary" style="
-  display: inline-block;
-  cursor: pointer;
-  text-align: center;
-">
-  📷 Afegir foto al client
-</label>
-     
-      
-      <!-- 🔥 GALERÍA DE FOTOS (CRÍTICO - ESTO ESTABA FUERA DE LUGAR) -->
-      <div id="photoGallery" class="photo-gallery"></div>
-      
-      <!-- BOTONS FINALS (DINS DEL CLIENT) -->
+      <!-- ✅ AFEGEIX AQUEST INPUT (OBLIGATORI!) -->
+<input 
+  type="file" 
+  id="photoInputiPad" 
+  accept="image/*" 
+  style="display: none;"
+  onchange="handlePhotoInputiPad(this)"
+>
+
+<!-- ✅ LABEL CENTRAT dins d'un div -->
+<div class="grid centered" style="margin-top: 12px;">
+  <label for="photoInputiPad" class="primary" style="
+    display: inline-block;
+    cursor: pointer;
+    text-align: center;
+    padding: 12px 24px;
+  ">
+    📷 Afegir foto al client
+  </label>
+</div>
+
+<!-- 🔥 GALERÍA DE FOTOS -->
+<div id="photoGallery" class="photo-gallery"></div>
    
 
     </section>
