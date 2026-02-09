@@ -2776,3 +2776,525 @@ window.setupStateListeners = setupStateListeners;
 window.setupProgressListeners = setupProgressListeners;
 
 console.log('✅ app-ui.js carregat amb suport per estats i progrés');
+/* ================= SISTEMA D'ARXIUS UNIVERSAL (FOTOS + DOCUMENTS + VÍDEOS + ÀUDIO) ================= */
+/* AFEGEIX AQUEST CODI AL FINAL DEL TEU app-ui.js (després de la línia 2779) */
+
+// Configuració de tipus d'arxius i mides màximes
+const FILE_CONFIG = {
+  maxSizes: {
+    image: 10 * 1024 * 1024,      // 10MB per imatges
+    video: 50 * 1024 * 1024,      // 50MB per vídeos
+    audio: 20 * 1024 * 1024,      // 20MB per àudio
+    document: 25 * 1024 * 1024,   // 25MB per documents
+    other: 15 * 1024 * 1024       // 15MB per altres
+  },
+  
+  types: {
+    image: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic'],
+    video: ['video/mp4', 'video/quicktime', 'video/webm', 'video/avi'],
+    audio: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'],
+    pdf: ['application/pdf'],
+    word: ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+    excel: ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+    text: ['text/plain', 'text/csv']
+  },
+  
+  icons: {
+    pdf: '📄',
+    word: '📝',
+    excel: '📊',
+    text: '📃',
+    video: '🎥',
+    audio: '🎵',
+    image: '🖼️',
+    other: '📎'
+  }
+};
+
+// Determinar el tipus d'arxiu
+function getFileType(mimeType) {
+  for (const [type, mimes] of Object.entries(FILE_CONFIG.types)) {
+    if (mimes.includes(mimeType)) {
+      return type;
+    }
+  }
+  return 'other';
+}
+
+// Obtenir icona segons tipus
+function getFileIcon(fileType) {
+  return FILE_CONFIG.icons[fileType] || FILE_CONFIG.icons.other;
+}
+
+// Obtenir mida màxima segons tipus
+function getMaxSize(fileType) {
+  const category = ['image', 'video', 'audio'].includes(fileType) 
+    ? fileType 
+    : ['pdf', 'word', 'excel', 'text'].includes(fileType) 
+      ? 'document' 
+      : 'other';
+  return FILE_CONFIG.maxSizes[category];
+}
+
+// Formatear mida d'arxiu
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+/* ================= FUNCIONS PER AFEGIR ARXIUS ================= */
+
+// Funció universal per afegir qualsevol tipus d'arxiu
+async function addFileToClient() {
+  console.log('📎 addFileToClient iniciada');
+  
+  if (!state.currentClientId) {
+    showAlert('Error', 'Selecciona un client primer', '⚠️');
+    return;
+  }
+  
+  const client = await loadClient(state.currentClientId);
+  if (!client) {
+    showAlert('Error', 'Client no trobat', '⚠️');
+    return;
+  }
+  
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "*/*"; // Acceptar tots els tipus
+  
+  input.style.cssText = `
+    position: absolute;
+    left: -9999px;
+    opacity: 0.01;
+  `;
+  document.body.appendChild(input);
+  
+  input.onchange = async () => {
+    const file = input.files[0];
+    
+    if (input.parentNode) {
+      document.body.removeChild(input);
+    }
+    
+    if (!file) return;
+    
+    console.log('🔎 Arxiu seleccionat:', file.name, file.type, formatFileSize(file.size));
+    
+    const fileType = getFileType(file.type);
+    const maxSize = getMaxSize(fileType);
+    
+    // Validar mida
+    if (file.size > maxSize) {
+      showAlert('Arxiu massa gran', `Mida màxima per ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
+      return;
+    }
+    
+    // Processar segons el tipus
+    if (fileType === 'image') {
+      await processImageFile(file, client);
+    } else if (fileType === 'video') {
+      await processVideoFile(file, client);
+    } else {
+      await processGenericFile(file, client);
+    }
+  };
+  
+  input.oncancel = () => {
+    if (input.parentNode) {
+      document.body.removeChild(input);
+    }
+  };
+  
+  input.click();
+}
+
+// Processar imatges (comprimir i optimitzar)
+async function processImageFile(file, client) {
+  const reader = new FileReader();
+  
+  reader.onload = async () => {
+    const img = new Image();
+    
+    img.onload = async () => {
+      try {
+        const MAX = 1920;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > MAX || height > MAX) {
+          const ratio = Math.min(MAX / width, MAX / height);
+          width = Math.floor(width * ratio);
+          height = Math.floor(height * ratio);
+        }
+        
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const dataURL = canvas.toDataURL("image/jpeg", 0.85);
+        
+        const fileObj = {
+          id: uid(),
+          date: new Date().toISOString(),
+          type: 'image',
+          name: file.name,
+          mimeType: 'image/jpeg',
+          size: dataURL.length,
+          data: dataURL,
+          comment: ""
+        };
+        
+        if (!client.files) client.files = [];
+        client.files.push(fileObj);
+        
+        await saveClient(client);
+        await renderFileGallery(client);
+        
+        showAlert('Imatge afegida', `${file.name} afegit correctament`, '✅');
+      } catch (error) {
+        console.error('Error processant imatge:', error);
+        showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
+      }
+    };
+    
+    img.onerror = () => {
+      showAlert('Error', 'No s\'ha pogut carregar la imatge', '❌');
+    };
+    
+    img.src = reader.result;
+  };
+  
+  reader.onerror = () => {
+    showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
+  };
+  
+  reader.readAsDataURL(file);
+}
+
+// Processar vídeos (crear thumbnail)
+async function processVideoFile(file, client) {
+  const reader = new FileReader();
+  
+  reader.onload = async () => {
+    try {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      
+      video.onloadedmetadata = async () => {
+        // Crear thumbnail del primer frame
+        video.currentTime = 0.1;
+      };
+      
+      video.onseeked = async () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 320;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.drawImage(video, 0, 0, 320, 240);
+        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+        
+        const fileObj = {
+          id: uid(),
+          date: new Date().toISOString(),
+          type: 'video',
+          name: file.name,
+          mimeType: file.type,
+          size: file.size,
+          data: reader.result,
+          thumbnail: thumbnail,
+          duration: Math.round(video.duration),
+          comment: ""
+        };
+        
+        if (!client.files) client.files = [];
+        client.files.push(fileObj);
+        
+        await saveClient(client);
+        await renderFileGallery(client);
+        
+        showAlert('Vídeo afegit', `${file.name} afegit correctament`, '✅');
+      };
+      
+      video.src = reader.result;
+    } catch (error) {
+      console.error('Error processant vídeo:', error);
+      showAlert('Error', 'No s\'ha pogut processar el vídeo', '❌');
+    }
+  };
+  
+  reader.readAsDataURL(file);
+}
+
+// Processar altres arxius (PDFs, documents, àudio, etc.)
+async function processGenericFile(file, client) {
+  const reader = new FileReader();
+  
+  reader.onload = async () => {
+    const fileType = getFileType(file.type);
+    
+    const fileObj = {
+      id: uid(),
+      date: new Date().toISOString(),
+      type: fileType,
+      name: file.name,
+      mimeType: file.type,
+      size: file.size,
+      data: reader.result,
+      comment: ""
+    };
+    
+    if (!client.files) client.files = [];
+    client.files.push(fileObj);
+    
+    await saveClient(client);
+    await renderFileGallery(client);
+    
+    const icon = getFileIcon(fileType);
+    showAlert('Arxiu afegit', `${icon} ${file.name} afegit correctament`, '✅');
+  };
+  
+  reader.onerror = () => {
+    showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
+  };
+  
+  reader.readAsDataURL(file);
+}
+
+/* ================= RENDERITZACIÓ DE LA GALERIA D'ARXIUS ================= */
+
+async function renderFileGallery(preloadedClient = null) {
+  const gallery = $("photoGallery");
+  if (!gallery) return;
+  
+  const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
+  
+  // Combinar arxius vells (photos) amb nous (files)
+  const allFiles = [];
+  
+  // Migrar fotos antigues a format nou si existeixen
+  if (client && client.photos && client.photos.length > 0) {
+    client.photos.forEach(photo => {
+      allFiles.push({
+        id: photo.id,
+        date: photo.date,
+        type: 'image',
+        name: 'Imatge',
+        mimeType: 'image/jpeg',
+        data: photo.data,
+        comment: photo.comment || ""
+      });
+    });
+  }
+  
+  // Afegir arxius nous
+  if (client && client.files && client.files.length > 0) {
+    allFiles.push(...client.files);
+  }
+  
+  window.currentClientFiles = allFiles;
+  
+  const fragment = document.createDocumentFragment();
+  
+  if (allFiles.length > 0) {
+    allFiles.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((file, index) => {
+      const container = document.createElement("div");
+      container.className = "file-item";
+      container.style.cssText = "position: relative; cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 8px; margin: 4px;";
+      container.onclick = () => openFileViewer(allFiles, index);
+      
+      if (file.type === 'image') {
+        // Mostrar thumbnail d'imatge
+        const img = document.createElement("img");
+        img.src = file.data;
+        img.className = "photo-thumb";
+        img.style.cssText = "width: 100%; height: auto; border-radius: 4px;";
+        container.appendChild(img);
+      } else if (file.type === 'video' && file.thumbnail) {
+        // Mostrar thumbnail de vídeo
+        const img = document.createElement("img");
+        img.src = file.thumbnail;
+        img.style.cssText = "width: 100%; height: auto; border-radius: 4px;";
+        container.appendChild(img);
+        
+        // Icona de play
+        const playIcon = document.createElement("div");
+        playIcon.textContent = '▶️';
+        playIcon.style.cssText = `
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 48px;
+          pointer-events: none;
+        `;
+        container.appendChild(playIcon);
+      } else {
+        // Mostrar icona per altres tipus
+        const icon = document.createElement("div");
+        icon.textContent = getFileIcon(file.type);
+        icon.style.cssText = `
+          font-size: 64px;
+          text-align: center;
+          padding: 20px;
+        `;
+        container.appendChild(icon);
+        
+        const fileName = document.createElement("div");
+        fileName.textContent = file.name;
+        fileName.style.cssText = `
+          font-size: 12px;
+          text-align: center;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        `;
+        container.appendChild(fileName);
+        
+        const fileSize = document.createElement("div");
+        fileSize.textContent = formatFileSize(file.size);
+        fileSize.style.cssText = `
+          font-size: 10px;
+          text-align: center;
+          color: #666;
+        `;
+        container.appendChild(fileSize);
+      }
+      
+      // Badge de comentari
+      if (file.comment && file.comment.trim()) {
+        const badge = document.createElement("div");
+        badge.style.cssText = `
+          position: absolute;
+          bottom: 5px;
+          left: 5px;
+          background: rgba(0,0,0,0.7);
+          color: white;
+          padding: 3px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          backdrop-filter: blur(5px);
+          pointer-events: none;
+        `;
+        badge.textContent = '💬';
+        container.appendChild(badge);
+      }
+      
+      fragment.appendChild(container);
+    });
+  }
+  
+  gallery.innerHTML = "";
+  gallery.appendChild(fragment);
+}
+
+/* ================= VISOR D'ARXIUS ================= */
+
+function openFileViewer(files, index) {
+  const file = files[index];
+  
+  if (file.type === 'image') {
+    // Usar lightbox existent per imatges
+    openLightbox(files, index);
+  } else if (file.type === 'video') {
+    // Obrir modal per vídeo
+    showVideoModal(file);
+  } else if (file.type === 'pdf') {
+    // Obrir PDF en nova pestanya
+    const win = window.open();
+    win.document.write(`<iframe src="${file.data}" style="width:100%; height:100%; border:none;"></iframe>`);
+  } else if (file.type === 'audio') {
+    // Reproduir àudio
+    showAudioModal(file);
+  } else {
+    // Descarregar arxiu
+    downloadFile(file);
+  }
+}
+
+function showVideoModal(file) {
+  // Crear modal per vídeo
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  `;
+  
+  const video = document.createElement('video');
+  video.src = file.data;
+  video.controls = true;
+  video.style.cssText = 'max-width: 90%; max-height: 80vh;';
+  modal.appendChild(video);
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕ Tancar';
+  closeBtn.style.cssText = 'margin-top: 20px; padding: 10px 20px; font-size: 16px;';
+  closeBtn.onclick = () => document.body.removeChild(modal);
+  modal.appendChild(closeBtn);
+  
+  document.body.appendChild(modal);
+}
+
+function showAudioModal(file) {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 10000;
+  `;
+  
+  const title = document.createElement('h3');
+  title.textContent = file.name;
+  title.style.marginBottom = '20px';
+  modal.appendChild(title);
+  
+  const audio = document.createElement('audio');
+  audio.src = file.data;
+  audio.controls = true;
+  audio.style.width = '100%';
+  modal.appendChild(audio);
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Tancar';
+  closeBtn.style.cssText = 'margin-top: 20px; padding: 10px 20px; width: 100%;';
+  closeBtn.onclick = () => document.body.removeChild(modal);
+  modal.appendChild(closeBtn);
+  
+  document.body.appendChild(modal);
+}
+
+function downloadFile(file) {
+  const a = document.createElement('a');
+  a.href = file.data;
+  a.download = file.name;
+  a.click();
+}
+
+/* ================= EXPORTAR FUNCIONS GLOBALS ================= */
+window.addFileToClient = addFileToClient;
+window.renderFileGallery = renderFileGallery;
+window.openFileViewer = openFileViewer;
+
+console.log('✅ Sistema d\'arxius universal carregat correctament');
