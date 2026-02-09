@@ -823,7 +823,7 @@ async function confirmDeleteClient() {
   showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
 }
 
-/* ================= FOTOS OPTIMIZADO Y CORREGIDO - VERSIÓ iPAD 6 ================= */
+/* ================= FOTOS OPTIMIZADO Y CORREGIDO - VERSIÓ FINAL ANDROID + iPAD ================= */
 let photoToDelete = null;
 
 async function addPhotoToClient() {
@@ -842,21 +842,25 @@ async function addPhotoToClient() {
   input.type = "file";
   input.accept = "image/*";
   
-  // ✅ AFEGIT: Necessari per iOS
-  input.style.display = 'none';
+  // ✅ Afegir al DOM (necessari per iOS)
+  input.style.cssText = `
+    position: absolute;
+    left: -9999px;
+    opacity: 0.01;
+  `;
   document.body.appendChild(input);
   
   input.onchange = async () => {
     const file = input.files[0];
     
-    // ✅ AFEGIT: Netejar del DOM
+    // Netejar del DOM
     if (input.parentNode) {
       document.body.removeChild(input);
     }
     
     if (!file) return;
     
-    // ✅ AFEGIT: Validació de tipus
+    // Validació de tipus
     if (!file.type.startsWith('image/')) {
       showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
       return;
@@ -866,11 +870,11 @@ async function addPhotoToClient() {
     reader.onload = async () => {
       const img = new Image();
       img.onload = async () => {
-        const MAX = 1920;  // ✅ CANVIAT: Era 1024
+        const MAX = 1920;
         let width = img.width;
         let height = img.height;
         
-        // ✅ MILLORAT: Redimensionar mantenint proporció
+        // Redimensionar mantenint proporció
         if (width > MAX || height > MAX) {
           const ratio = Math.min(MAX / width, MAX / height);
           width = Math.floor(width * ratio);
@@ -882,12 +886,12 @@ async function addPhotoToClient() {
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         
-        // ✅ AFEGIT: Fons blanc
+        // Fons blanc
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         
-        const dataURL = canvas.toDataURL("image/jpeg", 0.85);  // ✅ CANVIAT: Era 0.7
+        const dataURL = canvas.toDataURL("image/jpeg", 0.85);
         
         const photoObj = {
           id: uid(),
@@ -907,14 +911,14 @@ async function addPhotoToClient() {
         try {
           await saveClient(currentClient);
           renderPhotoGallery(currentClient);
-          showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');  // ✅ AFEGIT: Missatge de confirmació
+          showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
         } catch (e) {
           showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
         }
       };
       
       img.onerror = () => {
-        showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
+        showAlert('Error', 'No s\'ha pugut processar la imatge', '❌');
       };
       
       img.src = reader.result;
@@ -927,17 +931,15 @@ async function addPhotoToClient() {
     reader.readAsDataURL(file);
   };
   
-  // ✅ AFEGIT: Gestió de cancel·lació
+  // Gestió de cancel·lació
   input.oncancel = () => {
     if (input.parentNode) {
       document.body.removeChild(input);
     }
   };
   
-  // ✅ AFEGIT: Timeout per iOS (IMPORTANT)
-  setTimeout(() => {
-    input.click();
-  }, 100);
+  // ✅ CRÍTIC: Click directe sense setTimeout (necessari per iPad)
+  input.click();
 }
 
 async function renderPhotoGallery(preloadedClient = null) {
@@ -955,7 +957,8 @@ async function renderPhotoGallery(preloadedClient = null) {
     [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
       const container = document.createElement("div");
       container.style.cssText = "position: relative; cursor: pointer;";
-      container.onclick = () => openLightbox(index);
+      // ✅ ARREGLAT: Passar window.currentClientPhotos com a primer paràmetre
+      container.onclick = () => openLightbox(window.currentClientPhotos, index);
       
       const img = document.createElement("img");
       img.src = p.data;
