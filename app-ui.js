@@ -1003,7 +1003,7 @@ async function confirmDeletePhoto() {
     
     photoToDelete = null;
     
-    await renderPhotoGallery(client);
+    await renderFileGallery(client);
     
     showAlert('Foto eliminada', 'La foto s\'ha eliminat correctament', '✅');
   } catch (e) {
@@ -1089,7 +1089,7 @@ async function handlePhotoInputiPad(input) {
         await saveClient(client);
         console.log('✅ Client guardat amb', client.photos.length, 'fotos');
         
-        await renderPhotoGallery(client);
+        await renderFileGallery(client);
         console.log('✅ Galeria actualitzada');
         
         showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
