@@ -823,7 +823,7 @@ async function confirmDeleteClient() {
   showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
 }
 
-/* ================= FOTOS OPTIMIZADO Y CORREGIDO - VERSIÓ FINAL ANDROID + iPAD ================= */
+/* ================= FOTOS OPTIMIZADO Y CORREGIDO - VERSIÓ FINAL ================= */
 let photoToDelete = null;
 
 async function addPhotoToClient() {
@@ -842,7 +842,6 @@ async function addPhotoToClient() {
   input.type = "file";
   input.accept = "image/*";
   
-  // ✅ Afegir al DOM (necessari per iOS)
   input.style.cssText = `
     position: absolute;
     left: -9999px;
@@ -853,14 +852,12 @@ async function addPhotoToClient() {
   input.onchange = async () => {
     const file = input.files[0];
     
-    // Netejar del DOM
     if (input.parentNode) {
       document.body.removeChild(input);
     }
     
     if (!file) return;
     
-    // Validació de tipus
     if (!file.type.startsWith('image/')) {
       showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
       return;
@@ -874,7 +871,6 @@ async function addPhotoToClient() {
         let width = img.width;
         let height = img.height;
         
-        // Redimensionar mantenint proporció
         if (width > MAX || height > MAX) {
           const ratio = Math.min(MAX / width, MAX / height);
           width = Math.floor(width * ratio);
@@ -886,7 +882,6 @@ async function addPhotoToClient() {
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         
-        // Fons blanc
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
@@ -918,7 +913,7 @@ async function addPhotoToClient() {
       };
       
       img.onerror = () => {
-        showAlert('Error', 'No s\'ha pugut processar la imatge', '❌');
+        showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
       };
       
       img.src = reader.result;
@@ -931,14 +926,12 @@ async function addPhotoToClient() {
     reader.readAsDataURL(file);
   };
   
-  // Gestió de cancel·lació
   input.oncancel = () => {
     if (input.parentNode) {
       document.body.removeChild(input);
     }
   };
   
-  // ✅ CRÍTIC: Click directe sense setTimeout (necessari per iPad)
   input.click();
 }
 
@@ -948,7 +941,6 @@ async function renderPhotoGallery(preloadedClient = null) {
   
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
   
-  // Guardar fotos globalment per al lightbox
   window.currentClientPhotos = client && client.photos ? [...client.photos] : [];
   
   const fragment = document.createDocumentFragment();
@@ -957,7 +949,6 @@ async function renderPhotoGallery(preloadedClient = null) {
     [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
       const container = document.createElement("div");
       container.style.cssText = "position: relative; cursor: pointer;";
-      // ✅ ARREGLAT: Passar window.currentClientPhotos com a primer paràmetre
       container.onclick = () => openLightbox(window.currentClientPhotos, index);
       
       const img = document.createElement("img");
@@ -965,7 +956,6 @@ async function renderPhotoGallery(preloadedClient = null) {
       img.className = "photo-thumb";
       container.appendChild(img);
       
-      // Mostrar badge si hi ha comentari
       if (p.comment && p.comment.trim()) {
         const badge = document.createElement("div");
         badge.style.cssText = `
@@ -993,68 +983,6 @@ async function renderPhotoGallery(preloadedClient = null) {
 }
 
 async function confirmDeletePhoto() {
- async function handlePhotoInputiPad(input) {
-  const file = input.files[0];
-  if (!file) return;
-  
-  if (!state.currentClientId) {
-    showAlert('Error', 'Selecciona un client primer', '⚠️');
-    input.value = '';
-    return;
-  }
-  
-  if (!file.type.startsWith('image/')) {
-    showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
-    input.value = '';
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const img = new Image();
-    img.onload = async () => {
-      const MAX = 1920;
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > MAX || height > MAX) {
-        const ratio = Math.min(MAX / width, MAX / height);
-        width = Math.floor(width * ratio);
-        height = Math.floor(height * ratio);
-      }
-      
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      const dataURL = canvas.toDataURL("image/jpeg", 0.85);
-      
-      const photoObj = {
-        id: uid(),
-        date: new Date().toISOString(),
-        data: dataURL,
-        comment: ""
-      };
-      
-      const client = await loadClient(state.currentClientId);
-      if (client) {
-        client.photos.push(photoObj);
-        await saveClient(client);
-        await renderPhotoGallery(client);
-        showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
-      }
-      
-      input.value = '';
-    };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
-}
   if (!photoToDelete) return;
   
   const client = await loadClient(state.currentClientId);
@@ -1083,7 +1011,113 @@ async function confirmDeletePhoto() {
     showAlert('Error', 'No s\'ha pogut esborrar la foto: ' + e.message, '❌');
     closeModal('modalDeletePhoto');
   }
+}
 
+// ✅ Funció per l'input amb label (iPad compatible)
+async function handlePhotoInputiPad(input) {
+  console.log('📸 handlePhotoInputiPad iniciada');
+  
+  const file = input.files[0];
+  if (!file) {
+    console.log('⚠️ Cap fitxer seleccionat');
+    return;
+  }
+  
+  console.log('✅ Fitxer rebut:', file.name, file.type);
+  
+  if (!state.currentClientId) {
+    showAlert('Error', 'Selecciona un client primer', '⚠️');
+    input.value = '';
+    return;
+  }
+  
+  if (!file.type.startsWith('image/')) {
+    showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
+    input.value = '';
+    return;
+  }
+  
+  console.log('🔵 Processant imatge...');
+  
+  const reader = new FileReader();
+  
+  reader.onload = async () => {
+    const img = new Image();
+    
+    img.onload = async () => {
+      console.log('✅ Imatge carregada:', img.width, 'x', img.height);
+      
+      try {
+        const MAX = 1920;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > MAX || height > MAX) {
+          const ratio = Math.min(MAX / width, MAX / height);
+          width = Math.floor(width * ratio);
+          height = Math.floor(height * ratio);
+        }
+        
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const dataURL = canvas.toDataURL("image/jpeg", 0.85);
+        console.log('✅ JPEG generat');
+        
+        const photoObj = {
+          id: uid(),
+          date: new Date().toISOString(),
+          data: dataURL,
+          comment: ""
+        };
+        
+        const client = await loadClient(state.currentClientId);
+        if (!client) {
+          showAlert('Error', 'Client no trobat', '⚠️');
+          input.value = '';
+          return;
+        }
+        
+        client.photos.push(photoObj);
+        
+        await saveClient(client);
+        console.log('✅ Client guardat amb', client.photos.length, 'fotos');
+        
+        await renderPhotoGallery(client);
+        console.log('✅ Galeria actualitzada');
+        
+        showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
+        
+      } catch (error) {
+        console.error('❌ Error processant:', error);
+        showAlert('Error', 'No s\'ha pogut processar la imatge: ' + error.message, '❌');
+      }
+      
+      input.value = '';
+    };
+    
+    img.onerror = () => {
+      console.error('❌ Error carregant imatge');
+      showAlert('Error', 'No s\'ha pogut carregar la imatge', '❌');
+      input.value = '';
+    };
+    
+    img.src = reader.result;
+  };
+  
+  reader.onerror = () => {
+    console.error('❌ Error llegint fitxer');
+    showAlert('Error', 'No s\'ha pogut llegir el fitxer', '❌');
+    input.value = '';
+  };
+  
+  reader.readAsDataURL(file);
 }
 /*************************************************
  * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 4/5
