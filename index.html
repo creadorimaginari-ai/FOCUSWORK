@@ -213,32 +213,18 @@
 <!-- Substitueix la secció dels botons amb això -->
 <!-- ============================================ -->
 
-<!-- Input per fotos (mantenim el sistema antic) -->
-<input 
-  type="file" 
-  id="photoInputiPad" 
-  accept="image/*" 
-  style="display: none;"
-  onchange="handlePhotoInputiPad(this)"
->
 
-<!-- Botó per afegir fotos (sistema antic) -->
-<div class="grid centered" style="margin-top: 12px;">
-  <label for="photoInputiPad" class="primary" style="
-    display: inline-block;
-    cursor: pointer;
-    text-align: center;
-    padding: 12px 24px;
-  ">
-    📷 Afegir foto
-  </label>
-</div>
+<!-- Input per fotos -->
+<input type="file" id="photoInputiPad" accept="image/*" onchange="handlePhotoInputiPad(this)">
 
-<!-- Botó per afegir qualsevol arxiu (sistema nou) -->
-<div class="grid centered" style="margin-top: 12px;">
-  <button class="primary" onclick="addFileToClient()">
-    📎 Afegir arxiu (PDF, vídeo, àudio...)
-  </button>
+<!-- Input per arxius (NOU!) -->
+<input type="file" id="fileInputiPad" accept="*/*" onchange="handleFileInputiPad(this)">
+
+<!-- Botó fotos amb label -->
+<label for="photoInputiPad">📷 Afegir foto</label>
+
+<!-- Botó arxius amb label (funciona a iPad) ✅ -->
+<label for="fileInputiPad">📎 Afegir arxiu</label>
 </div>
 
 <!-- Galeria d'arxius -->
