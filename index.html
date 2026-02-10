@@ -214,10 +214,7 @@
 <!-- ============================================ -->
 
 
-<!-- Input per fotos -->
-<input type="file" id="photoInputiPad" accept="image/*" style="display: none !important; position: absolute; left: -9999px; opacity: 0; width: 0; height: 0;" onchange="handlePhotoInputiPad(this)">
-
-<!-- Input per arxius (NOU!) -->
+<!-- ✅ Input 1: Fotos -->
 <input 
   type="file" 
   id="photoInputiPad" 
@@ -226,13 +223,37 @@
   onchange="handlePhotoInputiPad(this)"
 >
 
-<!-- Botó fotos amb label -->
-<label for="photoInputiPad">📷 Afegir foto</label>
+<!-- ✅ Input 2: Arxius (ID CORRECTE: fileInputiPad) -->
+<input 
+  type="file" 
+  id="fileInputiPad" 
+  accept="*/*" 
+  style="display: none !important; position: absolute; left: -9999px; opacity: 0; width: 0; height: 0;"
+  onchange="handleFileInputiPad(this)"
+>
 
-<!-- Botó arxius amb label (funciona a iPad) ✅ -->
-<label for="fileInputiPad">📎 Afegir arxiu</label>
+<!-- ✅ Labels amb classe primary i estils -->
+<div class="grid centered" style="margin-top: 12px;">
+  <label for="photoInputiPad" class="primary" style="
+    display: inline-block;
+    cursor: pointer;
+    text-align: center;
+    padding: 12px 24px;
+  ">
+    📷 Afegir foto
+  </label>
 </div>
 
+<div class="grid centered" style="margin-top: 12px;">
+  <label for="fileInputiPad" class="primary" style="
+    display: inline-block;
+    cursor: pointer;
+    text-align: center;
+    padding: 12px 24px;
+  ">
+    📎 Afegir arxiu
+  </label>
+</div>
 <!-- Galeria d'arxius -->
 <div id="photoGallery" class="photo-gallery"></div>
    
