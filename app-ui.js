@@ -1118,7 +1118,63 @@ async function handlePhotoInputiPad(input) {
   };
   
   reader.readAsDataURL(file);
+}/* ================= FUNCIÓ PER GESTIONAR ARXIUS A L'IPAD ================= */
+/* AFEGEIX aquesta funció al fitxer app-ui.js (després de handlePhotoInputiPad) */
+
+async function handleFileInputiPad(input) {
+  console.log('📎 handleFileInputiPad iniciada');
+  
+  const file = input.files[0];
+  if (!file) {
+    console.log('⚠️ Cap fitxer seleccionat');
+    return;
+  }
+  
+  console.log('✅ Fitxer rebut:', file.name, file.type, formatFileSize(file.size));
+  
+  if (!state.currentClientId) {
+    showAlert('Error', 'Selecciona un client primer', '⚠️');
+    input.value = '';
+    return;
+  }
+  
+  const client = await loadClient(state.currentClientId);
+  if (!client) {
+    showAlert('Error', 'Client no trobat', '⚠️');
+    input.value = '';
+    return;
+  }
+  
+  const fileType = getFileType(file.type);
+  const maxSize = getMaxSize(fileType);
+  
+  // Validar mida
+  if (file.size > maxSize) {
+    showAlert('Arxiu massa gran', `Mida màxima per ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
+    input.value = '';
+    return;
+  }
+  
+  console.log('🔵 Processant arxiu tipus:', fileType);
+  
+  // Processar segons el tipus
+  if (fileType === 'image') {
+    await processImageFile(file, client);
+  } else if (fileType === 'video') {
+    await processVideoFile(file, client);
+  } else {
+    await processGenericFile(file, client);
+  }
+  
+  // Netejar input per permetre seleccionar el mateix arxiu de nou
+  input.value = '';
 }
+
+// Exportar la funció globalment
+window.handleFileInputiPad = handleFileInputiPad;
+
+console.log('✅ handleFileInputiPad carregada');
+
 /*************************************************
  * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 4/5
  * Workpad, Tasques, Hores Extra, Informe
