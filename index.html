@@ -218,7 +218,13 @@
 <input type="file" id="photoInputiPad" accept="image/*" onchange="handlePhotoInputiPad(this)">
 
 <!-- Input per arxius (NOU!) -->
-<input type="file" id="fileInputiPad" accept="*/*" onchange="handleFileInputiPad(this)">
+<input 
+  type="file" 
+  id="photoInputiPad" 
+  accept="image/*" 
+  style="display: none !important; position: absolute; left: -9999px; opacity: 0; width: 0; height: 0;"
+  onchange="handlePhotoInputiPad(this)"
+>
 
 <!-- Botó fotos amb label -->
 <label for="photoInputiPad">📷 Afegir foto</label>
