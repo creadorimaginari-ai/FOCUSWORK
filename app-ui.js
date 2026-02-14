@@ -935,128 +935,12 @@ async function addPhotoToClient() {
   input.click();
 }
 
+// ✅ NOTA: renderPhotoGallery ara és un alias de renderFileGallery
+// Això assegura que SEMPRE es mostrin tots els arxius (fotos + vídeos + PDFs + àudios)
 async function renderPhotoGallery(preloadedClient = null) {
-  const gallery = $("photoGallery");
-  if (!gallery) return;
-  
-  const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
-  
-  // ✅ ARREGLAT: Ordenar el array global igual que el visual
-  const sortedPhotos = client && client.photos ? [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)) : [];
-  window.currentClientPhotos = sortedPhotos;
-  
-  // ✅ Aplicar estilos de grid al contenedor principal
-  gallery.style.cssText = `
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-    padding: 12px;
-  `;
-  
-  const fragment = document.createDocumentFragment();
-  
-  if (sortedPhotos.length) {
-    sortedPhotos.forEach((p, index) => {
-      const container = document.createElement("div");
-      container.style.cssText = `
-        position: relative;
-        cursor: pointer;
-        aspect-ratio: 1;
-        overflow: hidden;
-        border-radius: 8px;
-        background: #1e293b;
-      `;
-      
-      // ✅ LONG PRESS per esborrar (PER TOTES LES FOTOS)
-      let pressTimer = null;
-      let touchStartTime = null;
-      
-      const startPress = (e) => {
-        touchStartTime = Date.now();
-        container.style.transform = 'scale(0.95)';
-        container.style.transition = 'transform 0.1s';
-        
-        pressTimer = setTimeout(() => {
-          // Vibrar si està disponible
-          if (navigator.vibrate) {
-            navigator.vibrate(50);
-          }
-          
-          // Mostrar confirmació de borrar
-          const photoAsFile = {
-            id: p.id,
-            type: 'image',
-            name: 'Foto',
-            data: p.data,
-            comment: p.comment
-          };
-          confirmDeleteFile(photoAsFile);
-          
-          // Reset visual
-          container.style.transform = 'scale(1)';
-        }, 800); // 800ms = 0.8 segons de pulsació
-      };
-      
-      const cancelPress = () => {
-        if (pressTimer) {
-          clearTimeout(pressTimer);
-          pressTimer = null;
-        }
-        container.style.transform = 'scale(1)';
-        
-        // Si és un click curt (menys de 300ms), obrir lightbox
-        if (touchStartTime && (Date.now() - touchStartTime) < 300) {
-          openLightboxById(p.id);
-        }
-        touchStartTime = null;
-      };
-      
-      // Event listeners per desktop i mòbil
-      container.addEventListener('mousedown', startPress);
-      container.addEventListener('touchstart', startPress, { passive: true });
-      container.addEventListener('mouseup', cancelPress);
-      container.addEventListener('mouseleave', cancelPress);
-      container.addEventListener('touchend', cancelPress);
-      container.addEventListener('touchcancel', cancelPress);
-      
-      const img = document.createElement("img");
-      img.src = p.data;
-      img.className = "photo-thumb";
-      // ✅ Estilos para que la imagen se ajuste correctamente
-      img.style.cssText = `
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-        pointer-events: none;
-      `;
-      container.appendChild(img);
-      
-      if (p.comment && p.comment.trim()) {
-        const badge = document.createElement("div");
-        badge.style.cssText = `
-          position: absolute;
-          bottom: 5px;
-          left: 5px;
-          background: rgba(0,0,0,0.7);
-          color: white;
-          padding: 3px 8px;
-          border-radius: 12px;
-          font-size: 11px;
-          backdrop-filter: blur(5px);
-          pointer-events: none;
-        `;
-        badge.textContent = '💬';
-        container.appendChild(badge);
-      }
-      
-      fragment.appendChild(container);
-    });
-  }
-  
-  gallery.innerHTML = "";
-  gallery.appendChild(fragment);
+  return await renderFileGallery(preloadedClient);
 }
+
 
 async function confirmDeletePhoto() {
   if (!photoToDelete) return;
@@ -3248,23 +3132,39 @@ async function renderFileGallery(preloadedClient = null) {
     allFiles.push(...client.files);
   }
   
-  window.currentClientFiles = allFiles;
+  // ✅ Ordenar y guardar el array ordenado globalmente
+  const sortedFiles = allFiles.sort((a, b) => new Date(b.date) - new Date(a.date));
+  window.currentClientFiles = sortedFiles;
+  
+  // ✅ Aplicar estilos de grid al contenedor principal
+  gallery.style.cssText = `
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    padding: 12px;
+  `;
   
   const fragment = document.createDocumentFragment();
   
-  if (allFiles.length > 0) {
-    allFiles.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((file, index) => {
+  if (sortedFiles.length > 0) {
+    sortedFiles.forEach((file, index) => {
       const container = document.createElement("div");
       container.className = "file-item";
-      container.style.cssText = "position: relative; cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 8px; margin: 4px;";
+      // ✅ Estilos mejorados para grid consistente
+      container.style.cssText = `
+        position: relative;
+        cursor: pointer;
+        aspect-ratio: 1;
+        overflow: hidden;
+        border-radius: 8px;
+        background: #1e293b;
+      `;
       
-      // ✅ LONG PRESS per esborrar (només per arxius no-imatge)
+      // ✅ LONG PRESS per esborrar (PER TOTS ELS ARXIUS incloent imatges)
       let pressTimer = null;
       let touchStartTime = null;
       
       const startPress = (e) => {
-        if (file.type === 'image') return; // Les imatges ja tenen botó al lightbox
-        
         touchStartTime = Date.now();
         container.style.transform = 'scale(0.95)';
         container.style.transition = 'transform 0.1s';
@@ -3305,17 +3205,18 @@ async function renderFileGallery(preloadedClient = null) {
       container.addEventListener('touchend', cancelPress);
       container.addEventListener('touchcancel', cancelPress);
       
-      // Click normal només per imatges (que usen el lightbox)
-      if (file.type === 'image') {
-        container.onclick = () => openFileViewer(allFiles, index);
-      }
-      
       if (file.type === 'image') {
         // Mostrar thumbnail d'imatge
         const img = document.createElement("img");
         img.src = file.data;
         img.className = "photo-thumb";
-        img.style.cssText = "width: 100%; height: auto; border-radius: 4px;";
+        img.style.cssText = `
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          pointer-events: none;
+        `;
         container.appendChild(img);
       } else if (file.type === 'video' && file.thumbnail) {
         // Mostrar thumbnail de vídeo
@@ -3437,12 +3338,8 @@ async function confirmDeleteFile(file) {
     // Guardar client actualitzat
     await saveClient(client);
     
-    // Actualitzar galeria - usar renderPhotoGallery per fotos, renderFileGallery per altres
-    if (file.type === 'image') {
-      await renderPhotoGallery(client);
-    } else {
-      await renderFileGallery(client);
-    }
+    // Actualitzar galeria - ara sempre usem renderFileGallery
+    await renderFileGallery(client);
     
     showAlert('Arxiu eliminat', `La ${fileTypeLabel} s'ha eliminat correctament`, '✅');
   } catch (e) {
