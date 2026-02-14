@@ -941,7 +941,9 @@ async function renderPhotoGallery(preloadedClient = null) {
   
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
   
-  window.currentClientPhotos = client && client.photos ? [...client.photos] : [];
+  // ✅ ARREGLAT: Ordenar el array global igual que el visual
+  const sortedPhotos = client && client.photos ? [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)) : [];
+  window.currentClientPhotos = sortedPhotos;
   
   // ✅ Aplicar estilos de grid al contenedor principal
   gallery.style.cssText = `
@@ -953,8 +955,8 @@ async function renderPhotoGallery(preloadedClient = null) {
   
   const fragment = document.createDocumentFragment();
   
-  if (client && client.photos.length) {
-    [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
+  if (sortedPhotos.length) {
+    sortedPhotos.forEach((p, index) => {
       const container = document.createElement("div");
       container.style.cssText = `
         position: relative;
