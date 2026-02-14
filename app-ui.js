@@ -966,7 +966,8 @@ async function renderPhotoGallery(preloadedClient = null) {
         border-radius: 8px;
         background: #1e293b;
       `;
-      container.onclick = () => openLightbox(window.currentClientPhotos, index);
+      // ✅ CANVI: Usar el ID de la foto en lugar del índice
+      container.onclick = () => openLightboxById(p.id);
       
       const img = document.createElement("img");
       img.src = p.data;
@@ -2007,6 +2008,23 @@ function openLightbox(photos, index) {
     
     document.body.style.overflow = 'hidden';
   }
+}
+
+// ✅ Nueva función que abre el lightbox por ID de foto
+function openLightboxById(photoId) {
+  const photos = window.currentClientPhotos;
+  if (!photos || !photos.length) return;
+  
+  // Buscar el índice de la foto con este ID
+  const index = photos.findIndex(p => p.id === photoId);
+  
+  if (index === -1) {
+    console.error('Foto no trobada:', photoId);
+    return;
+  }
+  
+  // Llamar a la función original con el índice correcto
+  openLightbox(photos, index);
 }
 
 function closeLightbox() {
