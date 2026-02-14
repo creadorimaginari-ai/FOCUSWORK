@@ -461,16 +461,21 @@ if (fixedBtns) {
   });
   
   const asyncUpdate = async () => {
-    updateWorkpad(client);
-    updateTasks(client);
-    await renderPhotoGallery(client);
-    
-    if (client && typeof initProjectStatus === 'function') {
-      await initProjectStatus();
+    try {
+      updateWorkpad(client);
+      updateTasks(client);
+      await renderPhotoGallery(client);
+      
+      if (client && typeof initProjectStatus === 'function') {
+        await initProjectStatus();
+      }
+    } catch (error) {
+      console.error('Error in asyncUpdate:', error);
     }
   };
   
-  await asyncUpdate();
+  // Ejecutar inmediatamente pero sin bloquear
+  asyncUpdate().catch(err => console.error('asyncUpdate failed:', err));
 }
 
 function updateDeliveryDateDisplay(client) {
