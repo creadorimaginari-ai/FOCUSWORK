@@ -943,17 +943,39 @@ async function renderPhotoGallery(preloadedClient = null) {
   
   window.currentClientPhotos = client && client.photos ? [...client.photos] : [];
   
+  // ✅ Aplicar estilos de grid al contenedor principal
+  gallery.style.cssText = `
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    padding: 12px;
+  `;
+  
   const fragment = document.createDocumentFragment();
   
   if (client && client.photos.length) {
     [...client.photos].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((p, index) => {
       const container = document.createElement("div");
-      container.style.cssText = "position: relative; cursor: pointer;";
+      container.style.cssText = `
+        position: relative;
+        cursor: pointer;
+        aspect-ratio: 1;
+        overflow: hidden;
+        border-radius: 8px;
+        background: #1e293b;
+      `;
       container.onclick = () => openLightbox(window.currentClientPhotos, index);
       
       const img = document.createElement("img");
       img.src = p.data;
       img.className = "photo-thumb";
+      // ✅ Estilos para que la imagen se ajuste correctamente
+      img.style.cssText = `
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      `;
       container.appendChild(img);
       
       if (p.comment && p.comment.trim()) {
