@@ -966,8 +966,58 @@ async function renderPhotoGallery(preloadedClient = null) {
         border-radius: 8px;
         background: #1e293b;
       `;
-      // ✅ CANVI: Usar el ID de la foto en lugar del índice
-      container.onclick = () => openLightboxById(p.id);
+      
+      // ✅ LONG PRESS per esborrar (PER TOTES LES FOTOS)
+      let pressTimer = null;
+      let touchStartTime = null;
+      
+      const startPress = (e) => {
+        touchStartTime = Date.now();
+        container.style.transform = 'scale(0.95)';
+        container.style.transition = 'transform 0.1s';
+        
+        pressTimer = setTimeout(() => {
+          // Vibrar si està disponible
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+          
+          // Mostrar confirmació de borrar
+          const photoAsFile = {
+            id: p.id,
+            type: 'image',
+            name: 'Foto',
+            data: p.data,
+            comment: p.comment
+          };
+          confirmDeleteFile(photoAsFile);
+          
+          // Reset visual
+          container.style.transform = 'scale(1)';
+        }, 800); // 800ms = 0.8 segons de pulsació
+      };
+      
+      const cancelPress = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+        container.style.transform = 'scale(1)';
+        
+        // Si és un click curt (menys de 300ms), obrir lightbox
+        if (touchStartTime && (Date.now() - touchStartTime) < 300) {
+          openLightboxById(p.id);
+        }
+        touchStartTime = null;
+      };
+      
+      // Event listeners per desktop i mòbil
+      container.addEventListener('mousedown', startPress);
+      container.addEventListener('touchstart', startPress, { passive: true });
+      container.addEventListener('mouseup', cancelPress);
+      container.addEventListener('mouseleave', cancelPress);
+      container.addEventListener('touchend', cancelPress);
+      container.addEventListener('touchcancel', cancelPress);
       
       const img = document.createElement("img");
       img.src = p.data;
@@ -978,6 +1028,7 @@ async function renderPhotoGallery(preloadedClient = null) {
         height: 100%;
         object-fit: cover;
         display: block;
+        pointer-events: none;
       `;
       container.appendChild(img);
       
@@ -3206,7 +3257,58 @@ async function renderFileGallery(preloadedClient = null) {
       const container = document.createElement("div");
       container.className = "file-item";
       container.style.cssText = "position: relative; cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 8px; margin: 4px;";
-      container.onclick = () => openFileViewer(allFiles, index);
+      
+      // ✅ LONG PRESS per esborrar (només per arxius no-imatge)
+      let pressTimer = null;
+      let touchStartTime = null;
+      
+      const startPress = (e) => {
+        if (file.type === 'image') return; // Les imatges ja tenen botó al lightbox
+        
+        touchStartTime = Date.now();
+        container.style.transform = 'scale(0.95)';
+        container.style.transition = 'transform 0.1s';
+        
+        pressTimer = setTimeout(() => {
+          // Vibrar si està disponible
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+          
+          // Mostrar confirmació
+          confirmDeleteFile(file);
+          
+          // Reset visual
+          container.style.transform = 'scale(1)';
+        }, 800); // 800ms = 0.8 segons de pulsació
+      };
+      
+      const cancelPress = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+        container.style.transform = 'scale(1)';
+        
+        // Si és un click curt (menys de 300ms), obrir arxiu
+        if (touchStartTime && (Date.now() - touchStartTime) < 300) {
+          openFileViewer(allFiles, index);
+        }
+        touchStartTime = null;
+      };
+      
+      // Event listeners per desktop i mòbil
+      container.addEventListener('mousedown', startPress);
+      container.addEventListener('touchstart', startPress, { passive: true });
+      container.addEventListener('mouseup', cancelPress);
+      container.addEventListener('mouseleave', cancelPress);
+      container.addEventListener('touchend', cancelPress);
+      container.addEventListener('touchcancel', cancelPress);
+      
+      // Click normal només per imatges (que usen el lightbox)
+      if (file.type === 'image') {
+        container.onclick = () => openFileViewer(allFiles, index);
+      }
       
       if (file.type === 'image') {
         // Mostrar thumbnail d'imatge
@@ -3291,6 +3393,62 @@ async function renderFileGallery(preloadedClient = null) {
   
   gallery.innerHTML = "";
   gallery.appendChild(fragment);
+}
+
+/* ================= ESBORRAR ARXIUS ================= */
+
+async function confirmDeleteFile(file) {
+  const fileTypeLabel = {
+    'image': 'foto',
+    'video': 'vídeo',
+    'audio': 'àudio',
+    'pdf': 'PDF',
+    'document': 'document',
+    'other': 'arxiu'
+  }[file.type] || 'arxiu';
+  
+  const fileName = file.name || (file.type === 'image' ? 'Foto' : 'Sense nom');
+  const confirmMessage = `Vols esborrar aquesta ${fileTypeLabel}?\n\n${fileName}\n\nAquesta acció no es pot desfer.`;
+  
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+  
+  try {
+    const client = await loadClient(state.currentClientId);
+    if (!client) {
+      showAlert('Error', 'Client no trobat', '⚠️');
+      return;
+    }
+    
+    // Tancar lightbox si està obert
+    closeLightbox();
+    
+    // Esborrar de la base de dades
+    if (file.type === 'image') {
+      // Si és una foto (del sistema antic)
+      await dbDelete('photos', file.id);
+      client.photos = client.photos.filter(f => f.id !== file.id);
+    } else {
+      // Si és un arxiu nou
+      client.files = client.files ? client.files.filter(f => f.id !== file.id) : [];
+    }
+    
+    // Guardar client actualitzat
+    await saveClient(client);
+    
+    // Actualitzar galeria - usar renderPhotoGallery per fotos, renderFileGallery per altres
+    if (file.type === 'image') {
+      await renderPhotoGallery(client);
+    } else {
+      await renderFileGallery(client);
+    }
+    
+    showAlert('Arxiu eliminat', `La ${fileTypeLabel} s'ha eliminat correctament`, '✅');
+  } catch (e) {
+    console.error('Error esborrant arxiu:', e);
+    showAlert('Error', `No s'ha pogut esborrar l'arxiu: ${e.message}`, '❌');
+  }
 }
 
 /* ================= VISOR D'ARXIUS ================= */
