@@ -1,71 +1,97 @@
 /* ===============================
-   BUTTONS PREMIUM - EFECTES MODERNS
-   Versió millorada amb animacions i gradients
+   BUTTONS CLEAN - DISEÑO MODERNO SIN GRADIENTES
+   Versión profesional con animaciones sutiles
    =============================== */
-/* ⚠️ IMPORTANT: Afegir ?v=4 al final per forçar recàrrega
-   <link rel="stylesheet" href="buttons-premium.css?v=4">
-*/
 
 /* ===============================
-   PALETA DE COLORS PREMIUM
+   PALETA DE COLORES LIMPIA
    =============================== */
 :root {
-  /* Nou encàrrec - Gradient vibrant coral/rosa */
-  --new-start: #FF6B9D;
-  --new-mid: #FFA06B;
-  --new-end: #FECA57;
+  /* Botón "Nou encàrrec" - Coral sólido */
+  --btn-new-bg: #ff6b9d;
+  --btn-new-hover: #ff5087;
+  --btn-new-active: #e64479;
+  --btn-new-shadow: rgba(255, 107, 157, 0.25);
   
-  /* Revisar encàrrecs - Gradient cyan/blau elèctric */
-  --review-start: #00D4FF;
-  --review-mid: #00A8E8;
-  --review-end: #0077B6;
+  /* Botón "Revisar encàrrecs" - Azul sólido */
+  --btn-review-bg: #0099cc;
+  --btn-review-hover: #0077aa;
+  --btn-review-active: #006688;
+  --btn-review-shadow: rgba(0, 153, 204, 0.25);
   
-  /* Efectes brillants */
-  --glow-coral: rgba(255, 107, 157, 0.6);
-  --glow-cyan: rgba(0, 212, 255, 0.6);
+  /* Colores neutros */
+  --btn-text: #ffffff;
+  --btn-border: rgba(255, 255, 255, 0.2);
+  --btn-border-hover: rgba(255, 255, 255, 0.4);
+  
+  /* Sombras limpias */
+  --shadow-sm: 0 2px 8px;
+  --shadow-md: 0 4px 12px;
+  --shadow-lg: 0 6px 16px;
+}
+
+/* Tema oscuro */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --btn-new-shadow: rgba(255, 107, 157, 0.35);
+    --btn-review-shadow: rgba(0, 153, 204, 0.35);
+  }
 }
 
 /* ===============================
-   ANIMACIONS GLOBALS
+   ANIMACIONES SUTILES
    =============================== */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
-@keyframes pulse-glow {
+@keyframes subtle-float {
   0%, 100% { 
-    box-shadow: 
-      0 8px 25px var(--glow-color),
-      0 0 40px var(--glow-color),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transform: translateY(0px); 
   }
   50% { 
-    box-shadow: 
-      0 12px 40px var(--glow-color),
-      0 0 60px var(--glow-color),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transform: translateY(-3px); 
   }
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+@keyframes subtle-pulse {
+  0%, 100% { 
+    transform: scale(1);
+  }
+  50% { 
+    transform: scale(1.02);
+  }
 }
 
-@keyframes ripple {
+@keyframes ripple-effect {
   0% {
-    transform: scale(0);
-    opacity: 1;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.5;
   }
   100% {
-    transform: scale(4);
+    transform: translate(-50%, -50%) scale(2.5);
     opacity: 0;
   }
 }
 
 /* ===============================
-   BOTÓ "NOU ENCÀRREC" - CORAL/ROSA
+   BOTÓN BASE
+   =============================== */
+.grid.centered button,
+#clientMainButtons button,
+button.btn-action {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid var(--btn-border);
+  color: var(--btn-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ===============================
+   BOTÓN "NOU ENCÀRREC" - CORAL
    =============================== */
 .grid.centered button:first-child,
 #clientMainButtons button:first-child,
@@ -73,73 +99,29 @@ button[id*="new"],
 button[id*="New"],
 #newClientBtn,
 #newClient {
-  --glow-color: var(--glow-coral);
-  
-  background: linear-gradient(
-    135deg, 
-    var(--new-start) 0%,
-    var(--new-mid) 50%,
-    var(--new-end) 100%
-  ) !important;
-  background-size: 200% 200% !important;
-  
-  color: #ffffff !important;
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  
-  box-shadow: 
-    0 8px 25px var(--glow-coral),
-    0 0 40px var(--glow-coral),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-  
-  font-weight: 700 !important;
-  letter-spacing: 0.5px !important;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
-  
-  position: relative !important;
-  overflow: hidden !important;
-  
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-  animation: pulse-glow 3s ease-in-out infinite !important;
+  background: var(--btn-new-bg);
+  border-color: var(--btn-border);
+  box-shadow: var(--shadow-sm) var(--btn-new-shadow);
 }
 
-/* Efecte brillant animat */
+/* Efecto de brillo sutil */
 .grid.centered button:first-child::before,
 #clientMainButtons button:first-child::before,
 #newClientBtn::before,
 #newClient::before {
-  content: "" !important;
-  position: absolute !important;
-  top: -50% !important;
-  left: -50% !important;
-  width: 200% !important;
-  height: 200% !important;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.2),
     transparent
-  ) !important;
-  transform: rotate(45deg) !important;
-  animation: shimmer 3s linear infinite !important;
-  pointer-events: none !important;
-}
-
-/* Efecte de partícules quan hover */
-.grid.centered button:first-child::after,
-#clientMainButtons button:first-child::after,
-#newClientBtn::after,
-#newClient::after {
-  content: "" !important;
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  width: 0 !important;
-  height: 0 !important;
-  border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.5) !important;
-  transform: translate(-50%, -50%) !important;
-  transition: width 0.6s, height 0.6s !important;
-  pointer-events: none !important;
+  );
+  transition: left 0.5s ease;
 }
 
 /* Hover - Nou encàrrec */
@@ -147,33 +129,17 @@ button[id*="New"],
 #clientMainButtons button:first-child:hover,
 #newClientBtn:hover,
 #newClient:hover {
-  background: linear-gradient(
-    135deg, 
-    var(--new-end) 0%,
-    var(--new-mid) 50%,
-    var(--new-start) 100%
-  ) !important;
-  background-size: 200% 200% !important;
-  
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  
-  box-shadow: 
-    0 15px 45px var(--glow-coral),
-    0 0 60px var(--glow-coral),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    0 0 0 4px rgba(255, 107, 157, 0.2) !important;
-  
-  transform: translateY(-5px) scale(1.02) !important;
-  animation: float 2s ease-in-out infinite !important;
+  background: var(--btn-new-hover);
+  border-color: var(--btn-border-hover);
+  box-shadow: var(--shadow-md) var(--btn-new-shadow);
+  transform: translateY(-2px);
 }
 
-.grid.centered button:first-child:hover::after,
-#clientMainButtons button:first-child:hover::after,
-#newClientBtn:hover::after,
-#newClient:hover::after {
-  width: 300px !important;
-  height: 300px !important;
-  opacity: 0 !important;
+.grid.centered button:first-child:hover::before,
+#clientMainButtons button:first-child:hover::before,
+#newClientBtn:hover::before,
+#newClient:hover::before {
+  left: 100%;
 }
 
 /* Active - Nou encàrrec */
@@ -181,15 +147,13 @@ button[id*="New"],
 #clientMainButtons button:first-child:active,
 #newClientBtn:active,
 #newClient:active {
-  transform: translateY(-2px) scale(0.98) !important;
-  box-shadow: 
-    0 5px 15px var(--glow-coral),
-    0 0 30px var(--glow-coral),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  background: var(--btn-new-active);
+  box-shadow: var(--shadow-sm) var(--btn-new-shadow);
+  transform: translateY(0px) scale(0.98);
 }
 
 /* ===============================
-   BOTÓ "REVISAR ENCÀRRECS" - CYAN/BLAU
+   BOTÓN "REVISAR ENCÀRRECS" - AZUL
    =============================== */
 .grid.centered button:last-child,
 #clientMainButtons button:last-child,
@@ -200,75 +164,30 @@ button[id*="Priority"],
 #focusPriorityBtn,
 button.primary,
 .primary {
-  --glow-color: var(--glow-cyan);
-  
-  background: linear-gradient(
-    135deg, 
-    var(--review-start) 0%,
-    var(--review-mid) 50%,
-    var(--review-end) 100%
-  ) !important;
-  background-size: 200% 200% !important;
-  
-  color: #ffffff !important;
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  
-  box-shadow: 
-    0 8px 25px var(--glow-cyan),
-    0 0 40px var(--glow-cyan),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-  
-  font-weight: 700 !important;
-  letter-spacing: 0.5px !important;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
-  
-  position: relative !important;
-  overflow: hidden !important;
-  
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-  animation: pulse-glow 3s ease-in-out infinite 1.5s !important;
+  background: var(--btn-review-bg);
+  border-color: var(--btn-border);
+  box-shadow: var(--shadow-sm) var(--btn-review-shadow);
 }
 
-/* Efecte brillant animat */
+/* Efecto de brillo sutil */
 .grid.centered button:last-child::before,
 #clientMainButtons button:last-child::before,
 #focusPriorityBtn::before,
 button.primary::before,
 .primary::before {
-  content: "" !important;
-  position: absolute !important;
-  top: -50% !important;
-  left: -50% !important;
-  width: 200% !important;
-  height: 200% !important;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.2),
     transparent
-  ) !important;
-  transform: rotate(45deg) !important;
-  animation: shimmer 3s linear infinite 1.5s !important;
-  pointer-events: none !important;
-}
-
-/* Efecte de partícules quan hover */
-.grid.centered button:last-child::after,
-#clientMainButtons button:last-child::after,
-#focusPriorityBtn::after,
-button.primary::after,
-.primary::after {
-  content: "" !important;
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  width: 0 !important;
-  height: 0 !important;
-  border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.5) !important;
-  transform: translate(-50%, -50%) !important;
-  transition: width 0.6s, height 0.6s !important;
-  pointer-events: none !important;
+  );
+  transition: left 0.5s ease;
 }
 
 /* Hover - Revisar encàrrecs */
@@ -277,34 +196,18 @@ button.primary::after,
 #focusPriorityBtn:hover,
 button.primary:hover,
 .primary:hover {
-  background: linear-gradient(
-    135deg, 
-    var(--review-end) 0%,
-    var(--review-mid) 50%,
-    var(--review-start) 100%
-  ) !important;
-  background-size: 200% 200% !important;
-  
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  
-  box-shadow: 
-    0 15px 45px var(--glow-cyan),
-    0 0 60px var(--glow-cyan),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    0 0 0 4px rgba(0, 212, 255, 0.2) !important;
-  
-  transform: translateY(-5px) scale(1.02) !important;
-  animation: float 2s ease-in-out infinite 1.5s !important;
+  background: var(--btn-review-hover);
+  border-color: var(--btn-border-hover);
+  box-shadow: var(--shadow-md) var(--btn-review-shadow);
+  transform: translateY(-2px);
 }
 
-.grid.centered button:last-child:hover::after,
-#clientMainButtons button:last-child:hover::after,
-#focusPriorityBtn:hover::after,
-button.primary:hover::after,
-.primary:hover::after {
-  width: 300px !important;
-  height: 300px !important;
-  opacity: 0 !important;
+.grid.centered button:last-child:hover::before,
+#clientMainButtons button:last-child:hover::before,
+#focusPriorityBtn:hover::before,
+button.primary:hover::before,
+.primary:hover::before {
+  left: 100%;
 }
 
 /* Active - Revisar encàrrecs */
@@ -313,93 +216,264 @@ button.primary:hover::after,
 #focusPriorityBtn:active,
 button.primary:active,
 .primary:active {
-  transform: translateY(-2px) scale(0.98) !important;
-  box-shadow: 
-    0 5px 15px var(--glow-cyan),
-    0 0 30px var(--glow-cyan),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  background: var(--btn-review-active);
+  box-shadow: var(--shadow-sm) var(--btn-review-shadow);
+  transform: translateY(0px) scale(0.98);
 }
 
 /* ===============================
-   EFECTE RIPPLE AL CLICAR
+   EFECTO RIPPLE AL HACER CLIC
    =============================== */
-@keyframes ripple-effect {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(2.5);
-    opacity: 0;
-  }
-}
-
-/* Afegeix això amb JavaScript per crear l'efecte ripple:
-   
-   document.querySelectorAll('button').forEach(btn => {
-     btn.addEventListener('click', function(e) {
-       const ripple = document.createElement('span');
-       ripple.classList.add('ripple-circle');
-       
-       const rect = this.getBoundingClientRect();
-       const x = e.clientX - rect.left;
-       const y = e.clientY - rect.top;
-       
-       ripple.style.left = x + 'px';
-       ripple.style.top = y + 'px';
-       
-       this.appendChild(ripple);
-       
-       setTimeout(() => ripple.remove(), 600);
-     });
-   });
-*/
-
 .ripple-circle {
-  position: absolute !important;
-  width: 20px !important;
-  height: 20px !important;
-  border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.6) !important;
-  pointer-events: none !important;
-  animation: ripple-effect 0.6s ease-out !important;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  animation: ripple-effect 0.6s ease-out;
 }
 
 /* ===============================
-   MILLORES DE FOCUS (ACCESSIBILITAT)
+   ACCESIBILIDAD - FOCUS VISIBLE
    =============================== */
 button:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.6) !important;
-  outline-offset: 4px !important;
+  outline: 3px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 3px;
 }
 
 button:focus:not(:focus-visible) {
-  outline: none !important;
+  outline: none;
 }
 
 /* ===============================
-   RESPONSIVITAT
+   ESTADOS ESPECIALES
    =============================== */
+
+/* Botón deshabilitado */
+button:disabled,
+button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+button:disabled:hover,
+button[disabled]:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Botón cargando (opcional) */
+button.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+button.loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===============================
+   VARIANTES DE BOTONES ADICIONALES
+   =============================== */
+
+/* Botón secundario (gris) */
+button.btn-secondary,
+.btn-secondary {
+  background: #64748b;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-sm) rgba(100, 116, 139, 0.25);
+}
+
+button.btn-secondary:hover,
+.btn-secondary:hover {
+  background: #475569;
+  box-shadow: var(--shadow-md) rgba(100, 116, 139, 0.25);
+  transform: translateY(-2px);
+}
+
+button.btn-secondary:active,
+.btn-secondary:active {
+  background: #334155;
+  box-shadow: var(--shadow-sm) rgba(100, 116, 139, 0.25);
+  transform: translateY(0px) scale(0.98);
+}
+
+/* Botón éxito (verde) */
+button.btn-success,
+.btn-success {
+  background: #10b981;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-sm) rgba(16, 185, 129, 0.25);
+}
+
+button.btn-success:hover,
+.btn-success:hover {
+  background: #059669;
+  box-shadow: var(--shadow-md) rgba(16, 185, 129, 0.25);
+  transform: translateY(-2px);
+}
+
+button.btn-success:active,
+.btn-success:active {
+  background: #047857;
+  box-shadow: var(--shadow-sm) rgba(16, 185, 129, 0.25);
+  transform: translateY(0px) scale(0.98);
+}
+
+/* Botón peligro (rojo) */
+button.btn-danger,
+.btn-danger {
+  background: #ef4444;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-sm) rgba(239, 68, 68, 0.25);
+}
+
+button.btn-danger:hover,
+.btn-danger:hover {
+  background: #dc2626;
+  box-shadow: var(--shadow-md) rgba(239, 68, 68, 0.25);
+  transform: translateY(-2px);
+}
+
+button.btn-danger:active,
+.btn-danger:active {
+  background: #b91c1c;
+  box-shadow: var(--shadow-sm) rgba(239, 68, 68, 0.25);
+  transform: translateY(0px) scale(0.98);
+}
+
+/* Botón advertencia (amarillo/naranja) */
+button.btn-warning,
+.btn-warning {
+  background: #f59e0b;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-sm) rgba(245, 158, 11, 0.25);
+  color: #ffffff;
+}
+
+button.btn-warning:hover,
+.btn-warning:hover {
+  background: #d97706;
+  box-shadow: var(--shadow-md) rgba(245, 158, 11, 0.25);
+  transform: translateY(-2px);
+}
+
+button.btn-warning:active,
+.btn-warning:active {
+  background: #b45309;
+  box-shadow: var(--shadow-sm) rgba(245, 158, 11, 0.25);
+  transform: translateY(0px) scale(0.98);
+}
+
+/* ===============================
+   TAMAÑOS DE BOTONES
+   =============================== */
+
+/* Botón pequeño */
+button.btn-sm,
+.btn-sm {
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+/* Botón grande */
+button.btn-lg,
+.btn-lg {
+  padding: 18px 36px;
+  font-size: 18px;
+  border-radius: 14px;
+}
+
+/* Botón ancho completo */
+button.btn-block,
+.btn-block {
+  width: 100%;
+  display: block;
+}
+
+/* ===============================
+   BOTONES ICONO + TEXTO
+   =============================== */
+button .icon,
+button .emoji {
+  margin-right: 8px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+button .icon-right,
+button .emoji-right {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+/* ===============================
+   GRUPO DE BOTONES
+   =============================== */
+.btn-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-group button {
+  flex: 1;
+  min-width: 140px;
+}
+
+/* ===============================
+   RESPONSIVIDAD
+   =============================== */
+@media (max-width: 768px) {
+  .grid.centered button,
+  #clientMainButtons button {
+    padding: 14px 24px;
+    font-size: 15px;
+  }
+  
+  button.btn-lg {
+    padding: 16px 28px;
+    font-size: 16px;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+  }
+  
+  .btn-group button {
+    width: 100%;
+  }
+}
+
 @media (max-width: 430px) {
   .grid.centered button,
   #clientMainButtons button {
-    padding: 16px 14px !important;
-    font-size: 15px !important;
+    padding: 12px 20px;
+    font-size: 14px;
   }
 }
 
 /* ===============================
-   MODE FOSC MILLORAT
-   =============================== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --glow-coral: rgba(255, 107, 157, 0.8);
-    --glow-cyan: rgba(0, 212, 255, 0.8);
-  }
-}
-
-/* ===============================
-   PREFERS REDUCED MOTION
+   PREFERENCIAS DE ACCESIBILIDAD
    =============================== */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -409,4 +483,125 @@ button:focus:not(:focus-visible) {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  
+  button:hover {
+    transform: none !important;
+  }
 }
+
+/* ===============================
+   MODO DE ALTO CONTRASTE
+   =============================== */
+@media (prefers-contrast: high) {
+  button {
+    border-width: 3px;
+  }
+  
+  button:focus-visible {
+    outline-width: 4px;
+  }
+}
+
+/* ===============================
+   UTILIDADES ADICIONALES
+   =============================== */
+
+/* Botón fantasma (outline) */
+button.btn-outline,
+.btn-outline {
+  background: transparent;
+  border: 2px solid currentColor;
+  box-shadow: none;
+}
+
+button.btn-outline.btn-new {
+  color: var(--btn-new-bg);
+  border-color: var(--btn-new-bg);
+}
+
+button.btn-outline.btn-new:hover {
+  background: var(--btn-new-bg);
+  color: white;
+}
+
+button.btn-outline.btn-review {
+  color: var(--btn-review-bg);
+  border-color: var(--btn-review-bg);
+}
+
+button.btn-outline.btn-review:hover {
+  background: var(--btn-review-bg);
+  color: white;
+}
+
+/* Botón solo icono (circular) */
+button.btn-icon,
+.btn-icon {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.btn-icon.btn-sm {
+  width: 36px;
+  height: 36px;
+}
+
+button.btn-icon.btn-lg {
+  width: 56px;
+  height: 56px;
+}
+
+/* ===============================
+   ANIMACIÓN DE ENTRADA (OPCIONAL)
+   =============================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+button.animate-in {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+/* ===============================
+   JAVASCRIPT HELPERS
+   =============================== */
+
+/*
+  AÑADIR EFECTO RIPPLE CON JS:
+  
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      const ripple = document.createElement('span');
+      ripple.classList.add('ripple-circle');
+      
+      const rect = this.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      ripple.style.left = x + 'px';
+      ripple.style.top = y + 'px';
+      
+      this.appendChild(ripple);
+      
+      setTimeout(() => ripple.remove(), 600);
+    });
+  });
+  
+  AÑADIR ESTADO DE CARGA:
+  
+  button.classList.add('loading');
+  // ... hacer petición ...
+  button.classList.remove('loading');
+*/
