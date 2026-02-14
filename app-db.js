@@ -3,17 +3,19 @@
  * Gestió d'IndexedDB per fotos
  *************************************************/
 
-// Evitar redeclaració si ja està definit
-if (typeof window.DB_NAME === 'undefined') {
-  window.DB_NAME = 'FocusWorkDB';
-  window.DB_VERSION = 1;
-  window.db = null;
+// Variables globals - declarar solo una vez
+var DB_NAME, DB_VERSION, db;
+
+if (typeof DB_NAME === 'undefined') {
+  DB_NAME = 'FocusWorkDB';
+  DB_VERSION = 1;
+  db = null;
 }
 
 // Inicialitzar IndexedDB
 async function initDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(window.DB_NAME, window.DB_VERSION);
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
     
     request.onerror = () => {
       console.error('❌ Error obrint IndexedDB:', request.error);
@@ -21,9 +23,10 @@ async function initDB() {
     };
     
     request.onsuccess = () => {
-      window.db = request.result;
+      db = request.result;
+      window.db = db; // També fer-lo accessible via window
       console.log('✅ IndexedDB inicialitzada correctament');
-      resolve(window.db);
+      resolve(db);
     };
     
     request.onupgradeneeded = (event) => {
@@ -42,11 +45,11 @@ async function initDB() {
 
 // Guardar objecte a IndexedDB
 async function dbPut(storeName, data) {
-  if (!window.db) await initDB();
+  if (!db) await initDB();
   
   return new Promise((resolve, reject) => {
     try {
-      const transaction = window.db.transaction([storeName], 'readwrite');
+      const transaction = db.transaction([storeName], 'readwrite');
       const store = transaction.objectStore(storeName);
       const request = store.put(data);
       
@@ -60,11 +63,11 @@ async function dbPut(storeName, data) {
 
 // Obtenir objecte per ID
 async function dbGet(storeName, id) {
-  if (!window.db) await initDB();
+  if (!db) await initDB();
   
   return new Promise((resolve, reject) => {
     try {
-      const transaction = window.db.transaction([storeName], 'readonly');
+      const transaction = db.transaction([storeName], 'readonly');
       const store = transaction.objectStore(storeName);
       const request = store.get(id);
       
@@ -78,11 +81,11 @@ async function dbGet(storeName, id) {
 
 // Obtenir tots els objectes (opcionalment filtrats per clientId)
 async function dbGetAll(storeName, clientId = null) {
-  if (!window.db) await initDB();
+  if (!db) await initDB();
   
   return new Promise((resolve, reject) => {
     try {
-      const transaction = window.db.transaction([storeName], 'readonly');
+      const transaction = db.transaction([storeName], 'readonly');
       const store = transaction.objectStore(storeName);
       
       let request;
@@ -103,11 +106,11 @@ async function dbGetAll(storeName, clientId = null) {
 
 // Eliminar objecte per ID
 async function dbDelete(storeName, id) {
-  if (!window.db) await initDB();
+  if (!db) await initDB();
   
   return new Promise((resolve, reject) => {
     try {
-      const transaction = window.db.transaction([storeName], 'readwrite');
+      const transaction = db.transaction([storeName], 'readwrite');
       const store = transaction.objectStore(storeName);
       const request = store.delete(id);
       
@@ -128,7 +131,5 @@ window.initDB = initDB;
 
 console.log('✅ app-db.js carregat correctament');
 
-// Inicialitzar automàticament només si no està ja inicialitzat
-if (!window.db) {
-  initDB().catch(err => console.error('❌ Error inicialitzant IndexedDB:', err));
-}
+// Inicialitzar automàticament
+initDB().catch(err => console.error('❌ Error inicialitzant IndexedDB:', err));
