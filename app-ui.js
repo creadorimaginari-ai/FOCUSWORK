@@ -463,14 +463,15 @@ if (fixedBtns) {
   const asyncUpdate = async () => {
     updateWorkpad(client);
     updateTasks(client);
-    await renderPhotoGallery(client);  // ⬅️ Añadido await
+    await renderPhotoGallery(client);
     
     if (client && typeof initProjectStatus === 'function') {
       await initProjectStatus();
     }
   };
   
-  await asyncUpdate();  // ⬅️ Ejecutar inmediatamente
+  await asyncUpdate();
+}
 
 function updateDeliveryDateDisplay(client) {
   const deliveryBox = $("deliveryDateBox");
