@@ -463,20 +463,14 @@ if (fixedBtns) {
   const asyncUpdate = async () => {
     updateWorkpad(client);
     updateTasks(client);
-    renderPhotoGallery(client);
+    await renderPhotoGallery(client);  // ⬅️ Añadido await
     
-    // ⬅️ AFEGIT: Inicialitzar estat i progrés del projecte
     if (client && typeof initProjectStatus === 'function') {
       await initProjectStatus();
     }
   };
   
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(asyncUpdate);
-  } else {
-    setTimeout(asyncUpdate, 0);
-  }
-}
+  await asyncUpdate();  // ⬅️ Ejecutar inmediatamente
 
 function updateDeliveryDateDisplay(client) {
   const deliveryBox = $("deliveryDateBox");
