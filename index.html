@@ -1364,6 +1364,44 @@ function setupProgressListeners() {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
+
+/* ✅ Text blanc als botons blaus (primary) */
+.primary,
+label.primary {
+  color: white !important;
+}
+
+/* ✅ Alinear els 3 botons del footer en grid */
+.footer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.95);
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+}
+
+.footer button {
+  padding: 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(30, 41, 59, 0.8);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.footer button:hover,
+.footer button:active {
+  background: rgba(30, 41, 59, 1);
+  transform: scale(0.98);
+}
+
 </style>
 <script src="botons-visibilitat.js"></script>
 <script src="buttons-ripple.js?v=1"></script>
