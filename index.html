@@ -48,7 +48,7 @@
   <!-- ACCIÓ PRINCIPAL -->
 <div id="clientMainButtons" class="grid centered" style="margin-top: 12px;">
    
-<button id="newClientBtn">➕ Nou encàrrec</button>
+<button id="newClientBtn" title="Nou encàrrec">➕</button>
  <!-- <button id="changeClient">🔄 Canviar d'encàrrec</button> -->
      <button id="focusPriorityBtn" class="primary full-width">
       👁️ Revisar encàrrecs
@@ -1369,6 +1369,36 @@ function setupProgressListeners() {
 .primary,
 label.primary {
   color: white !important;
+}
+
+/* ✅ Botó de Nou encàrrec circular i destacat */
+#newClientBtn {
+  width: 70px !important;
+  height: 70px !important;
+  border-radius: 50% !important;
+  font-size: 32px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto 16px auto !important;
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  border: 3px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+}
+
+#newClientBtn:hover,
+#newClientBtn:active {
+  transform: scale(1.05) !important;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6) !important;
+}
+
+#clientMainButtons {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
 }
 
 /* ✅ Alinear els 3 botons del footer en grid */
