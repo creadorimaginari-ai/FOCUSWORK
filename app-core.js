@@ -380,6 +380,20 @@ async function loadClient(clientId) {
 
 async function loadAllClients() {
   try {
+    // ✅ Intentar carregar de Supabase primer
+    if (window.getCurrentUser && typeof loadAllClientsSupabase === 'function') {
+      try {
+        const supabaseClients = await loadAllClientsSupabase();
+        if (supabaseClients && Object.keys(supabaseClients).length > 0) {
+          return supabaseClients;
+        }
+      } catch (supabaseError) {
+        console.error('Error carregant de Supabase:', supabaseError);
+        // Continuar amb la càrrega local si falla
+      }
+    }
+    
+    // Carregar de local com a fallback
     const clients = await dbGetAll('clients');
     const clientsObj = {};
     
@@ -403,11 +417,24 @@ async function loadAllClients() {
 
 async function deleteClient(clientId) {
   try {
+    // ✅ Esborrar de Supabase primer
+    if (window.getCurrentUser && typeof deleteClientSupabase === 'function') {
+      try {
+        await deleteClientSupabase(clientId);
+        console.log('✅ Client esborrat de Supabase');
+      } catch (supabaseError) {
+        console.error('Error esborrant de Supabase:', supabaseError);
+        // Continuar amb l'esborrat local
+      }
+    }
+    
+    // Esborrar fotos locals
     const photos = await dbGetByIndex('photos', 'clientId', clientId);
     for (const photo of photos) {
       await dbDelete('photos', photo.id);
     }
     
+    // Esborrar client local
     await dbDelete('clients', clientId);
     return true;
   } catch (e) {
