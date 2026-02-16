@@ -270,6 +270,12 @@ async function save() {
 
 /* ================= GESTIÓ DE CLIENTS ================= */
 async function saveClient(client) {
+   try {
+    await saveClientSupabase(client);
+  } catch (error) {
+    console.error('Error guardant a Supabase:', error);
+    // Continuar guardant local si falla Supabase
+  }
   try {
     const photos = client.photos || [];
     const clientData = { ...client };
@@ -295,19 +301,27 @@ async function saveClient(client) {
 }
 
 async function loadClient(clientId) {
-  try {
-    const client = await dbGet('clients', clientId);
-    if (!client) return null;
+   try {
+    // ✅ NOVA: Carregar de Supabase primer
+    const client = await loadClientSupabase(clientId);
+    
+    if (client) {
+      return client;
+    }
+    
+    // Si no està a Supabase, intentar local (backup)
+    const localClient = await dbGet('clients', clientId);
+    if (!localClient) return null;
     
     const photos = await dbGetByIndex('photos', 'clientId', clientId);
-    client.photos = photos.map(p => ({
+    localClient.photos = photos.map(p => ({
       id: p.id,
       data: p.data,
       date: p.date,
       comment: p.comment || ""
     }));
     
-    return client;
+    return localClient;
   } catch (e) {
     console.error('Error carregant client:', e);
     return null;
@@ -742,23 +756,35 @@ async function migrateFromLocalStorage() {
 /* ================= INICIALITZACIÓ ================= */
 async function initApp() {
   try {
+    // 1. Inicialitzar autenticació
+    const user = await initAuth();
+    
+    // 2. Si no hi ha usuari, mostrar login
+    if (!user) {
+      showLoginScreen();
+      return;
+    }
+    
+    // 3. Inicialitzar IndexedDB local (backup)
     await initDB();
     await loadState();
-    await migrateFromLocalStorage();
     
-    // Comprovar si és la primera vegada (onboarding obligatori)
+    // 4. Verificar si cal migrar dades locals
+    await checkMigration();
+    
+    // 5. Continuar com abans
     if (!userName) {
       showOnboardingScreen();
-      return; // No continuar fins que l'usuari introdueixi el nom
+      return;
     }
     
     updateUI();
     scheduleFullAutoBackup();
     
-    console.log('✅ FocusWork V4.0 inicialitzat amb IndexedDB');
+    console.log('✅ FocusWork V4.0 inicialitzat amb Supabase');
   } catch (e) {
     console.error('Error inicialitzant app:', e);
-    showAlert('Error', 'No s\'ha pogut inicialitzar l\'aplicació', '❌');
+    showAlert('Error', 'No s\'ha pogut inicialitzar l\'app', '❌');
   }
 }
 
