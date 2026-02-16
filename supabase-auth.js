@@ -385,8 +385,8 @@ async function handleLogin() {
     
     setTimeout(() => {
       hideLoginScreen();
-      // Verificar migració de dades locals
-      checkMigration();
+      // La migració es farà automàticament des de initApp()
+      // NO cridar checkMigration() aquí per evitar duplicats
     }, 1000);
     
   } catch (error) {
