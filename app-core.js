@@ -756,14 +756,35 @@ async function migrateFromLocalStorage() {
 /* ================= INICIALITZACIÓ ================= */
 async function initApp() {
   try {
+    // ✅ ESPERAR QUE SUPABASE ESTIGUI LLEST
+    console.log('🔄 Esperant que Supabase estigui llest...');
+    
+    // Esperar fins que initAuth estigui disponible (màxim 5 segons)
+    let retries = 0;
+    while (typeof window.initAuth !== 'function' && retries < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      retries++;
+    }
+    
+    if (typeof window.initAuth !== 'function') {
+      console.error('❌ ERROR: Supabase no s\'ha carregat correctament');
+      alert('Error carregant l\'autenticació. Si us plau, recarrega la pàgina.');
+      return;
+    }
+    
+    console.log('✅ Supabase carregat correctament!');
+    
     // 1. Inicialitzar autenticació
     const user = await initAuth();
     
     // 2. Si no hi ha usuari, mostrar login
     if (!user) {
+      console.log('👤 Usuari no autenticat - mostrant pantalla de login');
       showLoginScreen();
       return;
     }
+    
+    console.log('✅ Usuari autenticat:', user.email);
     
     // 3. Inicialitzar IndexedDB local (backup)
     await initDB();
