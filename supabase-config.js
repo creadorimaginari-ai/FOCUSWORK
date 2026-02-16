@@ -1,83 +1,110 @@
 /*************************************************
  * FOCUSWORK — supabase-config.js
  * Configuració de connexió amb Supabase
+ * VERSIÓ SIMPLIFICADA I ROBUSTA
  *************************************************/
 
-// Credencials del teu projecte Supabase
-const SUPABASE_URL = 'https://mhqdpslvowosxabuxcgw.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ocWRwc2x2b3dvc3hhYnV4Y2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjMxOTQsImV4cCI6MjA4Njc5OTE5NH0.vMUW6qOV69DJJ0snaOIPgwiZo9TGGn3rPPNfESay48I';
-
-// Crear client de Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// Variable global per saber si l'usuari està autenticat
-let currentUser = null;
-
-// Inicialitzar estat d'autenticació
-async function initAuth() {
-  try {
-    console.log('🔐 Inicialitzant autenticació amb Supabase...');
-    
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    if (error) {
-      console.error('❌ Error obtenint sessió:', error.message);
-      console.error('Detalls:', error);
-      throw error;
-    }
-    
-    if (session) {
-      currentUser = session.user;
-      console.log('✅ Usuari autenticat:', currentUser.email);
-      return currentUser;
-    } else {
-      console.log('👤 Cap usuari autenticat');
-      return null;
-    }
-  } catch (error) {
-    console.error('❌ Error crític a initAuth:', error);
-    throw error;
-  }
-}
-
-// Escoltar canvis d'autenticació
-supabase.auth.onAuthStateChange((event, session) => {
-  console.log('🔄 Event d\'autenticació:', event);
+(function() {
+  'use strict';
   
-  if (event === 'SIGNED_IN') {
-    currentUser = session.user;
-    console.log('✅ Login exitós:', currentUser.email);
-    
-    // Amagar pantalla de login
-    if (typeof hideLoginScreen === 'function') {
-      hideLoginScreen();
+  console.log('📦 Carregant configuració de Supabase...');
+  
+  // Esperar que window.supabase (del CDN) estigui disponible
+  function initSupabaseConfig() {
+    // Verificar que el CDN s'hagi carregat
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+      console.error('❌ La llibreria Supabase no està disponible!');
+      console.error('Assegura\'t que el CDN estigui carregat abans:');
+      console.error('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>');
+      return false;
     }
     
-    // Recarregar app després del login
-    if (typeof initApp === 'function') {
-      console.log('🔄 Reiniciant app després del login...');
-      initApp();
-    }
-  } else if (event === 'SIGNED_OUT') {
-    currentUser = null;
-    console.log('🚪 Logout exitós');
+    console.log('✅ Llibreria Supabase detectada');
     
-    // Mostrar pantalla de login
-    if (typeof showLoginScreen === 'function') {
-      showLoginScreen();
+    // Credencials
+    const SUPABASE_URL = 'https://mhqdpslvowosxabuxcgw.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ocWRwc2x2b3dvc3hhYnV4Y2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjMxOTQsImV4cCI6MjA4Njc5OTE5NH0.vMUW6qOV69DJJ0snaOIPgwiZo9TGGn3rPPNfESay48I';
+    
+    // Crear client (NO usar const per evitar conflictes, sobrescriure window.supabase)
+    try {
+      window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      console.log('✅ Client Supabase creat');
+      console.log('📍 URL:', SUPABASE_URL);
+    } catch (error) {
+      console.error('❌ Error creant client:', error);
+      return false;
     }
-  } else if (event === 'USER_UPDATED') {
-    console.log('👤 Usuari actualitzat');
-  } else if (event === 'TOKEN_REFRESHED') {
-    console.log('🔄 Token refrescat');
+    
+    // Variable per l'usuari actual
+    let currentUser = null;
+    
+    // Funció d'inicialització d'auth
+    window.initAuth = async function() {
+      try {
+        console.log('🔐 Inicialitzant autenticació...');
+        
+        const { data: { session }, error } = await window.supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Error obtenint sessió:', error);
+          throw error;
+        }
+        
+        if (session) {
+          currentUser = session.user;
+          console.log('✅ Usuari autenticat:', currentUser.email);
+          return currentUser;
+        } else {
+          console.log('👤 Cap usuari autenticat');
+          return null;
+        }
+      } catch (error) {
+        console.error('❌ Error a initAuth:', error);
+        throw error;
+      }
+    };
+    
+    // Getter per obtenir l'usuari actual
+    window.getCurrentUser = function() {
+      return currentUser;
+    };
+    
+    // Escoltar canvis d'autenticació
+    window.supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔄 Event auth:', event);
+      
+      if (event === 'SIGNED_IN') {
+        currentUser = session.user;
+        console.log('✅ Login exitós:', currentUser.email);
+        
+        if (typeof window.hideLoginScreen === 'function') {
+          window.hideLoginScreen();
+        }
+        
+        if (typeof window.initApp === 'function') {
+          window.initApp();
+        }
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        console.log('🚪 Logout exitós');
+        
+        if (typeof window.showLoginScreen === 'function') {
+          window.showLoginScreen();
+        }
+      }
+    });
+    
+    console.log('✅ Configuració Supabase completada');
+    return true;
   }
-});
-
-// Exportar configuració
-window.supabase = supabase;
-window.getCurrentUser = () => currentUser;
-window.initAuth = initAuth;
-
-console.log('✅ Supabase configurat correctament');
-console.log('📍 URL:', SUPABASE_URL);
-console.log('🔑 API Key configurada');
+  
+  // Executar configuració
+  if (document.readyState === 'loading') {
+    // Si el document encara s'està carregant, esperar
+    document.addEventListener('DOMContentLoaded', initSupabaseConfig);
+  } else {
+    // Si ja està carregat, executar ara
+    initSupabaseConfig();
+  }
+  
+})();
