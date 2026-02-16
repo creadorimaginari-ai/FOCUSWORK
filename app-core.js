@@ -243,12 +243,62 @@ let state = {
 
 async function loadState() {
   try {
+    const user = window.getCurrentUser();
+    
+    if (user) {
+      // 1. Carregar clients de Supabase
+      console.log('📥 Carregant clients des de Supabase...');
+      
+      try {
+        const supabaseClients = await loadAllClientsSupabase();
+        
+        if (supabaseClients && Object.keys(supabaseClients).length > 0) {
+          console.log(`✅ Carregats ${Object.keys(supabaseClients).length} clients de Supabase`);
+          
+          // Actualitzar estat amb clients de Supabase
+          state.clients = supabaseClients;
+          
+          // Guardar també a IndexedDB local com a cache/backup
+          for (const client of Object.values(supabaseClients)) {
+            const clientData = { ...client };
+            delete clientData.photos; // Les fotos ja estan a Supabase
+            
+            try {
+              await dbPut('clients', clientData);
+            } catch (e) {
+              console.warn('Error guardant client local:', e);
+            }
+          }
+          
+          // Carregar estat general d'IndexedDB (userName, etc.)
+          const savedState = await dbGet('state', 'main');
+          if (savedState && savedState.data) {
+            // Mantenir userName i altres dades, però NO sobrescriure clients
+            const { clients, ...restState } = savedState.data;
+            state = { ...state, ...restState };
+          }
+          
+          console.log('✅ Estat sincronitzat amb Supabase');
+          return;
+        } else {
+          console.log('ℹ️ No hi ha clients a Supabase');
+        }
+      } catch (error) {
+        console.error('❌ Error carregant de Supabase:', error);
+        console.log('📥 Carregant des d\'IndexedDB local com a fallback...');
+      }
+    } else {
+      console.log('👤 Usuari no autenticat - carregant dades locals');
+    }
+    
+    // 2. Si no hi ha usuari o error, carregar d'IndexedDB
     const savedState = await dbGet('state', 'main');
     if (savedState) {
       state = { ...state, ...savedState.data };
+      console.log('✅ Estat carregat des d\'IndexedDB local');
     }
   } catch (e) {
-    console.warn('No s\'ha pogut carregar l\'estat:', e);
+    console.warn('⚠️ Error carregant estat:', e);
   }
 }
 
@@ -757,9 +807,21 @@ async function migrateFromLocalStorage() {
 async function initApp() {
   try {
     // ✅ ESPERAR QUE SUPABASE ESTIGUI LLEST
-    console.log('🔄 Esperant que Supabase estigui llest...');
+    console.log('🔄 Iniciant FocusWork...');
+    console.log('🔍 Comprovant disponibilitat de Supabase...');
+    
+    // Comprovar si la llibreria de Supabase s'ha carregat
+    if (typeof window.supabase === 'undefined') {
+      console.error('❌ ERROR: La llibreria de Supabase no s\'ha carregat');
+      console.error('Verifica que el CDN estigui accessible: https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+      alert('Error: No s\'ha pogut carregar la llibreria de Supabase.\n\nComprova la teva connexió a Internet i recarrega la pàgina.');
+      return;
+    }
+    
+    console.log('✅ Llibreria Supabase carregada');
     
     // Esperar fins que initAuth estigui disponible (màxim 5 segons)
+    console.log('🔄 Esperant que la configuració de Supabase estigui llesta...');
     let retries = 0;
     while (typeof window.initAuth !== 'function' && retries < 50) {
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -767,14 +829,16 @@ async function initApp() {
     }
     
     if (typeof window.initAuth !== 'function') {
-      console.error('❌ ERROR: Supabase no s\'ha carregat correctament');
-      alert('Error carregant l\'autenticació. Si us plau, recarrega la pàgina.');
+      console.error('❌ ERROR: La funció initAuth no està disponible');
+      console.error('Verifica que supabase-config.js s\'hagi carregat correctament');
+      alert('Error carregant la configuració d\'autenticació.\n\nRecarrega la pàgina o contacta amb suport tècnic.');
       return;
     }
     
-    console.log('✅ Supabase carregat correctament!');
+    console.log('✅ Configuració de Supabase carregada');
     
     // 1. Inicialitzar autenticació
+    console.log('🔐 Inicialitzant autenticació...');
     const user = await initAuth();
     
     // 2. Si no hi ha usuari, mostrar login
@@ -787,6 +851,7 @@ async function initApp() {
     console.log('✅ Usuari autenticat:', user.email);
     
     // 3. Inicialitzar IndexedDB local (backup)
+    console.log('💾 Inicialitzant base de dades local...');
     await initDB();
     await loadState();
     
