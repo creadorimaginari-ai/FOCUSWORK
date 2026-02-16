@@ -1,6 +1,7 @@
 /*************************************************
  * FOCUSWORK — supabase-db.js
  * Funcions de base de dades amb Supabase
+ * VERSIÓ MILLORADA AMB GESTIÓ DE MIGRACIÓ
  *************************************************/
 
 /* ================= CLIENTS ================= */
@@ -17,7 +18,7 @@ async function saveClientSupabase(client) {
   };
   
   // Intentar actualitzar primer, si no existeix, insertar
-  const { data, error } = await supabase
+  const { data, error } = await window.supabase
     .from('clients')
     .upsert(clientData, { onConflict: 'id' })
     .select()
@@ -37,7 +38,7 @@ async function loadClientSupabase(clientId) {
   if (!user) throw new Error('Usuari no autenticat');
   
   // Carregar client
-  const { data: client, error: clientError } = await supabase
+  const { data: client, error: clientError } = await window.supabase
     .from('clients')
     .select('*')
     .eq('id', clientId)
@@ -50,7 +51,7 @@ async function loadClientSupabase(clientId) {
   }
   
   // Carregar fotos del client
-  const { data: photos, error: photosError } = await supabase
+  const { data: photos, error: photosError } = await window.supabase
     .from('photos')
     .select('*')
     .eq('client_id', clientId)
@@ -63,7 +64,7 @@ async function loadClientSupabase(clientId) {
   }
   
   // Carregar arxius del client
-  const { data: files, error: filesError } = await supabase
+  const { data: files, error: filesError } = await window.supabase
     .from('files')
     .select('*')
     .eq('client_id', clientId)
@@ -83,7 +84,7 @@ async function loadAllClientsSupabase() {
   const user = window.getCurrentUser();
   if (!user) throw new Error('Usuari no autenticat');
   
-  const { data, error } = await supabase
+  const { data, error } = await window.supabase
     .from('clients')
     .select('*')
     .eq('user_id', user.id)
@@ -108,7 +109,7 @@ async function deleteClientSupabase(clientId) {
   const user = window.getCurrentUser();
   if (!user) throw new Error('Usuari no autenticat');
   
-  const { error } = await supabase
+  const { error } = await window.supabase
     .from('clients')
     .delete()
     .eq('id', clientId)
@@ -135,7 +136,7 @@ async function savePhotoSupabase(photo, clientId) {
     user_id: user.id
   };
   
-  const { data, error } = await supabase
+  const { data, error } = await window.supabase
     .from('photos')
     .upsert(photoData, { onConflict: 'id' })
     .select()
@@ -154,7 +155,7 @@ async function deletePhotoSupabase(photoId) {
   const user = window.getCurrentUser();
   if (!user) throw new Error('Usuari no autenticat');
   
-  const { error } = await supabase
+  const { error } = await window.supabase
     .from('photos')
     .delete()
     .eq('id', photoId)
@@ -181,7 +182,7 @@ async function saveFileSupabase(file, clientId) {
     user_id: user.id
   };
   
-  const { data, error } = await supabase
+  const { data, error } = await window.supabase
     .from('files')
     .upsert(fileData, { onConflict: 'id' })
     .select()
@@ -200,7 +201,7 @@ async function deleteFileSupabase(fileId) {
   const user = window.getCurrentUser();
   if (!user) throw new Error('Usuari no autenticat');
   
-  const { error } = await supabase
+  const { error } = await window.supabase
     .from('files')
     .delete()
     .eq('id', fileId)
@@ -216,51 +217,113 @@ async function deleteFileSupabase(fileId) {
 
 /* ================= FUNCIONS DE SINCRONITZACIÓ ================= */
 
+// Variable global per evitar múltiples execucions
+let migrationInProgress = false;
+let migrationChecked = false;
+
 // Migrar dades locals a Supabase (només una vegada)
 async function migrateLocalToSupabase() {
-  console.log('🔄 Migrant dades locals a Supabase...');
+  if (migrationInProgress) {
+    console.log('⚠️ Migració ja en curs, esperant...');
+    return;
+  }
+  
+  migrationInProgress = true;
   
   try {
+    console.log('🔄 Migrant dades locals a Supabase...');
+    
+    // Verificar que la base de dades local existeix
+    if (typeof dbGetAll !== 'function') {
+      console.log('ℹ️ No hi ha funcions de IndexedDB disponibles - saltant migració');
+      localStorage.setItem('focowork_migrated_to_supabase', 'no_local_data');
+      return;
+    }
+    
     // Carregar clients locals d'IndexedDB
-    const localClients = await dbGetAll('clients');
+    let localClients;
+    try {
+      localClients = await dbGetAll('clients');
+    } catch (error) {
+      console.log('ℹ️ No s\'ha pogut accedir a IndexedDB:', error.message);
+      localStorage.setItem('focowork_migrated_to_supabase', 'no_local_data');
+      return;
+    }
     
     if (!localClients || localClients.length === 0) {
       console.log('ℹ️ No hi ha clients locals per migrar');
+      localStorage.setItem('focowork_migrated_to_supabase', 'no_local_data');
       return;
     }
     
     console.log(`📦 Migrant ${localClients.length} clients...`);
     
     for (const client of localClients) {
-      // Guardar client a Supabase
-      await saveClientSupabase(client);
-      
-      // Migrar fotos del client
-      const localPhotos = await dbGetByIndex('photos', 'clientId', client.id);
-      if (localPhotos && localPhotos.length > 0) {
-        console.log(`📸 Migrant ${localPhotos.length} fotos del client ${client.name}...`);
-        for (const photo of localPhotos) {
-          await savePhotoSupabase(photo, client.id);
+      try {
+        // Guardar client a Supabase
+        await saveClientSupabase(client);
+        
+        // Migrar fotos del client
+        if (typeof dbGetByIndex === 'function') {
+          try {
+            const localPhotos = await dbGetByIndex('photos', 'clientId', client.id);
+            if (localPhotos && localPhotos.length > 0) {
+              console.log(`📸 Migrant ${localPhotos.length} fotos del client ${client.name}...`);
+              for (const photo of localPhotos) {
+                await savePhotoSupabase(photo, client.id);
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Error migrant fotos del client:', client.name, error);
+          }
         }
+      } catch (error) {
+        console.error('❌ Error migrant client:', client.name, error);
       }
     }
     
     console.log('✅ Migració completada!');
-    
-    // Marcar que ja s'ha migrat
     localStorage.setItem('focowork_migrated_to_supabase', 'true');
     
   } catch (error) {
-    console.error('❌ Error migrant dades:', error);
+    console.error('❌ Error durant la migració:', error);
+    localStorage.setItem('focowork_migrated_to_supabase', 'error');
     throw error;
+  } finally {
+    migrationInProgress = false;
   }
 }
 
-// Verificar si cal migrar
+// Verificar si cal migrar (NOMÉS UNA VEGADA)
 async function checkMigration() {
-  const migrated = localStorage.getItem('focowork_migrated_to_supabase');
+  // Evitar múltiples execucions
+  if (migrationChecked) {
+    console.log('ℹ️ Migració ja comprovada anteriorment');
+    return;
+  }
   
-  if (!migrated && window.getCurrentUser()) {
+  migrationChecked = true;
+  
+  const migrated = localStorage.getItem('focowork_migrated_to_supabase');
+  const user = window.getCurrentUser();
+  
+  console.log('🔍 Estat de migració:', migrated);
+  console.log('👤 Usuari actual:', user?.email);
+  
+  // Si ja s'ha migrat o saltat, no fer res
+  if (migrated) {
+    console.log('ℹ️ Migració ja gestionada:', migrated);
+    return;
+  }
+  
+  // Si no hi ha usuari, no fer res
+  if (!user) {
+    console.log('⚠️ No hi ha usuari autenticat - saltant migració');
+    return;
+  }
+  
+  // Preguntar només una vegada
+  try {
     const shouldMigrate = confirm(
       '🔄 Vols migrar les teves dades locals al núvol?\n\n' +
       'Això permetrà sincronitzar-les entre dispositius.\n\n' +
@@ -271,8 +334,12 @@ async function checkMigration() {
       await migrateLocalToSupabase();
       alert('✅ Dades migrades correctament!');
     } else {
+      console.log('ℹ️ Usuari ha saltat la migració');
       localStorage.setItem('focowork_migrated_to_supabase', 'skipped');
     }
+  } catch (error) {
+    console.error('❌ Error durant checkMigration:', error);
+    localStorage.setItem('focowork_migrated_to_supabase', 'error');
   }
 }
 
