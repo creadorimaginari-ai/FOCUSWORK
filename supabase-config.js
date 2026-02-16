@@ -15,31 +15,61 @@ let currentUser = null;
 
 // Inicialitzar estat d'autenticació
 async function initAuth() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    console.log('✅ Usuari autenticat:', currentUser.email);
-    return currentUser;
-  } else {
-    console.log('❌ Usuari no autenticat');
-    return null;
+  try {
+    console.log('🔐 Inicialitzant autenticació amb Supabase...');
+    
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('❌ Error obtenint sessió:', error.message);
+      console.error('Detalls:', error);
+      throw error;
+    }
+    
+    if (session) {
+      currentUser = session.user;
+      console.log('✅ Usuari autenticat:', currentUser.email);
+      return currentUser;
+    } else {
+      console.log('👤 Cap usuari autenticat');
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ Error crític a initAuth:', error);
+    throw error;
   }
 }
 
 // Escoltar canvis d'autenticació
 supabase.auth.onAuthStateChange((event, session) => {
+  console.log('🔄 Event d\'autenticació:', event);
+  
   if (event === 'SIGNED_IN') {
     currentUser = session.user;
     console.log('✅ Login exitós:', currentUser.email);
+    
+    // Amagar pantalla de login
+    if (typeof hideLoginScreen === 'function') {
+      hideLoginScreen();
+    }
+    
     // Recarregar app després del login
     if (typeof initApp === 'function') {
+      console.log('🔄 Reiniciant app després del login...');
       initApp();
     }
   } else if (event === 'SIGNED_OUT') {
     currentUser = null;
-    console.log('❌ Logout exitós');
+    console.log('🚪 Logout exitós');
+    
     // Mostrar pantalla de login
-    showLoginScreen();
+    if (typeof showLoginScreen === 'function') {
+      showLoginScreen();
+    }
+  } else if (event === 'USER_UPDATED') {
+    console.log('👤 Usuari actualitzat');
+  } else if (event === 'TOKEN_REFRESHED') {
+    console.log('🔄 Token refrescat');
   }
 });
 
@@ -49,3 +79,5 @@ window.getCurrentUser = () => currentUser;
 window.initAuth = initAuth;
 
 console.log('✅ Supabase configurat correctament');
+console.log('📍 URL:', SUPABASE_URL);
+console.log('🔑 API Key configurada');
