@@ -1,7 +1,7 @@
 /*************************************************
- * FOCUSWORK — supabase-db.js
+ * FOCUSWORK – supabase-db.js
  * Funcions de base de dades amb Supabase
- * VERSIÓ MILLORADA AMB GESTIÓ DE MIGRACIÓ
+ * VERSIÓ CORREGIDA - FUNCIONA AMB SUPABASE
  *************************************************/
 
 /* ================= CLIENTS ================= */
@@ -11,11 +11,24 @@ async function saveClientSupabase(client) {
   const user = window.getCurrentUser();
   if (!user) throw new Error('Usuari no autenticat');
   
-  // Afegir user_id al client
+  // ✅ IMPORTANT: Generar UUID vàlid per Supabase
   const clientData = {
-    ...client,
-    user_id: user.id
+    id: client.id && client.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
+      ? client.id 
+      : crypto.randomUUID(), // Generar UUID vàlid
+    user_id: user.id,
+    name: client.name || '',
+    email: client.email || null,
+    phone: client.phone || null,
+    company: client.company || null,
+    notes: client.notes || null,
+    status: client.status || 'active',
+    activities: client.activities || [],
+    tags: client.tags || [],
+    custom_fields: client.custom_fields || {}
   };
+  
+  console.log('💾 Guardant client a Supabase:', clientData);
   
   // Intentar actualitzar primer, si no existeix, insertar
   const { data, error } = await window.supabase
@@ -25,10 +38,11 @@ async function saveClientSupabase(client) {
     .single();
   
   if (error) {
-    console.error('Error guardant client:', error);
+    console.error('❌ Error guardant client a Supabase:', error);
     throw error;
   }
   
+  console.log('✅ Client guardat a Supabase:', data);
   return data;
 }
 
@@ -36,6 +50,14 @@ async function saveClientSupabase(client) {
 async function loadClientSupabase(clientId) {
   const user = window.getCurrentUser();
   if (!user) throw new Error('Usuari no autenticat');
+  
+  console.log('📥 Carregant client de Supabase:', clientId);
+  
+  // ✅ Validar que el clientId és un UUID vàlid
+  if (!clientId || !clientId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    console.warn('⚠️ ID no és un UUID vàlid, intentant carregar de local:', clientId);
+    return null;
+  }
   
   // Carregar client
   const { data: client, error: clientError } = await window.supabase
@@ -46,33 +68,45 @@ async function loadClientSupabase(clientId) {
     .single();
   
   if (clientError) {
-    console.error('Error carregant client:', clientError);
+    console.error('❌ Error carregant client de Supabase:', clientError);
     return null;
   }
   
-  // Carregar fotos del client
-  const { data: photos, error: photosError } = await window.supabase
-    .from('photos')
-    .select('*')
-    .eq('client_id', clientId)
-    .order('date', { ascending: false });
+  console.log('✅ Client carregat de Supabase:', client);
   
-  if (!photosError && photos) {
-    client.photos = photos;
-  } else {
+  // Carregar fotos del client (si existeix la taula)
+  try {
+    const { data: photos, error: photosError } = await window.supabase
+      .from('photos')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('date', { ascending: false });
+    
+    if (!photosError && photos) {
+      client.photos = photos;
+    } else {
+      client.photos = [];
+    }
+  } catch (e) {
+    console.warn('⚠️ Taula photos no existeix, continuant sense fotos');
     client.photos = [];
   }
   
-  // Carregar arxius del client
-  const { data: files, error: filesError } = await window.supabase
-    .from('files')
-    .select('*')
-    .eq('client_id', clientId)
-    .order('date', { ascending: false });
-  
-  if (!filesError && files) {
-    client.files = files;
-  } else {
+  // Carregar arxius del client (si existeix la taula)
+  try {
+    const { data: files, error: filesError } = await window.supabase
+      .from('files')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('date', { ascending: false });
+    
+    if (!filesError && files) {
+      client.files = files;
+    } else {
+      client.files = [];
+    }
+  } catch (e) {
+    console.warn('⚠️ Taula files no existeix, continuant sense arxius');
     client.files = [];
   }
   
@@ -84,6 +118,8 @@ async function loadAllClientsSupabase() {
   const user = window.getCurrentUser();
   if (!user) throw new Error('Usuari no autenticat');
   
+  console.log('📥 Carregant tots els clients de Supabase...');
+  
   const { data, error } = await window.supabase
     .from('clients')
     .select('*')
@@ -91,13 +127,18 @@ async function loadAllClientsSupabase() {
     .order('created_at', { ascending: false });
   
   if (error) {
-    console.error('Error carregant clients:', error);
+    console.error('❌ Error carregant clients de Supabase:', error);
     return {};
   }
+  
+  console.log(`✅ ${data.length} clients carregats de Supabase`);
   
   // Convertir array a objecte amb id com a clau
   const clientsObj = {};
   for (const client of data) {
+    // Afegir arrays buides si no existeixen
+    client.photos = client.photos || [];
+    client.files = client.files || [];
     clientsObj[client.id] = client;
   }
   
@@ -109,6 +150,8 @@ async function deleteClientSupabase(clientId) {
   const user = window.getCurrentUser();
   if (!user) throw new Error('Usuari no autenticat');
   
+  console.log('🗑️ Esborrant client de Supabase:', clientId);
+  
   const { error } = await window.supabase
     .from('clients')
     .delete()
@@ -116,10 +159,11 @@ async function deleteClientSupabase(clientId) {
     .eq('user_id', user.id);
   
   if (error) {
-    console.error('Error esborrant client:', error);
+    console.error('❌ Error esborrant client de Supabase:', error);
     throw error;
   }
   
+  console.log('✅ Client esborrat de Supabase');
   return true;
 }
 
@@ -131,9 +175,14 @@ async function savePhotoSupabase(photo, clientId) {
   if (!user) throw new Error('Usuari no autenticat');
   
   const photoData = {
-    ...photo,
+    id: photo.id && photo.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      ? photo.id
+      : crypto.randomUUID(),
     client_id: clientId,
-    user_id: user.id
+    user_id: user.id,
+    data: photo.data,
+    date: photo.date,
+    comment: photo.comment || ''
   };
   
   const { data, error } = await window.supabase
@@ -143,7 +192,7 @@ async function savePhotoSupabase(photo, clientId) {
     .single();
   
   if (error) {
-    console.error('Error guardant foto:', error);
+    console.error('❌ Error guardant foto:', error);
     throw error;
   }
   
@@ -162,7 +211,7 @@ async function deletePhotoSupabase(photoId) {
     .eq('user_id', user.id);
   
   if (error) {
-    console.error('Error esborrant foto:', error);
+    console.error('❌ Error esborrant foto:', error);
     throw error;
   }
   
@@ -177,9 +226,15 @@ async function saveFileSupabase(file, clientId) {
   if (!user) throw new Error('Usuari no autenticat');
   
   const fileData = {
-    ...file,
+    id: file.id && file.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      ? file.id
+      : crypto.randomUUID(),
     client_id: clientId,
-    user_id: user.id
+    user_id: user.id,
+    name: file.name,
+    type: file.type,
+    data: file.data,
+    date: file.date
   };
   
   const { data, error } = await window.supabase
@@ -189,7 +244,7 @@ async function saveFileSupabase(file, clientId) {
     .single();
   
   if (error) {
-    console.error('Error guardant arxiu:', error);
+    console.error('❌ Error guardant arxiu:', error);
     throw error;
   }
   
@@ -208,7 +263,7 @@ async function deleteFileSupabase(fileId) {
     .eq('user_id', user.id);
   
   if (error) {
-    console.error('Error esborrant arxiu:', error);
+    console.error('❌ Error esborrant arxiu:', error);
     throw error;
   }
   
@@ -234,25 +289,25 @@ async function migrateLocalToSupabase() {
     console.log('🔄 Migrant dades locals a Supabase...');
     
     // Verificar que la base de dades local existeix
-    if (typeof dbGetAll !== 'function') {
+    if (typeof window.dbGetAll !== 'function') {
       console.log('ℹ️ No hi ha funcions de IndexedDB disponibles - saltant migració');
-      localStorage.setItem('focowork_migrated_to_supabase', 'no_local_data');
+      localStorage.setItem('focuswork_migrated_to_supabase', 'no_local_data');
       return;
     }
     
     // Carregar clients locals d'IndexedDB
     let localClients;
     try {
-      localClients = await dbGetAll('clients');
+      localClients = await window.dbGetAll('clients');
     } catch (error) {
       console.log('ℹ️ No s\'ha pogut accedir a IndexedDB:', error.message);
-      localStorage.setItem('focowork_migrated_to_supabase', 'no_local_data');
+      localStorage.setItem('focuswork_migrated_to_supabase', 'no_local_data');
       return;
     }
     
     if (!localClients || localClients.length === 0) {
       console.log('ℹ️ No hi ha clients locals per migrar');
-      localStorage.setItem('focowork_migrated_to_supabase', 'no_local_data');
+      localStorage.setItem('focuswork_migrated_to_supabase', 'no_local_data');
       return;
     }
     
@@ -264,9 +319,9 @@ async function migrateLocalToSupabase() {
         await saveClientSupabase(client);
         
         // Migrar fotos del client
-        if (typeof dbGetByIndex === 'function') {
+        if (typeof window.dbGetByIndex === 'function') {
           try {
-            const localPhotos = await dbGetByIndex('photos', 'clientId', client.id);
+            const localPhotos = await window.dbGetByIndex('photos', 'clientId', client.id);
             if (localPhotos && localPhotos.length > 0) {
               console.log(`📸 Migrant ${localPhotos.length} fotos del client ${client.name}...`);
               for (const photo of localPhotos) {
@@ -283,11 +338,11 @@ async function migrateLocalToSupabase() {
     }
     
     console.log('✅ Migració completada!');
-    localStorage.setItem('focowork_migrated_to_supabase', 'true');
+    localStorage.setItem('focuswork_migrated_to_supabase', 'true');
     
   } catch (error) {
     console.error('❌ Error durant la migració:', error);
-    localStorage.setItem('focowork_migrated_to_supabase', 'error');
+    localStorage.setItem('focuswork_migrated_to_supabase', 'error');
     throw error;
   } finally {
     migrationInProgress = false;
@@ -304,7 +359,7 @@ async function checkMigration() {
   
   migrationChecked = true;
   
-  const migrated = localStorage.getItem('focowork_migrated_to_supabase');
+  const migrated = localStorage.getItem('focuswork_migrated_to_supabase');
   const user = window.getCurrentUser();
   
   console.log('🔍 Estat de migració:', migrated);
@@ -335,11 +390,11 @@ async function checkMigration() {
       alert('✅ Dades migrades correctament!');
     } else {
       console.log('ℹ️ Usuari ha saltat la migració');
-      localStorage.setItem('focowork_migrated_to_supabase', 'skipped');
+      localStorage.setItem('focuswork_migrated_to_supabase', 'skipped');
     }
   } catch (error) {
     console.error('❌ Error durant checkMigration:', error);
-    localStorage.setItem('focowork_migrated_to_supabase', 'error');
+    localStorage.setItem('focuswork_migrated_to_supabase', 'error');
   }
 }
 
@@ -355,4 +410,4 @@ window.deleteFileSupabase = deleteFileSupabase;
 window.migrateLocalToSupabase = migrateLocalToSupabase;
 window.checkMigration = checkMigration;
 
-console.log('✅ Funcions de base de dades Supabase carregades');
+console.log('✅ Funcions de base de dades Supabase carregades (VERSIÓ CORREGIDA)');
