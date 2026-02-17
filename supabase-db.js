@@ -1,14 +1,13 @@
 /*************************************************
  * FOCUSWORK - SUPABASE DATABASE (VERSIÓ DEFINITIVA)
  * 
- * ✅ Inclou user_id per les polítiques RLS
- * ✅ Una sola definició de cada funció
- * ✅ Sense duplicats amb app-ui.js
+ * ✅ user_id per les polítiques RLS
+ * ✅ Guarda files[] amb URLs de Storage (sincronitzable)
+ * ✅ No guarda base64 si hi ha URL
  *************************************************/
 
 console.log('🚀 Supabase DB carregat');
 
-/* ── Helper: obtenir user_id actual ── */
 function getCurrentUserId() {
   if (typeof window.getCurrentUser === 'function') {
     const u = window.getCurrentUser();
@@ -17,8 +16,7 @@ function getCurrentUserId() {
   return null;
 }
 
-/* ==================== CARREGAR TOTS ELS CLIENTS ==================== */
-
+/* ── CARREGAR TOTS ELS CLIENTS ── */
 async function loadAllClientsSupabase() {
   console.log('📥 Carregant clients de Supabase...');
   try {
@@ -31,16 +29,17 @@ async function loadAllClientsSupabase() {
 
     const clients = {};
     (data || []).forEach(client => {
-      client.active = true;
-      client.total = client.total || 0;
+      client.active      = true;
+      client.total       = client.total       || 0;
       client.billableTime = client.billableTime || 0;
-      client.activities = client.activities || {};
-      client.tasks = client.tasks || { urgent: '', important: '', later: '' };
-      client.photos = client.photos || [];
+      client.activities  = client.activities  || {};
+      client.tasks       = client.tasks       || { urgent: '', important: '', later: '' };
+      client.photos      = client.photos      || [];
+      client.files       = client.files       || [];
       clients[client.id] = client;
     });
 
-    console.log(`✅ ${Object.keys(clients).length} clients carregats de Supabase`);
+    console.log('✅ ' + Object.keys(clients).length + ' clients carregats de Supabase');
     return clients;
   } catch (error) {
     console.error('❌ Error carregant clients:', error.message);
@@ -48,8 +47,7 @@ async function loadAllClientsSupabase() {
   }
 }
 
-/* ==================== CARREGAR UN CLIENT ==================== */
-
+/* ── CARREGAR UN CLIENT ── */
 async function loadClientSupabase(clientId) {
   try {
     const { data, error } = await window.supabase
@@ -60,12 +58,13 @@ async function loadClientSupabase(clientId) {
 
     if (error || !data) return null;
 
-    data.active = true;
-    data.total = data.total || 0;
+    data.active       = true;
+    data.total        = data.total        || 0;
     data.billableTime = data.billableTime || 0;
-    data.activities = data.activities || {};
-    data.tasks = data.tasks || { urgent: '', important: '', later: '' };
-    data.photos = data.photos || [];
+    data.activities   = data.activities   || {};
+    data.tasks        = data.tasks        || { urgent: '', important: '', later: '' };
+    data.photos       = data.photos       || [];
+    data.files        = data.files        || [];
     return data;
   } catch (error) {
     console.error('❌ Error carregant client:', error.message);
@@ -73,8 +72,7 @@ async function loadClientSupabase(clientId) {
   }
 }
 
-/* ==================== GUARDAR CLIENT ==================== */
-
+/* ── GUARDAR CLIENT ── */
 async function saveClientSupabase(client) {
   const userId = getCurrentUserId();
   if (!userId) {
@@ -82,22 +80,38 @@ async function saveClientSupabase(client) {
     return false;
   }
 
+  // Guardar metadades dels arxius però NO el base64 (massa gran)
+  // Les URLs de Supabase Storage sí es guarden (permeten sincronització)
+  const files = (client.files || []).map(function(f) {
+    return {
+      id:       f.id,
+      date:     f.date,
+      type:     f.type,
+      name:     f.name,
+      mimeType: f.mimeType || '',
+      comment:  f.comment  || '',
+      url:      f.url  || null,
+      data:     f.url  ? null : (f.data || null)
+    };
+  });
+
   const clientData = {
-    id: client.id,
-    user_id: userId,                          // ← Necessari per RLS
-    name: client.name || '',
-    email: client.email || null,
-    phone: client.phone || null,
-    company: client.company || null,
-    notes: client.notes || null,
-    status: client.status || 'active',
-    total: client.total || 0,
+    id:          client.id,
+    user_id:     userId,
+    name:        client.name        || '',
+    email:       client.email       || null,
+    phone:       client.phone       || null,
+    company:     client.company     || null,
+    notes:       client.notes       || null,
+    status:      client.status      || 'active',
+    total:       client.total       || 0,
     billableTime: client.billableTime || 0,
-    activities: client.activities || {},
-    tasks: client.tasks || {},
-    tags: client.tags || [],
-    created_at: client.created_at || new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    activities:  client.activities  || {},
+    tasks:       client.tasks       || {},
+    tags:        client.tags        || [],
+    files:       files,
+    created_at:  client.created_at  || new Date().toISOString(),
+    updated_at:  new Date().toISOString()
   };
 
   try {
@@ -115,8 +129,7 @@ async function saveClientSupabase(client) {
   }
 }
 
-/* ==================== ELIMINAR CLIENT ==================== */
-
+/* ── ELIMINAR CLIENT ── */
 async function deleteClientSupabase(clientId) {
   try {
     const { error } = await window.supabase
@@ -132,8 +145,7 @@ async function deleteClientSupabase(clientId) {
   }
 }
 
-/* ==================== EXPORTAR ==================== */
-
+/* ── EXPORTAR ── */
 window.loadAllClientsSupabase = loadAllClientsSupabase;
 window.loadClientSupabase     = loadClientSupabase;
 window.saveClientSupabase     = saveClientSupabase;
