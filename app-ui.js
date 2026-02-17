@@ -3451,3 +3451,172 @@ window.renderFileGallery = renderFileGallery;
 window.openFileViewer = openFileViewer;
 
 console.log('✅ Sistema d\'arxius universal carregat correctament');
+/*************************************************
+ * FOCUSWORK - CORRECCIÓ RENDERITZAT DE CLIENTS
+ * Afegir aquesta funció a app-ui.js o app-core.js
+ *************************************************/
+
+// ✅ SOLUCIÓ: Afegir aquesta funció al final de app-ui.js
+// Si no tens app-ui.js, afegeix-la al final de app-core.js
+
+function updateProjectList() {
+  const container = document.querySelector('#projectList');
+  
+  if (!container) {
+    console.warn('⚠️ No s\'ha trobat el contenidor #projectList');
+    return;
+  }
+  
+  // Netejar contenidor
+  container.innerHTML = '';
+  
+  // Comprovar si hi ha clients
+  if (!state.clients || Object.keys(state.clients).length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #888;">
+        <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
+        <div style="font-size: 16px;">No hi ha clients amb aquest filtre</div>
+      </div>
+    `;
+    return;
+  }
+  
+  // Obtenir filtres actuals
+  const filterStatus = document.querySelector('[data-filter-status]')?.dataset.filterStatus || 'all';
+  const searchTerm = document.querySelector('[data-search]')?.value?.toLowerCase() || '';
+  
+  // Filtrar clients
+  let clients = Object.values(state.clients);
+  
+  // Filtrar per estat
+  if (filterStatus === 'todos') {
+    clients = clients.filter(c => c.status !== 'archived');
+  } else if (filterStatus === 'progres') {
+    clients = clients.filter(c => c.status === 'active' && c.hasActiveWork);
+  } else if (filterStatus === 'prova') {
+    clients = clients.filter(c => c.status === 'trial');
+  }
+  
+  // Filtrar per cerca
+  if (searchTerm) {
+    clients = clients.filter(c => 
+      (c.name || '').toLowerCase().includes(searchTerm) ||
+      (c.email || '').toLowerCase().includes(searchTerm) ||
+      (c.company || '').toLowerCase().includes(searchTerm)
+    );
+  }
+  
+  // Si no hi ha resultats després de filtrar
+  if (clients.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #888;">
+        <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
+        <div style="font-size: 16px;">No hi ha clients amb aquest filtre</div>
+      </div>
+    `;
+    return;
+  }
+  
+  // Ordenar clients (per urgència/entrega propera per defecte)
+  clients.sort((a, b) => {
+    // Aquí pots afegir la lògica d'ordenació que vulguis
+    return (b.created_at || 0) - (a.created_at || 0);
+  });
+  
+  // Renderitzar clients
+  clients.forEach(client => {
+    const clientCard = document.createElement('div');
+    clientCard.className = 'project-card';
+    clientCard.style.cssText = `
+      padding: 15px;
+      margin-bottom: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid #4CAF50;
+    `;
+    
+    // Hover effect
+    clientCard.onmouseover = () => {
+      clientCard.style.background = 'rgba(255, 255, 255, 0.1)';
+    };
+    clientCard.onmouseout = () => {
+      clientCard.style.background = 'rgba(255, 255, 255, 0.05)';
+    };
+    
+    // Contingut de la targeta
+    clientCard.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div style="flex: 1;">
+          <div style="font-size: 16px; font-weight: bold; color: white; margin-bottom: 5px;">
+            ${client.name || 'Sense nom'}
+          </div>
+          <div style="font-size: 12px; color: #888;">
+            ${client.email || ''} ${client.phone ? '• ' + client.phone : ''}
+          </div>
+          ${client.company ? `<div style="font-size: 12px; color: #666; margin-top: 3px;">${client.company}</div>` : ''}
+        </div>
+        <div style="font-size: 20px; opacity: 0.5;">
+          ${client.status === 'active' ? '✓' : client.status === 'trial' ? '🔄' : '📦'}
+        </div>
+      </div>
+    `;
+    
+    // Click per seleccionar client
+    clientCard.onclick = () => {
+      selectClient(client.id);
+    };
+    
+    container.appendChild(clientCard);
+  });
+  
+  console.log(`✅ ${clients.length} clients renderitzats`);
+}
+
+// Funció per seleccionar un client
+async function selectClient(clientId) {
+  console.log('📌 Seleccionant client:', clientId);
+  state.currentClientId = clientId;
+  await save();
+  
+  // Recarregar per mostrar el client
+  location.reload();
+}
+
+// Funció updateUI que crida updateProjectList
+function updateUI() {
+  console.log('🔄 Actualitzant interfície...');
+  
+  // Actualitzar llista de projectes/clients
+  if (typeof updateProjectList === 'function') {
+    updateProjectList();
+  }
+  
+  // Actualitzar altres elements de la UI
+  // ... (afegeix aquí altres actualitzacions si cal)
+}
+
+// ✅ Afegir al window per poder cridar-les des de la consola
+window.updateProjectList = updateProjectList;
+window.selectClient = selectClient;
+window.updateUI = updateUI;
+
+console.log('✅ Funcions de renderitzat de clients carregades');
+
+/*************************************************
+ * INSTRUCCIONS D'ÚS:
+ * 
+ * 1. Si tens app-ui.js:
+ *    - Afegeix aquest codi al FINAL de app-ui.js
+ * 
+ * 2. Si NO tens app-ui.js:
+ *    - Afegeix aquest codi al FINAL de app-core.js
+ * 
+ * 3. Després de pujar el codi:
+ *    - Recarrega l'app (Ctrl+Shift+R)
+ *    - Els clients haurien d'aparèixer automàticament
+ * 
+ * 4. Si continua sense funcionar, executa a la consola:
+ *    updateProjectList();
+ *************************************************/
