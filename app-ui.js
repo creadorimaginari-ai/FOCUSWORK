@@ -996,8 +996,22 @@ async function handlePhotoInputiPad(input) {
     input.value = '';
     return;
   }
+
+  // Si photos-storage.js està carregat, usar-lo per pujar a Supabase Storage
+  if (typeof window.processImageFile === 'function') {
+    const client = await loadClient(state.currentClientId);
+    if (!client) {
+      showAlert('Error', 'Client no trobat', '⚠️');
+      input.value = '';
+      return;
+    }
+    input.value = '';
+    await window.processImageFile(file, client);
+    return;
+  }
   
-  console.log('🔵 Processant imatge...');
+  // Fallback: guardar en local si Storage no disponible
+  console.log('🔵 Processant imatge (mode local)...');
   
   const reader = new FileReader();
   
