@@ -1,12 +1,13 @@
 /*************************************************
- * FOCUSWORK - SUPABASE DATABASE (VERSIÓ DEFINITIVA)
+ * FOCUSWORK - SUPABASE DATABASE (VERSIÓ DEFINITIVA v2)
  * 
  * ✅ user_id per les polítiques RLS
+ * ✅ billableTime (JS) ↔ billable_time (Supabase) correctament mapejat
  * ✅ Guarda files[] amb URLs de Storage (sincronitzable)
  * ✅ No guarda base64 si hi ha URL
  *************************************************/
 
-console.log('🚀 Supabase DB carregat');
+console.log('🚀 Supabase DB v2 carregat');
 
 function getCurrentUserId() {
   if (typeof window.getCurrentUser === 'function') {
@@ -29,14 +30,15 @@ async function loadAllClientsSupabase() {
 
     const clients = {};
     (data || []).forEach(client => {
-      client.active      = true;
-      client.total       = client.total       || 0;
-      client.billableTime = client.billableTime || 0;
-      client.activities  = client.activities  || {};
-      client.tasks       = client.tasks       || { urgent: '', important: '', later: '' };
-      client.photos      = client.photos      || [];
-      client.files       = client.files       || [];
-      clients[client.id] = client;
+      client.active       = true;
+      client.total        = client.total         || 0;
+      // Supabase guarda 'billable_time', el codi JS usa 'billableTime'
+      client.billableTime = client.billable_time || client.billableTime || 0;
+      client.activities   = client.activities    || {};
+      client.tasks        = client.tasks         || { urgent: '', important: '', later: '' };
+      client.photos       = client.photos        || [];
+      client.files        = client.files         || [];
+      clients[client.id]  = client;
     });
 
     console.log('✅ ' + Object.keys(clients).length + ' clients carregats de Supabase');
@@ -59,12 +61,13 @@ async function loadClientSupabase(clientId) {
     if (error || !data) return null;
 
     data.active       = true;
-    data.total        = data.total        || 0;
-    data.billableTime = data.billableTime || 0;
-    data.activities   = data.activities   || {};
-    data.tasks        = data.tasks        || { urgent: '', important: '', later: '' };
-    data.photos       = data.photos       || [];
-    data.files        = data.files        || [];
+    data.total        = data.total         || 0;
+    // Mapeja billable_time → billableTime
+    data.billableTime = data.billable_time  || data.billableTime || 0;
+    data.activities   = data.activities    || {};
+    data.tasks        = data.tasks         || { urgent: '', important: '', later: '' };
+    data.photos       = data.photos        || [];
+    data.files        = data.files         || [];
     return data;
   } catch (error) {
     console.error('❌ Error carregant client:', error.message);
@@ -90,28 +93,28 @@ async function saveClientSupabase(client) {
       name:     f.name,
       mimeType: f.mimeType || '',
       comment:  f.comment  || '',
-      url:      f.url  || null,
-      data:     f.url  ? null : (f.data || null)
+      url:      f.url      || null,
+      data:     f.url      ? null : (f.data || null)
     };
   });
 
   const clientData = {
-    id:          client.id,
-    user_id:     userId,
-    name:        client.name        || '',
-    email:       client.email       || null,
-    phone:       client.phone       || null,
-    company:     client.company     || null,
-    notes:       client.notes       || null,
-    status:      client.status      || 'active',
-    total:       client.total       || 0,
-    billableTime: client.billableTime || 0,
-    activities:  client.activities  || {},
-    tasks:       client.tasks       || {},
-    tags:        client.tags        || [],
-    files:       files,
-    created_at:  client.created_at  || new Date().toISOString(),
-    updated_at:  new Date().toISOString()
+    id:            client.id,
+    user_id:       userId,
+    name:          client.name        || '',
+    email:         client.email       || null,
+    phone:         client.phone       || null,
+    company:       client.company     || null,
+    notes:         client.notes       || null,
+    status:        client.status      || 'active',
+    total:         client.total       || 0,
+    billable_time: client.billableTime || client.billable_time || 0,  // ← snake_case per Supabase
+    activities:    client.activities  || {},
+    tasks:         client.tasks       || {},
+    tags:          client.tags        || [],
+    files:         files,
+    created_at:    client.created_at  || new Date().toISOString(),
+    updated_at:    new Date().toISOString()
   };
 
   try {
@@ -151,4 +154,4 @@ window.loadClientSupabase     = loadClientSupabase;
 window.saveClientSupabase     = saveClientSupabase;
 window.deleteClientSupabase   = deleteClientSupabase;
 
-console.log('✅ Supabase DB definitiu carregat');
+console.log('✅ Supabase DB v2 carregat correctament');
