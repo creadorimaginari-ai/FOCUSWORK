@@ -232,8 +232,8 @@ async function renderFileGallery(preloadedClient = null) {
       wrap.innerHTML = `
         <img src="${src}" alt="${file.name || 'Foto'}"
           style="width:100%;height:100%;object-fit:cover;"
-          onerror="this.style.display='none';this.nextSibling.style.display='flex'">
-        <div style="display:none;align-items:center;justify-content:center;height:100%;color:#888;font-size:30px;">🖼️</div>
+          onerror="this.style.display='none';var fb=this.parentElement.querySelector('.img-fallback');if(fb)fb.style.display='flex';">
+        <div class="img-fallback" style="display:none;align-items:center;justify-content:center;height:100%;color:#888;font-size:30px;">🖼️</div>
         ${file.comment ? `<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);color:white;font-size:10px;padding:4px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">💬 ${file.comment}</div>` : ''}
       `;
     } else {
