@@ -4036,8 +4036,8 @@ async function loadAllClientsSupabase() {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('*')
-      .eq('user_email', userName);
+      .select('id, name, email, phone, company, notes, status, activities, tags, created_at')
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error('❌ Error Supabase:', error);
@@ -4052,6 +4052,7 @@ async function loadAllClientsSupabase() {
     // Convertir array a objecte amb id com a clau
     const clients = {};
     data.forEach(client => {
+      client.active = true; // Assegurar que active és true per compatibilitat
       clients[client.id] = client;
     });
     
@@ -4071,17 +4072,19 @@ async function loadClientSupabase(clientId) {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('*')
+      .select('id, name, email, phone, company, notes, status, activities, tags, created_at')
       .eq('id', clientId)
-      .eq('user_email', userName)
-      .single();
+      .limit(1);
     
     if (error) {
       console.error('❌ Error carregant client:', error);
       return null;
     }
     
-    return data;
+    if (!data || data.length === 0) return null;
+    const client = data[0];
+    client.active = true;
+    return client;
     
   } catch (error) {
     console.error('❌ Error:', error);
@@ -4094,15 +4097,24 @@ async function loadClientSupabase(clientId) {
  */
 async function saveClientSupabase(client) {
   try {
-    // Assegurar que té user_email
-    if (!client.user_email) {
-      client.user_email = userName;
-    }
+    // Només columnes que existeixen a Supabase
+    const clientData = {
+      id: client.id,
+      name: client.name || '',
+      email: client.email || null,
+      phone: client.phone || null,
+      company: client.company || null,
+      notes: client.notes || null,
+      status: client.status || 'active',
+      activities: client.activities || {},
+      tags: client.tags || [],
+      created_at: client.created_at || new Date().toISOString()
+    };
     
     // Upsert (insert o update)
     const { data, error } = await supabase
       .from('clients')
-      .upsert(client, { onConflict: 'id' })
+      .upsert(clientData, { onConflict: 'id' })
       .select();
     
     if (error) {
@@ -4211,8 +4223,11 @@ async function updateProjectList() {
   // Obtenir tots els clients
   let clients = Object.values(state.clients);
   
-  // Filtrar clients actius
-  clients = clients.filter(c => c.active !== false);
+  // Filtrar: excloure només els explícitament eliminats/arxivats
+  clients = clients.filter(c => {
+    const status = (c.status || '').toLowerCase();
+    return status !== 'deleted' && status !== 'archived' && c.active !== false;
+  });
   
   // Ordenar per data de creació
   clients.sort((a, b) => {
@@ -4291,7 +4306,6 @@ async function createTestClient() {
     company: 'Empresa Test',
     active: true,
     created_at: new Date().toISOString(),
-    user_email: userName,
     total: 0,
     billableTime: 0,
     activities: {},
