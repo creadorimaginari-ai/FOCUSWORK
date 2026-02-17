@@ -669,7 +669,6 @@ async function closeClient() {
   const client = await loadClient(state.currentClientId);
   if (!client) return;
   
-  client.photos = client.photos || [];
   if (client.photos.length > 0 || (client.notes && client.notes.trim())) {
     $('exportBeforeCloseText').textContent = `Aquest client té ${client.photos.length} fotos i notes.\n\nVols exportar el treball abans de tancar?`;
     window.clientToClose = client.id;
@@ -3452,945 +3451,122 @@ window.renderFileGallery = renderFileGallery;
 window.openFileViewer = openFileViewer;
 
 console.log('✅ Sistema d\'arxius universal carregat correctament');
-/*************************************************
- * FOCUSWORK - CORRECCIÓ RENDERITZAT DE CLIENTS
- * Afegir aquesta funció a app-ui.js o app-core.js
- *************************************************/
 
-// ✅ SOLUCIÓ: Afegir aquesta funció al final de app-ui.js
-// Si no tens app-ui.js, afegeix-la al final de app-core.js
+/* ================= RENDERITZAT DE CLIENTS ================= */
 
+/**
+ * Renderitza la llista de clients al #projectList.
+ * Utilitza state.clients que ja ha estat carregat per initApp/loadState.
+ */
 function updateProjectList() {
   const container = document.querySelector('#projectList');
-  
-  if (!container) {
-    console.warn('⚠️ No s\'ha trobat el contenidor #projectList');
-    return;
-  }
-  
-  // Netejar contenidor
+  if (!container) return;
+
   container.innerHTML = '';
-  
-  // Comprovar si hi ha clients
-  if (!state.clients || Object.keys(state.clients).length === 0) {
+
+  const allClients = state.clients ? Object.values(state.clients) : [];
+  const clients = allClients
+    .filter(c => {
+      const s = (c.status || '').toLowerCase();
+      return s !== 'archived' && s !== 'deleted' && c.active !== false;
+    })
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+  if (!clients.length) {
     container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #888;">
-        <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
-        <div style="font-size: 16px;">No hi ha clients amb aquest filtre</div>
-      </div>
-    `;
+      <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.4)">
+        <div style="font-size:48px;margin-bottom:16px">📋</div>
+        <div style="font-size:16px;font-weight:600;margin-bottom:8px">No hi ha clients</div>
+        <div style="font-size:13px">Crea el teu primer client amb el botó +</div>
+      </div>`;
     return;
   }
-  
-  // Obtenir filtres actuals
-  const filterStatus = document.querySelector('[data-filter-status]')?.dataset.filterStatus || 'all';
-  const searchTerm = document.querySelector('[data-search]')?.value?.toLowerCase() || '';
-  
-  // Filtrar clients - mostrar tots excepte archived/deleted
-  let clients = Object.values(state.clients).filter(c => {
-    const s = (c.status||'').toLowerCase();
-    return s !== 'archived' && s !== 'deleted';
-  });
-  
-  // Filtrar per cerca
-  if (searchTerm) {
-    clients = clients.filter(c => 
-      (c.name || '').toLowerCase().includes(searchTerm) ||
-      (c.email || '').toLowerCase().includes(searchTerm) ||
-      (c.company || '').toLowerCase().includes(searchTerm)
-    );
-  }
-  
-  // Si no hi ha resultats després de filtrar
-  if (clients.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #888;">
-        <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
-        <div style="font-size: 16px;">No hi ha clients amb aquest filtre</div>
-      </div>
-    `;
-    return;
-  }
-  
-  // Ordenar clients (per urgència/entrega propera per defecte)
-  clients.sort((a, b) => {
-    // Aquí pots afegir la lògica d'ordenació que vulguis
-    return (b.created_at || 0) - (a.created_at || 0);
-  });
-  
-  // Renderitzar clients
-  clients.forEach(client => {
-    const clientCard = document.createElement('div');
-    clientCard.className = 'project-card';
-    clientCard.style.cssText = `
-      padding: 15px;
-      margin-bottom: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-      border-left: 3px solid #4CAF50;
-    `;
-    
-    // Hover effect
-    clientCard.onmouseover = () => {
-      clientCard.style.background = 'rgba(255, 255, 255, 0.1)';
-    };
-    clientCard.onmouseout = () => {
-      clientCard.style.background = 'rgba(255, 255, 255, 0.05)';
-    };
-    
-    // Contingut de la targeta
-    clientCard.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: start;">
-        <div style="flex: 1;">
-          <div style="font-size: 16px; font-weight: bold; color: white; margin-bottom: 5px;">
-            ${client.name || 'Sense nom'}
-          </div>
-          <div style="font-size: 12px; color: #888;">
-            ${client.email || ''} ${client.phone ? '• ' + client.phone : ''}
-          </div>
-          ${client.company ? `<div style="font-size: 12px; color: #666; margin-top: 3px;">${client.company}</div>` : ''}
-        </div>
-        <div style="font-size: 20px; opacity: 0.5;">
-          ${client.status === 'active' ? '✓' : client.status === 'trial' ? '🔄' : '📦'}
-        </div>
-      </div>
-    `;
-    
-    // Click per seleccionar client
-    clientCard.onclick = () => {
-      selectClient(client.id);
-    };
-    
-    container.appendChild(clientCard);
-  });
-  
-  console.log(`✅ ${clients.length} clients renderitzats`);
-}
 
-// Funció per seleccionar un client (versió sense reload)
-// La versió completa ja està definida a dalt (línia ~635)
-
-// Funció updateUI que crida updateProjectList
-function updateUI() {
-  console.log('🔄 Actualitzant interfície...');
-  
-  // Actualitzar llista de projectes/clients
-  if (typeof updateProjectList === 'function') {
-    updateProjectList();
-  }
-  
-  // Actualitzar altres elements de la UI
-  // ... (afegeix aquí altres actualitzacions si cal)
-}
-
-// ✅ Afegir al window per poder cridar-les des de la consola
-window.updateProjectList = updateProjectList;
-window.selectClient = selectClient;
-window.updateUI = updateUI;
-
-console.log('✅ Funcions de renderitzat de clients carregades');
-
-/*************************************************
- * INSTRUCCIONS D'ÚS:
- * 
- * 1. Si tens app-ui.js:
- *    - Afegeix aquest codi al FINAL de app-ui.js
- * 
- * 2. Si NO tens app-ui.js:
- *    - Afegeix aquest codi al FINAL de app-core.js
- * 
- * 3. Després de pujar el codi:
- *    - Recarrega l'app (Ctrl+Shift+R)
- *    - Els clients haurien d'aparèixer automàticament
- * 
- * 4. Si continua sense funcionar, executa a la consola:
- *    updateProjectList();
- *************************************************/
-/*************************************************
- * FOCUSWORK - FIX COMPLET SINCRONITZACIÓ CLIENTS
- * 
- * PROBLEMA: Els clients no es carreguen de Supabase i 
- *           la llista apareix buida
- * 
- * SOLUCIÓ: Aquest codi carrega automàticament els clients
- *          de Supabase quan l'app s'inicia
- *************************************************/
-
-// ==========================================
-// PART 1: CARREGAR CLIENTS DE SUPABASE
-// ==========================================
-
-/**
- * Carrega TOTS els clients de Supabase i els guarda a state.clients
- */
-async function syncClientsFromSupabase() {
-  console.log('🔄 Iniciant sincronització amb Supabase...');
-  
-  try {
-    // Carregar clients de Supabase
-    const clients = await loadAllClientsSupabase();
-    
-    if (!clients || Object.keys(clients).length === 0) {
-      console.log('⚠️ No s\'han trobat clients a Supabase');
-      state.clients = {};
-      return;
-    }
-    
-    // Guardar clients a state
-    state.clients = clients;
-    
-    console.log(`✅ ${Object.keys(clients).length} clients sincronitzats de Supabase`);
-    
-    // Guardar a localStorage també
-    await save();
-    
-    // Actualitzar la UI
-    if (typeof updateProjectList === 'function') {
-      updateProjectList();
-    }
-    
-    return clients;
-    
-  } catch (error) {
-    console.error('❌ Error sincronitzant clients de Supabase:', error);
-    
-    // Si falla Supabase, intentar carregar de IndexedDB local
-    try {
-      const localClients = await loadAllClients();
-      state.clients = localClients;
-      console.log(`⚠️ Carregats ${Object.keys(localClients).length} clients locals (Supabase no disponible)`);
-    } catch (localError) {
-      console.error('❌ Error carregant clients locals:', localError);
-      state.clients = {};
-    }
-  }
-}
-
-// ==========================================
-// PART 2: INICIALITZACIÓ AUTOMÀTICA
-// ==========================================
-
-/**
- * S'executa automàticament quan es carrega l'app
- */
-async function initializeClientList() {
-  console.log('🚀 Inicialitzant llista de clients...');
-  
-  // 1. Sincronitzar clients de Supabase
-  await syncClientsFromSupabase();
-  
-  // 2. Actualitzar la UI
-  if (typeof updateProjectList === 'function') {
-    updateProjectList();
-  } else {
-    console.warn('⚠️ Funció updateProjectList no disponible');
-  }
-  
-  // 3. Configurar sincronització periòdica (cada 30 segons)
-  setInterval(async () => {
-    console.log('🔄 Sincronització automàtica...');
-    await syncClientsFromSupabase();
-  }, 30000); // 30 segons
-}
-
-// ==========================================
-// PART 3: MILLORAR updateProjectList
-// ==========================================
-
-/**
- * Versió millorada que sempre intenta carregar de Supabase
- */
-async function updateProjectListEnhanced() {
-  const container = document.querySelector('#projectList');
-  
-  if (!container) {
-    console.warn('⚠️ No s\'ha trobat el contenidor #projectList');
-    return;
-  }
-  
-  // Si no hi ha clients a state, carregar de Supabase
-  if (!state.clients || Object.keys(state.clients).length === 0) {
-    console.log('📥 Carregant clients de Supabase...');
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #888;">
-        <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-        <div style="font-size: 16px;">Carregant clients...</div>
-      </div>
-    `;
-    
-    await syncClientsFromSupabase();
-  }
-  
-  // Netejar contenidor
-  container.innerHTML = '';
-  
-  // Comprovar si hi ha clients després de carregar
-  if (!state.clients || Object.keys(state.clients).length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #888;">
-        <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
-        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
-          No hi ha clients encara
-        </div>
-        <div style="font-size: 14px; color: #666;">
-          Crea el teu primer client per començar
-        </div>
-        <button onclick="openModal('modalClient')" style="
-          margin-top: 20px;
-          padding: 10px 20px;
-          background: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 14px;
-        ">
-          ➕ Crear Client
-        </button>
-      </div>
-    `;
-    return;
-  }
-  
-  // Obtenir filtres actuals
-  const filterStatus = document.querySelector('[data-filter-status]')?.dataset.filterStatus || 'all';
-  const searchTerm = document.querySelector('[data-search]')?.value?.toLowerCase() || '';
-  
-  // Filtrar clients
-  let clients = Object.values(state.clients);
-  
-  // Filtrar per estat
-  if (filterStatus === 'active') {
-    clients = clients.filter(c => c.active !== false);
-  } else if (filterStatus === 'archived') {
-    clients = clients.filter(c => c.active === false);
-  }
-  
-  // Filtrar per cerca
-  if (searchTerm) {
-    clients = clients.filter(c => 
-      (c.name || '').toLowerCase().includes(searchTerm) ||
-      (c.email || '').toLowerCase().includes(searchTerm) ||
-      (c.company || '').toLowerCase().includes(searchTerm)
-    );
-  }
-  
-  // Si no hi ha resultats després de filtrar
-  if (clients.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #888;">
-        <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
-        <div style="font-size: 16px;">No hi ha clients amb aquest filtre</div>
-        <button onclick="updateProjectListEnhanced()" style="
-          margin-top: 20px;
-          padding: 8px 16px;
-          background: #666;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 12px;
-        ">
-          🔄 Recarregar
-        </button>
-      </div>
-    `;
-    return;
-  }
-  
-  // Ordenar clients per data de creació (més recent primer)
-  clients.sort((a, b) => {
-    const dateA = new Date(a.created_at || 0);
-    const dateB = new Date(b.created_at || 0);
-    return dateB - dateA;
-  });
-  
-  // Renderitzar clients
-  clients.forEach(client => {
-    const clientCard = document.createElement('div');
-    clientCard.className = 'project-card';
-    clientCard.style.cssText = `
-      padding: 15px;
-      margin-bottom: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-      border-left: 3px solid ${client.active === false ? '#888' : '#4CAF50'};
-    `;
-    
-    // Hover effect
-    clientCard.onmouseover = () => {
-      clientCard.style.background = 'rgba(255, 255, 255, 0.1)';
-      clientCard.style.transform = 'translateX(5px)';
-    };
-    clientCard.onmouseout = () => {
-      clientCard.style.background = 'rgba(255, 255, 255, 0.05)';
-      clientCard.style.transform = 'translateX(0)';
-    };
-    
-    // Temps total formatat
-    const totalTime = formatTime(client.total || 0);
-    
-    // Contingut de la targeta
-    clientCard.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: start;">
-        <div style="flex: 1;">
-          <div style="font-size: 16px; font-weight: bold; color: white; margin-bottom: 5px;">
-            ${client.name || 'Sense nom'}
-            ${client.active === false ? '<span style="font-size: 10px; background: #888; padding: 2px 6px; border-radius: 3px; margin-left: 8px;">ARXIVAT</span>' : ''}
-          </div>
-          <div style="font-size: 12px; color: #888;">
-            ${client.email || ''} ${client.phone ? '• ' + client.phone : ''}
-          </div>
-          ${client.company ? `<div style="font-size: 12px; color: #666; margin-top: 3px;">${client.company}</div>` : ''}
-          ${client.total > 0 ? `<div style="font-size: 11px; color: #4CAF50; margin-top: 5px;">⏱️ ${totalTime}</div>` : ''}
-        </div>
-        <div style="font-size: 20px; opacity: 0.5;">
-          ${client.active === false ? '📦' : '✓'}
-        </div>
-      </div>
-    `;
-    
-    // Click per seleccionar client
-    clientCard.onclick = () => {
-      selectClient(client.id);
-    };
-    
-    container.appendChild(clientCard);
-  });
-  
-  console.log(`✅ ${clients.length} clients renderitzats`);
-}
-
-// ==========================================
-// PART 4: EXPORTAR FUNCIONS
-// ==========================================
-
-window.syncClientsFromSupabase = syncClientsFromSupabase;
-window.initializeClientList = initializeClientList;
-window.updateProjectListEnhanced = updateProjectListEnhanced;
-
-// Reemplaçar updateProjectList original
-window.updateProjectList = updateProjectListEnhanced;
-
-// ==========================================
-// PART 5: AUTO-INICIALITZACIÓ
-// ==========================================
-
-// Esperar que el DOM estigui carregat
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeClientList);
-} else {
-  // El DOM ja està carregat, executar immediatament
-  initializeClientList();
-}
-
-console.log('✅ Sistema de sincronització de clients carregat');
-
-/*************************************************
- * INSTRUCCIONS D'APLICACIÓ:
- * 
- * OPCIÓ A - AFEGIR A app-ui.js (RECOMANAT):
- * ========================================
- * 1. Obre app-ui.js a GitHub
- * 2. Ves al FINAL del fitxer
- * 3. ENGANXA tot aquest codi
- * 4. Commit changes
- * 
- * OPCIÓ B - AFEGIR A app-core.js:
- * ================================
- * 1. Obre app-core.js a GitHub
- * 2. Ves al FINAL del fitxer
- * 3. ENGANXA tot aquest codi
- * 4. Commit changes
- * 
- * DESPRÉS D'APLICAR:
- * =================
- * 1. Neteja la cache del navegador:
- *    Ctrl + Shift + Delete
- *    Marca "Cookies" i "Cache"
- *    Esborra
- * 
- * 2. Recarrega l'app:
- *    Ctrl + Shift + R
- * 
- * 3. Obre la consola (F12) i comprova:
- *    - Hauria de dir "🔄 Iniciant sincronització..."
- *    - Hauria de dir "✅ X clients sincronitzats"
- *    - Els clients haurien d'aparèixer a la llista
- * 
- * SI CONTINUA SENSE FUNCIONAR:
- * ===========================
- * Executa a la consola:
- * 
- *   await syncClientsFromSupabase();
- *   updateProjectList();
- * 
- *************************************************/
-/*************************************************
- * FOCUSWORK - FIX DEFINITIU SENSE INDEXEDDB
- * 
- * PROBLEMA: IndexedDB està corromput i dona errors
- * SOLUCIÓ: Usar NOMÉS Supabase + localStorage
- *************************************************/
-
-// ==========================================
-// CONFIGURACIÓ: DESACTIVAR INDEXEDDB
-// ==========================================
-
-// Marcar que NO volem usar IndexedDB
-window.FOCUSWORK_NO_INDEXEDDB = true;
-
-console.log('⚠️ IndexedDB desactivat - Usant només Supabase + localStorage');
-
-// ==========================================
-// FUNCIONS DE GUARDAT ALTERNATIVES
-// ==========================================
-
-/**
- * Guardar state a localStorage (sense IndexedDB)
- */
-async function saveStateToLocalStorage() {
-  try {
-    localStorage.setItem('focuswork_state', JSON.stringify(state));
-    console.log('✅ State guardat a localStorage');
-    return true;
-  } catch (error) {
-    console.error('❌ Error guardant state:', error);
-    return false;
-  }
-}
-
-/**
- * Carregar state de localStorage
- */
-function loadStateFromLocalStorage() {
-  try {
-    const saved = localStorage.getItem('focuswork_state');
-    if (saved) {
-      const parsedState = JSON.parse(saved);
-      Object.assign(state, parsedState);
-      console.log('✅ State carregat de localStorage');
-      return true;
-    }
-  } catch (error) {
-    console.error('❌ Error carregant state:', error);
-  }
-  return false;
-}
-
-/**
- * Reemplaçar la funció save() original per una versió sense IndexedDB
- */
-const originalSave = window.save;
-window.save = async function() {
-  console.log('💾 Guardant (sense IndexedDB)...');
-  
-  // Guardar a localStorage
-  await saveStateToLocalStorage();
-  
-  // Si tenim un client actual, guardar-lo també a Supabase
-  if (state.currentClientId) {
-    try {
-      const client = await loadClient(state.currentClientId);
-      if (client) {
-        await saveClientSupabase(client);
-        console.log('✅ Client guardat a Supabase');
-      }
-    } catch (error) {
-      console.error('❌ Error guardant client a Supabase:', error);
-    }
-  }
-  
-  return true;
-};
-
-// ==========================================
-// FUNCIONS DE CLIENTS (NOMÉS SUPABASE)
-// ==========================================
-
-/**
- * Carregar TOTS els clients de Supabase
- */
-async function loadAllClientsSupabase() {
-  console.log('📥 Carregant clients de Supabase...');
-  
-  try {
-    const { data, error } = await supabase
-      .from('clients')
-      .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('❌ Error Supabase:', error);
-      return {};
-    }
-    
-    if (!data || data.length === 0) {
-      console.log('⚠️ No hi ha clients a Supabase');
-      return {};
-    }
-    
-    // Convertir array a objecte amb id com a clau
-    const clients = {};
-    data.forEach(client => {
-      client.active = true; // Necessari per compatibilitat amb l'app
-      client.total = client.total || 0;
-      client.billableTime = 0;
-      clients[client.id] = client;
-    });
-    
-    console.log(`✅ ${data.length} clients carregats de Supabase`);
-    return clients;
-    
-  } catch (error) {
-    console.error('❌ Error carregant clients:', error);
-    return {};
-  }
-}
-
-/**
- * Carregar un client específic de Supabase
- */
-async function loadClientSupabase(clientId) {
-  try {
-    const { data, error } = await supabase
-      .from('clients')
-      .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
-      .eq('id', clientId)
-      .limit(1);
-    
-    if (error) {
-      console.error('❌ Error carregant client:', error);
-      return null;
-    }
-    
-    if (!data || data.length === 0) return null;
-    const client = data[0];
-    client.active = true;
-    client.total = client.total || 0;
-    client.billableTime = 0;
-    return client;
-    
-  } catch (error) {
-    console.error('❌ Error:', error);
-    return null;
-  }
-}
-
-/**
- * Guardar client a Supabase
- */
-async function saveClientSupabase(client) {
-  try {
-    // Només columnes que existeixen a Supabase
-    const clientData = {
-      id: client.id,
-      name: client.name || '',
-      email: client.email || null,
-      phone: client.phone || null,
-      company: client.company || null,
-      notes: client.notes || null,
-      status: client.status || 'active',
-      activities: client.activities || {},
-      tags: client.tags || [],
-      created_at: client.created_at || new Date().toISOString()
-    };
-    
-    // Upsert (insert o update)
-    const { data, error } = await supabase
-      .from('clients')
-      .upsert(clientData, { onConflict: 'id' })
-      .select();
-    
-    if (error) {
-      console.error('❌ Error guardant client:', error);
-      return false;
-    }
-    
-    console.log('✅ Client guardat a Supabase:', client.name);
-    return true;
-    
-  } catch (error) {
-    console.error('❌ Error:', error);
-    return false;
-  }
-}
-
-// ==========================================
-// SINCRONITZACIÓ AMB SUPABASE
-// ==========================================
-
-/**
- * Sincronitzar clients de Supabase a state
- */
-async function syncClientsFromSupabase() {
-  console.log('🔄 Sincronitzant clients de Supabase...');
-  
-  try {
-    const clients = await loadAllClientsSupabase();
-    
-    if (clients && Object.keys(clients).length > 0) {
-      state.clients = clients;
-      await saveStateToLocalStorage();
-      console.log(`✅ ${Object.keys(clients).length} clients sincronitzats`);
-      return clients;
-    } else {
-      console.log('⚠️ No hi ha clients a Supabase');
-      state.clients = {};
-      return {};
-    }
-    
-  } catch (error) {
-    console.error('❌ Error sincronitzant:', error);
-    return {};
-  }
-}
-
-// ==========================================
-// RENDERITZAR LLISTA DE CLIENTS
-// ==========================================
-
-/**
- * Actualitzar llista de projectes/clients
- */
-async function updateProjectList() {
-  console.log('🔄 Actualitzant llista de clients...');
-  
-  const container = document.querySelector('#projectList');
-  
-  if (!container) {
-    console.warn('⚠️ No s\'ha trobat #projectList');
-    return;
-  }
-  
-  // Si no hi ha clients, carregar de Supabase
-  if (!state.clients || Object.keys(state.clients).length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #888;">
-        <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-        <div style="font-size: 16px;">Carregant clients de Supabase...</div>
-      </div>
-    `;
-    
-    await syncClientsFromSupabase();
-  }
-  
-  // Netejar contenidor
-  container.innerHTML = '';
-  
-  // Comprovar si hi ha clients
-  if (!state.clients || Object.keys(state.clients).length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px; color: #888;">
-        <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
-        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
-          No hi ha clients encara
-        </div>
-        <div style="font-size: 14px; color: #666; margin-bottom: 20px;">
-          Crea el teu primer client a Supabase
-        </div>
-        <button onclick="createTestClient()" style="
-          padding: 10px 20px;
-          background: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 14px;
-        ">
-          ➕ Crear Client de Prova
-        </button>
-      </div>
-    `;
-    return;
-  }
-  
-  // Obtenir tots els clients
-  let clients = Object.values(state.clients);
-  
-  // Mostrar tots els clients excepte archived/deleted
-  clients = clients.filter(c => {
-    const s = (c.status||'').toLowerCase();
-    return s !== 'archived' && s !== 'deleted';
-  });
-  
-  // Ordenar per data de creació
-  clients.sort((a, b) => {
-    const dateA = new Date(a.created_at || 0);
-    const dateB = new Date(b.created_at || 0);
-    return dateB - dateA;
-  });
-  
-  console.log(`📋 Renderitzant ${clients.length} clients`);
-  
-  // Renderitzar cada client
-  clients.forEach(client => {
+  clients.forEach(function(client) {
     const card = document.createElement('div');
     card.className = 'project-card';
     card.style.cssText = `
-      padding: 15px;
-      margin-bottom: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-      border-left: 3px solid #4CAF50;
+      padding:15px;margin-bottom:10px;
+      background:rgba(255,255,255,0.05);border-radius:8px;
+      cursor:pointer;transition:all 0.2s;
+      border-left:3px solid #4CAF50;
     `;
-    
-    card.onmouseover = () => {
-      card.style.background = 'rgba(255, 255, 255, 0.1)';
-      card.style.transform = 'translateX(5px)';
-    };
-    
-    card.onmouseout = () => {
-      card.style.background = 'rgba(255, 255, 255, 0.05)';
-      card.style.transform = 'translateX(0)';
-    };
-    
+    card.onmouseover = () => { card.style.background = 'rgba(255,255,255,0.1)'; card.style.transform = 'translateX(4px)'; };
+    card.onmouseout  = () => { card.style.background = 'rgba(255,255,255,0.05)'; card.style.transform = 'translateX(0)'; };
+
+    const timeStr = client.total > 0 ? `<div style="font-size:11px;color:#4CAF50;margin-top:5px;">⏱️ ${formatTime(client.total)}</div>` : '';
     card.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: start;">
-        <div style="flex: 1;">
-          <div style="font-size: 16px; font-weight: bold; color: white; margin-bottom: 5px;">
+      <div style="display:flex;justify-content:space-between;align-items:start;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:16px;font-weight:600;color:white;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             ${client.name || 'Sense nom'}
           </div>
-          <div style="font-size: 12px; color: #888;">
-            ${client.email || ''} ${client.phone ? '• ' + client.phone : ''}
+          <div style="font-size:12px;color:#888;">
+            ${[client.email, client.phone].filter(Boolean).join(' • ')}
           </div>
-          ${client.company ? `<div style="font-size: 12px; color: #666; margin-top: 3px;">${client.company}</div>` : ''}
-          ${client.total > 0 ? `<div style="font-size: 11px; color: #4CAF50; margin-top: 5px;">⏱️ ${formatTime(client.total || 0)}</div>` : ''}
+          ${client.company ? `<div style="font-size:12px;color:#666;margin-top:2px;">${client.company}</div>` : ''}
+          ${timeStr}
         </div>
-        <div style="font-size: 20px; opacity: 0.5;">✓</div>
-      </div>
-    `;
-    
-    card.onclick = () => {
-      selectClient(client.id);
-    };
-    
+        <div style="font-size:20px;opacity:0.5;margin-left:10px;">✓</div>
+      </div>`;
+
+    card.onclick = () => selectClient(client.id);
     container.appendChild(card);
   });
-  
+
   console.log(`✅ ${clients.length} clients renderitzats`);
 }
 
-// ==========================================
-// FUNCIÓ AUXILIAR: CREAR CLIENT DE PROVA
-// ==========================================
+/**
+ * Selecciona un client: actualitza state, guarda a IndexedDB i mostra la vista.
+ * NO fa location.reload() — mostra la vista directament.
+ */
+async function selectClient(clientId) {
+  console.log('📌 Seleccionant client:', clientId);
 
-async function createTestClient() {
-  console.log('🧪 Creant client de prova...');
-  
-  const testClient = {
-    id: 'client_' + Date.now(),
-    name: 'Client de Prova',
-    email: 'prova@example.com',
-    phone: '600 000 000',
-    company: 'Empresa Test',
-    active: true,
-    created_at: new Date().toISOString(),
-    total: 0,
-    billableTime: 0,
-    activities: {},
-    notes: '',
-    tasks: { urgent: "", important: "", later: "" }
-  };
-  
-  const success = await saveClientSupabase(testClient);
-  
-  if (success) {
-    alert('✅ Client de prova creat! Recarregant...');
-    await syncClientsFromSupabase();
-    updateProjectList();
-  } else {
-    alert('❌ Error creant client de prova');
+  if (state.currentClientId === clientId) {
+    closeModal('modalChangeClient');
+    return;
   }
+
+  state.currentClientId = clientId;
+  state.currentActivity = ACTIVITIES.WORK;
+  state.sessionElapsed = 0;
+  state.lastTick = Date.now();
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
+
+  // Guardar a IndexedDB ABANS de qualsevol altra cosa
+  await save();
+
+  // Carregar client i actualitzar tota la UI
+  const client = await loadClient(clientId);
+  if (!client) {
+    console.error('❌ No s\'ha pogut carregar el client:', clientId);
+    return;
+  }
+
+  // Mostrar panells del client
+  const clientInfoPanel = document.getElementById('clientInfoPanel');
+  if (clientInfoPanel) clientInfoPanel.style.display = 'block';
+
+  const fixedBtns = document.getElementById('clientFixedButtons');
+  if (fixedBtns) { fixedBtns.style.display = 'grid'; fixedBtns.classList.remove('hidden'); }
+
+  closeModal('modalChangeClient');
+
+  // Cridar updateUI original (la completa, async, definida a l'inici del fitxer)
+  await _originalUpdateUI(client);
+
+  console.log('✅ Client seleccionat:', client.name);
 }
 
-// ==========================================
-// INICIALITZACIÓ AUTOMÀTICA
-// ==========================================
+// Guardar referència a la updateUI original CORRECTA (la de la línia ~338)
+// per evitar que futures sobrescriptures la trenquin
+const _originalUpdateUI = updateUI;
 
-async function initApp() {
-  console.log('🚀 Inicialitzant FocusWork (sense IndexedDB)...');
-  
-  // Carregar state de localStorage
-  loadStateFromLocalStorage();
-  
-  // Sincronitzar clients de Supabase
-  await syncClientsFromSupabase();
-  
-  // Actualitzar UI
-  updateProjectList();
-  
-  // Configurar sincronització periòdica (cada 30 segons)
-  setInterval(async () => {
-    console.log('🔄 Sincronització automàtica...');
-    await syncClientsFromSupabase();
-    updateProjectList();
-  }, 30000);
-  
-  console.log('✅ App inicialitzada correctament');
-}
-
-// ==========================================
-// EXPORTAR FUNCIONS
-// ==========================================
-
-window.syncClientsFromSupabase = syncClientsFromSupabase;
+// Exposar al window
 window.updateProjectList = updateProjectList;
-window.saveClientSupabase = saveClientSupabase;
-window.loadClientSupabase = loadClientSupabase;
-window.createTestClient = createTestClient;
-window.initApp = initApp;
+window.selectClient = selectClient;
 
-// ==========================================
-// AUTO-INICIALITZACIÓ
-// ==========================================
-
-// Esperar que tot estigui carregat
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  // Executar després d'un petit delay per assegurar que tot està carregat
-  setTimeout(initApp, 1000);
-}
-
-console.log('✅ Sistema sense IndexedDB carregat');
-
-/*************************************************
- * INSTRUCCIONS D'ÚS:
- * 
- * 1. AFEGIR AQUEST CODI:
- *    - Obre app-core.js o app-ui.js a GitHub
- *    - Ves al FINAL del fitxer
- *    - ENGANXA tot aquest codi
- *    - Commit changes
- * 
- * 2. NETEJA LA CACHE:
- *    - Ctrl + Shift + Delete
- *    - Marca "Cookies" i "Cache"
- *    - Esborra
- * 
- * 3. RECARREGA L'APP:
- *    - Ctrl + Shift + R
- * 
- * 4. COMPROVA LA CONSOLA:
- *    - Hauria de dir "🚀 Inicialitzant FocusWork"
- *    - Després "✅ X clients carregats"
- * 
- * 5. SI NO HI HA CLIENTS:
- *    - Clica el botó "Crear Client de Prova"
- *    - Hauria de crear-se a Supabase
- *    - I aparèixer a la llista
- * 
- * AVANTATGES D'AQUESTA SOLUCIÓ:
- * ✅ No depèn d'IndexedDB (que estava corromput)
- * ✅ Usa només Supabase (més fiable)
- * ✅ localStorage com a cache local
- * ✅ Sincronització automàtica cada 30s
- * ✅ Més simple i menys propenso a errors
- *************************************************/
+console.log('✅ Sistema de clients definitiu carregat');

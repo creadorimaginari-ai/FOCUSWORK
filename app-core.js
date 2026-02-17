@@ -1357,10 +1357,9 @@ document.addEventListener('DOMContentLoaded', initApp);
       
       card.onclick = () => {
         console.log('📌 Client seleccionat:', client.id);
-        if (window.state) {
-          window.state.currentClientId = client.id;
+        if (typeof window.selectClient === 'function') {
+          window.selectClient(client.id);
         }
-        setTimeout(() => location.reload(), 300);
       };
       
       container.appendChild(card);
