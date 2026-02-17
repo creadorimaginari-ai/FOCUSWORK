@@ -1,56 +1,46 @@
 /*************************************************
- * FOCUSWORK - PATCH FINAL
- * 
- * Sobreescriu les funcions errònies de app-ui.js
- * que fan servir user_email i user_id inexistents.
- * 
- * INSTRUCCIONS:
- * 1. Puja aquest fitxer a GitHub com: patch.js
- * 2. Afegeix-lo a index.html DESPRES de app-ui.js:
- *    <script src="patch.js"></script>
- * 3. Commit i recarrega
+ * FOCUSWORK - PATCH FINAL v3
+ * Columnes correctes: id, name, email, phone, 
+ * company, notes, status, activities, tags
  *************************************************/
 
-console.log('🔧 Patch carregat - sobreescrivint funcions errònies...');
+console.log('🔧 Patch v3 carregat...');
 
 // =====================================================
-// CORREGIR: loadAllClientsSupabase
-// Eliminar el filtre per user_email
+// COLUMNES REALS DE SUPABASE
 // =====================================================
+const SUPABASE_COLUMNS = 'id, name, email, phone, company, notes, status, activities, tags, created_at';
 
+// =====================================================
+// loadAllClientsSupabase - SENSE user_email, SENSE .single()
+// =====================================================
 window.loadAllClientsSupabase = async function() {
-  console.log('📥 [PATCH] Carregant TOTS els clients...');
-  
+  console.log('📥 [PATCH] Carregant clients...');
   try {
     const { data, error } = await window.supabase
       .from('clients')
-      .select('*')
+      .select(SUPABASE_COLUMNS)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    
     console.log(`✅ ${data.length} clients carregats`);
-    
     const clients = {};
     data.forEach(c => clients[c.id] = c);
     return clients;
-    
-  } catch (error) {
-    console.error('❌ Error:', error.message);
+  } catch (e) {
+    console.error('❌ loadAll:', e.message);
     return {};
   }
 };
 
 // =====================================================
-// CORREGIR: saveClientSupabase
-// Eliminar user_email de les dades guardades
+// saveClientSupabase - SENSE billableTime, total, tasks
 // =====================================================
-
 window.saveClientSupabase = async function(client) {
-  console.log('💾 [PATCH] Guardant client:', client.name);
+  console.log('💾 [PATCH] Guardant:', client.name);
   
-  // Columnes que SÍ existeixen a Supabase
-  const clientData = {
+  // NOMÉS les columnes que existeixen a Supabase
+  const data = {
     id: client.id,
     name: client.name || '',
     email: client.email || null,
@@ -58,176 +48,162 @@ window.saveClientSupabase = async function(client) {
     company: client.company || null,
     notes: client.notes || null,
     status: client.status || 'active',
-    total: client.total || 0,
-    billableTime: client.billableTime || 0,
     activities: client.activities || {},
-    tags: client.tags || [],
-    created_at: client.created_at || new Date().toISOString()
+    tags: client.tags || []
   };
   
   try {
-    const { data, error } = await window.supabase
+    const { error } = await window.supabase
       .from('clients')
-      .upsert(clientData, { onConflict: 'id' })
-      .select()
-      .single();
+      .upsert(data, { onConflict: 'id' });
     
     if (error) throw error;
-    
-    console.log('✅ Client guardat:', client.name);
+    console.log('✅ Guardat:', client.name);
     return true;
-    
-  } catch (error) {
-    console.error('❌ Error guardant:', error.message);
+  } catch (e) {
+    console.error('❌ save:', e.message);
     return false;
   }
 };
 
 // =====================================================
-// CORREGIR: loadClientSupabase
-// Eliminar el filtre per user_email
+// loadClientSupabase - SENSE .single() per evitar errors
 // =====================================================
-
 window.loadClientSupabase = async function(clientId) {
   try {
     const { data, error } = await window.supabase
       .from('clients')
-      .select('*')
+      .select(SUPABASE_COLUMNS)
       .eq('id', clientId)
-      .single();
+      .limit(1);
     
     if (error) throw error;
-    return data;
-    
-  } catch (error) {
-    console.error('❌ Error carregant client:', error.message);
+    return data && data.length > 0 ? data[0] : null;
+  } catch (e) {
+    console.error('❌ loadClient:', e.message);
     return null;
   }
 };
 
 // =====================================================
-// CORREGIR: syncClientsFromSupabase
+// deleteClientSupabase
 // =====================================================
-
-window.syncClientsFromSupabase = async function() {
-  console.log('🔄 [PATCH] Sincronitzant clients...');
-  
-  const clients = await window.loadAllClientsSupabase();
-  
-  if (!window.state) {
-    window.state = { clients: {} };
-  }
-  
-  window.state.clients = clients;
-  
-  const count = Object.keys(clients).length;
-  console.log(`✅ ${count} clients sincronitzats`);
-  
-  // Renderitzar si hi ha contenidor
-  if (count > 0) {
-    window.renderClientsPatched();
-  }
-  
-  return clients;
-};
-
-// =====================================================
-// CORREGIR: deleteClientSupabase
-// =====================================================
-
 window.deleteClientSupabase = async function(clientId) {
   try {
     const { error } = await window.supabase
       .from('clients')
       .delete()
       .eq('id', clientId);
-    
     if (error) throw error;
-    console.log('✅ Client eliminat');
     return true;
-    
-  } catch (error) {
-    console.error('❌ Error eliminant:', error.message);
+  } catch (e) {
+    console.error('❌ delete:', e.message);
     return false;
   }
 };
 
 // =====================================================
-// AFEGIR: checkMigration (funció que faltava)
+// checkMigration - funció que faltava i petava l'app
 // =====================================================
-
 window.checkMigration = async function() {
-  console.log('✅ [PATCH] checkMigration - sense migració necessària');
+  console.log('✅ [PATCH] checkMigration OK');
   return true;
 };
 
 // =====================================================
-// NOVA FUNCIÓ: Renderitzar clients correctament
+// syncClientsFromSupabase
 // =====================================================
+window.syncClientsFromSupabase = async function() {
+  console.log('🔄 [PATCH] Sincronitzant...');
+  const clients = await window.loadAllClientsSupabase();
+  if (!window.state) window.state = { clients: {}, currentClientId: null };
+  window.state.clients = clients;
+  const count = Object.keys(clients).length;
+  console.log(`✅ ${count} clients a state`);
+  if (count > 0) window.renderClientsPatched();
+  return clients;
+};
 
+// =====================================================
+// renderClientsPatched - Renderitzar llista clients
+// =====================================================
 window.renderClientsPatched = function() {
   const container = document.querySelector('#clientsListContainer')
     || document.querySelector('#projectList');
-  
   if (!container) return;
   
   const clients = Object.values(window.state?.clients || {});
-  
   if (clients.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.5);">No hi ha clients</div>';
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.4);">No hi ha clients</div>';
     return;
   }
   
   container.innerHTML = '';
+  const colors = ['#4CAF50','#2196F3','#9C27B0','#FF5722','#FFC107','#00BCD4','#E91E63'];
   
   clients
     .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-    .forEach((client, index) => {
+    .forEach((client, i) => {
       const card = document.createElement('div');
-      
-      const colors = ['#4CAF50','#2196F3','#9C27B0','#FF5722','#FFC107','#00BCD4','#E91E63','#3F51B5'];
-      const color = colors[index % colors.length];
-      
-      const h = Math.floor((client.total || 0) / 3600);
-      const m = Math.floor(((client.total || 0) % 3600) / 60);
-      const timeStr = h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m` : '';
-      
       card.style.cssText = `
-        padding: 20px;
-        margin-bottom: 12px;
-        background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
-        border-radius: 12px;
-        cursor: pointer;
-        border-left: 4px solid ${color};
-        transition: all 0.3s;
+        padding:18px 20px;
+        margin-bottom:10px;
+        background:linear-gradient(135deg,rgba(102,126,234,0.1),rgba(118,75,162,0.1));
+        border-radius:12px;
+        cursor:pointer;
+        border-left:4px solid ${colors[i % colors.length]};
+        transition:all 0.25s;
       `;
       
+      // Calcular temps des de activitats
+      const acts = client.activities || {};
+      let totalSec = 0;
+      Object.values(acts).forEach(a => {
+        if (a && a.elapsed) totalSec += a.elapsed;
+      });
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const timeStr = h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m` : '';
+      
+      const actCount = Object.keys(acts).length;
+      
       card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:start;">
-          <div style="flex:1;">
-            <div style="font-size:18px;font-weight:bold;color:white;margin-bottom:6px;">${client.name}</div>
-            ${client.email ? `<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:4px;">📧 ${client.email}</div>` : ''}
-            ${client.phone ? `<div style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:4px;">📱 ${client.phone}</div>` : ''}
-            ${timeStr ? `<div style="margin-top:10px;display:inline-block;padding:4px 12px;background:rgba(76,175,80,0.2);border-radius:6px;font-size:12px;font-weight:bold;color:#4CAF50;">⏱️ ${timeStr}</div>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:17px;font-weight:bold;color:white;margin-bottom:5px;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${client.name || 'Sense nom'}
+            </div>
+            ${client.email ? `<div style="font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:3px;">📧 ${client.email}</div>` : ''}
+            ${client.phone ? `<div style="font-size:12px;color:rgba(255,255,255,0.55);">📱 ${client.phone}</div>` : ''}
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+              ${timeStr ? `<span style="padding:3px 10px;background:rgba(76,175,80,0.2);border-radius:5px;font-size:11px;color:#4CAF50;font-weight:bold;">⏱️ ${timeStr}</span>` : ''}
+              ${actCount > 0 ? `<span style="padding:3px 10px;background:rgba(33,150,243,0.2);border-radius:5px;font-size:11px;color:#2196F3;font-weight:bold;">📊 ${actCount}</span>` : ''}
+            </div>
           </div>
-          <div style="font-size:22px;opacity:0.3;">→</div>
+          <div style="font-size:20px;opacity:0.25;margin-left:10px;">→</div>
         </div>
       `;
       
       card.onmouseover = () => {
-        card.style.transform = 'translateX(6px) scale(1.02)';
-        card.style.background = 'linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2))';
+        card.style.transform = 'translateX(6px)';
+        card.style.background = 'linear-gradient(135deg,rgba(102,126,234,0.2),rgba(118,75,162,0.2))';
       };
-      
       card.onmouseout = () => {
         card.style.transform = '';
-        card.style.background = 'linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1))';
+        card.style.background = 'linear-gradient(135deg,rgba(102,126,234,0.1),rgba(118,75,162,0.1))';
       };
       
       card.onclick = () => {
+        if (!window.state) window.state = {};
         window.state.currentClientId = client.id;
-        if (window.save) window.save();
-        setTimeout(() => location.reload(), 200);
+        // Guardar estat complet localment
+        try { localStorage.setItem('fw_currentClient', client.id); } catch(e){}
+        if (window.save) {
+          window.save().then(() => location.reload());
+        } else {
+          setTimeout(() => location.reload(), 150);
+        }
       };
       
       container.appendChild(card);
@@ -237,46 +213,36 @@ window.renderClientsPatched = function() {
 };
 
 // =====================================================
-// INICIALITZAR: Executar quan tot estigui carregat
+// INICIALITZAR
 // =====================================================
-
 async function initPatch() {
-  console.log('🚀 [PATCH] Iniciant sincronització...');
-  
-  // Esperar que state i supabase existeixin
   let attempts = 0;
-  while ((!window.state || !window.supabase) && attempts < 100) {
+  while (!window.supabase && attempts < 60) {
     await new Promise(r => setTimeout(r, 100));
     attempts++;
   }
   
-  // Crear state si no existeix
   if (!window.state) {
     window.state = {
-      clients: {},
-      currentClientId: null,
-      isFull: false,
-      license: null,
+      clients: {}, currentClientId: null,
+      isFull: false, license: null,
       day: new Date().toISOString().split('T')[0],
-      focus: {},
-      focusSchedule: { enabled: false, start: "09:00", end: "17:00" }
+      focus: {}, focusSchedule: { enabled: false, start:"09:00", end:"17:00" }
     };
   }
   
-  // Sincronitzar i renderitzar
   await window.syncClientsFromSupabase();
   
-  // Re-sincronitzar cada 30 segons
+  // Resincronitzar cada 30s
   setInterval(() => window.syncClientsFromSupabase(), 30000);
   
-  console.log('✅ [PATCH] Inicialitzat correctament');
+  console.log('✅ [PATCH] Inicialitzat!');
 }
 
-// Executar
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => setTimeout(initPatch, 1500));
 } else {
   setTimeout(initPatch, 1500);
 }
 
-console.log('✅ Patch carregat. Les funcions errònies han estat sobreescrites.');
+console.log('✅ Patch v3 llest');
