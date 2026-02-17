@@ -112,3 +112,4 @@ window.deleteClientSupabase = deleteClientSupabase;
 window.syncClientsFromSupabase = syncClientsFromSupabase;
 
 console.log('🚀 Funcions Supabase disponibles globalment');
+"Fix: Eliminar user_email i usar estructura correcta"
