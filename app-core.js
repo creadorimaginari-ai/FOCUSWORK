@@ -330,12 +330,14 @@ async function save() {
 
 /* ================= GESTIÓ DE CLIENTS ================= */
 async function saveClient(client) {
-   try {
+  // Guardar a Supabase (sense columnes que no existeixen)
+  try {
     await saveClientSupabase(client);
   } catch (error) {
     console.error('Error guardant a Supabase:', error);
-    // Continuar guardant local si falla Supabase
   }
+  
+  // Guardar SEMPRE a IndexedDB local (fotos, total, billableTime, tasks...)
   try {
     const photos = client.photos || [];
     const clientData = { ...client };
@@ -355,33 +357,59 @@ async function saveClient(client) {
     
     return true;
   } catch (e) {
-    console.error('Error guardant client:', e);
+    console.error('Error guardant client local:', e);
     return false;
   }
 }
 
 async function loadClient(clientId) {
-   try {
-    // ✅ NOVA: Carregar de Supabase primer
-    const client = await loadClientSupabase(clientId);
-    
-    if (client) {
-      return client;
+  try {
+    // 1. Intentar Supabase
+    let client = null;
+    try {
+      client = await loadClientSupabase(clientId);
+    } catch(e) {
+      console.warn('Supabase no disponible');
     }
     
-    // Si no està a Supabase, intentar local (backup)
-    const localClient = await dbGet('clients', clientId);
-    if (!localClient) return null;
+    // 2. Si no, agafar de IndexedDB local
+    if (!client) {
+      client = await dbGet('clients', clientId);
+      if (!client) return null;
+    }
     
-    const photos = await dbGetByIndex('photos', 'clientId', clientId);
-    localClient.photos = photos.map(p => ({
-      id: p.id,
-      data: p.data,
-      date: p.date,
-      comment: p.comment || ""
-    }));
+    // 3. Combinar amb dades locals que Supabase no té
+    try {
+      const local = await dbGet('clients', clientId);
+      if (local) {
+        client.total = client.total || local.total || 0;
+        client.billableTime = client.billableTime || local.billableTime || 0;
+        client.tasks = client.tasks || local.tasks || { urgent: "", important: "", later: "" };
+        client.deliveryDate = client.deliveryDate || local.deliveryDate || null;
+        client.extraHours = client.extraHours || local.extraHours || [];
+      }
+    } catch(e) {}
     
-    return localClient;
+    // 4. SEMPRE actiu
+    client.active = true;
+    
+    // 5. SEMPRE carregar fotos de IndexedDB
+    try {
+      const photos = await dbGetByIndex('photos', 'clientId', clientId);
+      client.photos = photos.map(p => ({
+        id: p.id,
+        data: p.data,
+        date: p.date,
+        comment: p.comment || ""
+      }));
+      if (client.photos.length > 0) {
+        console.log(`📷 ${client.photos.length} fotos per ${client.name}`);
+      }
+    } catch(e) {
+      client.photos = client.photos || [];
+    }
+    
+    return client;
   } catch (e) {
     console.error('Error carregant client:', e);
     return null;
