@@ -147,17 +147,17 @@ async function confirmDeleteFile(file) {
 
     closeLightbox();
 
-    // Esborrar de Storage si té URL
-    if (file.type === 'image' && file.url) {
+    // 1. Esborrar de Supabase Storage si té URL pública
+    if (file.type === 'image' && (file.url || file.id)) {
       await deletePhotoFromStorage(file.id, client.id);
     }
 
-    // Esborrar de IndexedDB local (compatibilitat)
+    // 2. Esborrar de IndexedDB local (compatibilitat sistema antic)
     if (window.db) {
       try { await dbDelete('photos', file.id); } catch(e) {}
     }
 
-    // Treure de les dues llistes (photos i files)
+    // 3. Treure de TOTES les llistes (fotos noves van a files, antigues a photos)
     client.photos = (client.photos || []).filter(f => f.id !== file.id);
     client.files  = (client.files  || []).filter(f => f.id !== file.id);
 
@@ -250,12 +250,15 @@ async function renderFileGallery(preloadedClient = null) {
     // Long press → esborrar | click curt → obrir
     let pressTimer = null;
     let t0 = null;
+    let longPressTriggered = false;
 
     const startPress = () => {
       t0 = Date.now();
+      longPressTriggered = false;
       wrap.style.transform = 'scale(0.95)';
       wrap.style.transition = 'transform 0.1s';
       pressTimer = setTimeout(() => {
+        longPressTriggered = true;
         if (navigator.vibrate) navigator.vibrate(50);
         confirmDeleteFile(file);
         wrap.style.transform = 'scale(1)';
@@ -265,11 +268,21 @@ async function renderFileGallery(preloadedClient = null) {
     const endPress = () => {
       clearTimeout(pressTimer);
       wrap.style.transform = 'scale(1)';
-      if (t0 && (Date.now() - t0) < 300) openFileViewer(sorted, index);
+      // Obrir visor només si ha estat un click curt i NO s'ha activat el long press
+      if (!longPressTriggered && t0 && (Date.now() - t0) < 300) {
+        openFileViewer(sorted, index);
+      }
       t0 = null;
+      longPressTriggered = false;
     };
 
-    const cancelPress = () => { clearTimeout(pressTimer); wrap.style.transform = 'scale(1)'; t0 = null; };
+    // mouseleave només cancel·la el timer, NO obre el visor
+    const cancelPress = () => {
+      clearTimeout(pressTimer);
+      wrap.style.transform = 'scale(1)';
+      t0 = null;
+      longPressTriggered = false;
+    };
 
     wrap.addEventListener('mousedown',  startPress);
     wrap.addEventListener('mouseup',    endPress);
