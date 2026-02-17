@@ -116,19 +116,19 @@ function activityLabel(act) {
 /* ================= AJUDANTS ================= */
 const $ = (id) => document.getElementById(id);
 
-   function uid() {
-     // ✅ Generar UUID vàlid per Supabase
-     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-       return crypto.randomUUID();
-     }
-     
-     // Fallback per navegadors antics
-     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-       const r = Math.random() * 16 | 0;
-       const v = c === 'x' ? r : (r & 0x3 | 0x8);
-       return v.toString(16);
-     });
-   }
+function uid() {
+  // ✅ Generar UUID vàlid per Supabase
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  
+  // Fallback per navegadors antics
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 function formatTime(sec) {
   const h = String(Math.floor(sec / 3600)).padStart(2, "0");
