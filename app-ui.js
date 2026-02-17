@@ -3945,3 +3945,452 @@ console.log('✅ Sistema de sincronització de clients carregat');
  *   updateProjectList();
  * 
  *************************************************/
+/*************************************************
+ * FOCUSWORK - FIX DEFINITIU SENSE INDEXEDDB
+ * 
+ * PROBLEMA: IndexedDB està corromput i dona errors
+ * SOLUCIÓ: Usar NOMÉS Supabase + localStorage
+ *************************************************/
+
+// ==========================================
+// CONFIGURACIÓ: DESACTIVAR INDEXEDDB
+// ==========================================
+
+// Marcar que NO volem usar IndexedDB
+window.FOCUSWORK_NO_INDEXEDDB = true;
+
+console.log('⚠️ IndexedDB desactivat - Usant només Supabase + localStorage');
+
+// ==========================================
+// FUNCIONS DE GUARDAT ALTERNATIVES
+// ==========================================
+
+/**
+ * Guardar state a localStorage (sense IndexedDB)
+ */
+async function saveStateToLocalStorage() {
+  try {
+    localStorage.setItem('focuswork_state', JSON.stringify(state));
+    console.log('✅ State guardat a localStorage');
+    return true;
+  } catch (error) {
+    console.error('❌ Error guardant state:', error);
+    return false;
+  }
+}
+
+/**
+ * Carregar state de localStorage
+ */
+function loadStateFromLocalStorage() {
+  try {
+    const saved = localStorage.getItem('focuswork_state');
+    if (saved) {
+      const parsedState = JSON.parse(saved);
+      Object.assign(state, parsedState);
+      console.log('✅ State carregat de localStorage');
+      return true;
+    }
+  } catch (error) {
+    console.error('❌ Error carregant state:', error);
+  }
+  return false;
+}
+
+/**
+ * Reemplaçar la funció save() original per una versió sense IndexedDB
+ */
+const originalSave = window.save;
+window.save = async function() {
+  console.log('💾 Guardant (sense IndexedDB)...');
+  
+  // Guardar a localStorage
+  await saveStateToLocalStorage();
+  
+  // Si tenim un client actual, guardar-lo també a Supabase
+  if (state.currentClientId) {
+    try {
+      const client = await loadClient(state.currentClientId);
+      if (client) {
+        await saveClientSupabase(client);
+        console.log('✅ Client guardat a Supabase');
+      }
+    } catch (error) {
+      console.error('❌ Error guardant client a Supabase:', error);
+    }
+  }
+  
+  return true;
+};
+
+// ==========================================
+// FUNCIONS DE CLIENTS (NOMÉS SUPABASE)
+// ==========================================
+
+/**
+ * Carregar TOTS els clients de Supabase
+ */
+async function loadAllClientsSupabase() {
+  console.log('📥 Carregant clients de Supabase...');
+  
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('user_email', userName);
+    
+    if (error) {
+      console.error('❌ Error Supabase:', error);
+      return {};
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('⚠️ No hi ha clients a Supabase');
+      return {};
+    }
+    
+    // Convertir array a objecte amb id com a clau
+    const clients = {};
+    data.forEach(client => {
+      clients[client.id] = client;
+    });
+    
+    console.log(`✅ ${data.length} clients carregats de Supabase`);
+    return clients;
+    
+  } catch (error) {
+    console.error('❌ Error carregant clients:', error);
+    return {};
+  }
+}
+
+/**
+ * Carregar un client específic de Supabase
+ */
+async function loadClientSupabase(clientId) {
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('id', clientId)
+      .eq('user_email', userName)
+      .single();
+    
+    if (error) {
+      console.error('❌ Error carregant client:', error);
+      return null;
+    }
+    
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    return null;
+  }
+}
+
+/**
+ * Guardar client a Supabase
+ */
+async function saveClientSupabase(client) {
+  try {
+    // Assegurar que té user_email
+    if (!client.user_email) {
+      client.user_email = userName;
+    }
+    
+    // Upsert (insert o update)
+    const { data, error } = await supabase
+      .from('clients')
+      .upsert(client, { onConflict: 'id' })
+      .select();
+    
+    if (error) {
+      console.error('❌ Error guardant client:', error);
+      return false;
+    }
+    
+    console.log('✅ Client guardat a Supabase:', client.name);
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    return false;
+  }
+}
+
+// ==========================================
+// SINCRONITZACIÓ AMB SUPABASE
+// ==========================================
+
+/**
+ * Sincronitzar clients de Supabase a state
+ */
+async function syncClientsFromSupabase() {
+  console.log('🔄 Sincronitzant clients de Supabase...');
+  
+  try {
+    const clients = await loadAllClientsSupabase();
+    
+    if (clients && Object.keys(clients).length > 0) {
+      state.clients = clients;
+      await saveStateToLocalStorage();
+      console.log(`✅ ${Object.keys(clients).length} clients sincronitzats`);
+      return clients;
+    } else {
+      console.log('⚠️ No hi ha clients a Supabase');
+      state.clients = {};
+      return {};
+    }
+    
+  } catch (error) {
+    console.error('❌ Error sincronitzant:', error);
+    return {};
+  }
+}
+
+// ==========================================
+// RENDERITZAR LLISTA DE CLIENTS
+// ==========================================
+
+/**
+ * Actualitzar llista de projectes/clients
+ */
+async function updateProjectList() {
+  console.log('🔄 Actualitzant llista de clients...');
+  
+  const container = document.querySelector('#projectList');
+  
+  if (!container) {
+    console.warn('⚠️ No s\'ha trobat #projectList');
+    return;
+  }
+  
+  // Si no hi ha clients, carregar de Supabase
+  if (!state.clients || Object.keys(state.clients).length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #888;">
+        <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+        <div style="font-size: 16px;">Carregant clients de Supabase...</div>
+      </div>
+    `;
+    
+    await syncClientsFromSupabase();
+  }
+  
+  // Netejar contenidor
+  container.innerHTML = '';
+  
+  // Comprovar si hi ha clients
+  if (!state.clients || Object.keys(state.clients).length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #888;">
+        <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
+        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
+          No hi ha clients encara
+        </div>
+        <div style="font-size: 14px; color: #666; margin-bottom: 20px;">
+          Crea el teu primer client a Supabase
+        </div>
+        <button onclick="createTestClient()" style="
+          padding: 10px 20px;
+          background: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+        ">
+          ➕ Crear Client de Prova
+        </button>
+      </div>
+    `;
+    return;
+  }
+  
+  // Obtenir tots els clients
+  let clients = Object.values(state.clients);
+  
+  // Filtrar clients actius
+  clients = clients.filter(c => c.active !== false);
+  
+  // Ordenar per data de creació
+  clients.sort((a, b) => {
+    const dateA = new Date(a.created_at || 0);
+    const dateB = new Date(b.created_at || 0);
+    return dateB - dateA;
+  });
+  
+  console.log(`📋 Renderitzant ${clients.length} clients`);
+  
+  // Renderitzar cada client
+  clients.forEach(client => {
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.style.cssText = `
+      padding: 15px;
+      margin-bottom: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid #4CAF50;
+    `;
+    
+    card.onmouseover = () => {
+      card.style.background = 'rgba(255, 255, 255, 0.1)';
+      card.style.transform = 'translateX(5px)';
+    };
+    
+    card.onmouseout = () => {
+      card.style.background = 'rgba(255, 255, 255, 0.05)';
+      card.style.transform = 'translateX(0)';
+    };
+    
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div style="flex: 1;">
+          <div style="font-size: 16px; font-weight: bold; color: white; margin-bottom: 5px;">
+            ${client.name || 'Sense nom'}
+          </div>
+          <div style="font-size: 12px; color: #888;">
+            ${client.email || ''} ${client.phone ? '• ' + client.phone : ''}
+          </div>
+          ${client.company ? `<div style="font-size: 12px; color: #666; margin-top: 3px;">${client.company}</div>` : ''}
+          ${client.total > 0 ? `<div style="font-size: 11px; color: #4CAF50; margin-top: 5px;">⏱️ ${formatTime(client.total || 0)}</div>` : ''}
+        </div>
+        <div style="font-size: 20px; opacity: 0.5;">✓</div>
+      </div>
+    `;
+    
+    card.onclick = async () => {
+      console.log('📌 Seleccionant client:', client.id);
+      state.currentClientId = client.id;
+      await save();
+      location.reload();
+    };
+    
+    container.appendChild(card);
+  });
+  
+  console.log(`✅ ${clients.length} clients renderitzats`);
+}
+
+// ==========================================
+// FUNCIÓ AUXILIAR: CREAR CLIENT DE PROVA
+// ==========================================
+
+async function createTestClient() {
+  console.log('🧪 Creant client de prova...');
+  
+  const testClient = {
+    id: 'client_' + Date.now(),
+    name: 'Client de Prova',
+    email: 'prova@example.com',
+    phone: '600 000 000',
+    company: 'Empresa Test',
+    active: true,
+    created_at: new Date().toISOString(),
+    user_email: userName,
+    total: 0,
+    billableTime: 0,
+    activities: {},
+    notes: '',
+    tasks: { urgent: "", important: "", later: "" }
+  };
+  
+  const success = await saveClientSupabase(testClient);
+  
+  if (success) {
+    alert('✅ Client de prova creat! Recarregant...');
+    await syncClientsFromSupabase();
+    updateProjectList();
+  } else {
+    alert('❌ Error creant client de prova');
+  }
+}
+
+// ==========================================
+// INICIALITZACIÓ AUTOMÀTICA
+// ==========================================
+
+async function initApp() {
+  console.log('🚀 Inicialitzant FocusWork (sense IndexedDB)...');
+  
+  // Carregar state de localStorage
+  loadStateFromLocalStorage();
+  
+  // Sincronitzar clients de Supabase
+  await syncClientsFromSupabase();
+  
+  // Actualitzar UI
+  updateProjectList();
+  
+  // Configurar sincronització periòdica (cada 30 segons)
+  setInterval(async () => {
+    console.log('🔄 Sincronització automàtica...');
+    await syncClientsFromSupabase();
+    updateProjectList();
+  }, 30000);
+  
+  console.log('✅ App inicialitzada correctament');
+}
+
+// ==========================================
+// EXPORTAR FUNCIONS
+// ==========================================
+
+window.syncClientsFromSupabase = syncClientsFromSupabase;
+window.updateProjectList = updateProjectList;
+window.saveClientSupabase = saveClientSupabase;
+window.loadClientSupabase = loadClientSupabase;
+window.createTestClient = createTestClient;
+window.initApp = initApp;
+
+// ==========================================
+// AUTO-INICIALITZACIÓ
+// ==========================================
+
+// Esperar que tot estigui carregat
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  // Executar després d'un petit delay per assegurar que tot està carregat
+  setTimeout(initApp, 1000);
+}
+
+console.log('✅ Sistema sense IndexedDB carregat');
+
+/*************************************************
+ * INSTRUCCIONS D'ÚS:
+ * 
+ * 1. AFEGIR AQUEST CODI:
+ *    - Obre app-core.js o app-ui.js a GitHub
+ *    - Ves al FINAL del fitxer
+ *    - ENGANXA tot aquest codi
+ *    - Commit changes
+ * 
+ * 2. NETEJA LA CACHE:
+ *    - Ctrl + Shift + Delete
+ *    - Marca "Cookies" i "Cache"
+ *    - Esborra
+ * 
+ * 3. RECARREGA L'APP:
+ *    - Ctrl + Shift + R
+ * 
+ * 4. COMPROVA LA CONSOLA:
+ *    - Hauria de dir "🚀 Inicialitzant FocusWork"
+ *    - Després "✅ X clients carregats"
+ * 
+ * 5. SI NO HI HA CLIENTS:
+ *    - Clica el botó "Crear Client de Prova"
+ *    - Hauria de crear-se a Supabase
+ *    - I aparèixer a la llista
+ * 
+ * AVANTATGES D'AQUESTA SOLUCIÓ:
+ * ✅ No depèn d'IndexedDB (que estava corromput)
+ * ✅ Usa només Supabase (més fiable)
+ * ✅ localStorage com a cache local
+ * ✅ Sincronització automàtica cada 30s
+ * ✅ Més simple i menys propenso a errors
+ *************************************************/
