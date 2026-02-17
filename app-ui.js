@@ -4030,7 +4030,7 @@ async function loadAllClientsSupabase() {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
+      .select('*')
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -4068,7 +4068,7 @@ async function loadClientSupabase(clientId) {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
+      .select('*')
       .eq('id', clientId)
       .limit(1);
     
@@ -4279,8 +4279,27 @@ async function updateProjectList() {
     card.onclick = async () => {
       console.log('📌 Seleccionant client:', client.id);
       state.currentClientId = client.id;
+      state.currentActivity = state.currentActivity || ACTIVITIES.WORK;
+      state.sessionElapsed = state.sessionElapsed || 0;
+      state.lastTick = Date.now();
+      isWorkpadInitialized = false;
+      areTasksInitialized = false;
       await save();
-      location.reload();
+      // Carregar dades completes del client i actualitzar la UI sense reload
+      const fullClient = await loadClientSupabase(client.id);
+      if (fullClient) {
+        // Assegurar camps obligatoris
+        fullClient.active = true;
+        fullClient.photos = fullClient.photos || [];
+        fullClient.tasks = fullClient.tasks || { urgent: "", important: "", later: "" };
+        fullClient.total = fullClient.total || 0;
+        fullClient.billableTime = fullClient.billableTime || 0;
+        fullClient.notes = fullClient.notes || '';
+      }
+      await updateUI(fullClient);
+      // Tancar el panel de llista si existeix
+      const projectPanel = document.querySelector('#projectsPanel, #projectList')?.closest('.panel, [class*="panel"], [id*="panel"]');
+      if (projectPanel && typeof closePanel === 'function') closePanel(projectPanel.id);
     };
     
     container.appendChild(card);
@@ -4335,7 +4354,28 @@ async function initApp() {
   // Sincronitzar clients de Supabase
   await syncClientsFromSupabase();
   
-  // Actualitzar UI
+  // Si hi havia un client actiu, carregar-lo i mostrar les seves dades
+  if (state.currentClientId) {
+    console.log('🔄 Recuperant client actiu:', state.currentClientId);
+    const fullClient = await loadClientSupabase(state.currentClientId);
+    if (fullClient) {
+      fullClient.active = true;
+      fullClient.photos = fullClient.photos || [];
+      fullClient.tasks = fullClient.tasks || { urgent: "", important: "", later: "" };
+      fullClient.total = fullClient.total || 0;
+      fullClient.billableTime = fullClient.billableTime || 0;
+      fullClient.notes = fullClient.notes || '';
+      await updateUI(fullClient);
+    } else {
+      // Client no trobat, netejar selecció
+      state.currentClientId = null;
+      await updateUI();
+    }
+  } else {
+    await updateUI();
+  }
+  
+  // Actualitzar llista de projectes
   updateProjectList();
   
   // Configurar sincronització periòdica (cada 30 segons)
