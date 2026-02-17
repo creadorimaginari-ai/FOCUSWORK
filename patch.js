@@ -327,3 +327,4 @@ if (document.readyState === 'loading') {
 }
 
 console.log('✅ [PATCH v5] Llest - fotos IndexedDB + dades Supabase');
+          
