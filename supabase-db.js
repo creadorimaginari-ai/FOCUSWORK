@@ -1,413 +1,464 @@
 /*************************************************
- * FOCUSWORK – supabase-db.js
- * Funcions de base de dades amb Supabase
- * VERSIÓ CORREGIDA - FUNCIONA AMB SUPABASE
+ * FOCUSWORK - supabase-db.js CORREGIT
+ * 
+ * FUNCIONA SENSE user_id i user_email
+ * Carrega TOTS els clients sense filtrar per usuari
  *************************************************/
 
 /* ================= CLIENTS ================= */
 
-// Guardar o actualitzar client
+/**
+ * Guardar o actualitzar client
+ * SIN user_id (que no existeix a la taula)
+ */
 async function saveClientSupabase(client) {
-  const user = window.getCurrentUser();
-  if (!user) throw new Error('Usuari no autenticat');
+  console.log('💾 Guardant client a Supabase:', client.name);
   
-  // ✅ IMPORTANT: Generar UUID vàlid per Supabase
+  // Preparar dades (NOMÉS columnes que existeixen a Supabase)
   const clientData = {
-    id: client.id && client.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
-      ? client.id 
-      : crypto.randomUUID(), // Generar UUID vàlid
-    user_id: user.id,
+    id: client.id || crypto.randomUUID(),
     name: client.name || '',
     email: client.email || null,
     phone: client.phone || null,
     company: client.company || null,
     notes: client.notes || null,
     status: client.status || 'active',
-    activities: client.activities || [],
-    tags: client.tags || [],
-    custom_fields: client.custom_fields || {}
+    // Si la taula té aquestes columnes:
+    total: client.total || 0,
+    billableTime: client.billableTime || 0,
+    activities: client.activities || {},
+    tasks: client.tasks || { urgent: "", important: "", later: "" }
   };
   
-  console.log('💾 Guardant client a Supabase:', clientData);
-  
-  // Intentar actualitzar primer, si no existeix, insertar
-  const { data, error } = await window.supabase
-    .from('clients')
-    .upsert(clientData, { onConflict: 'id' })
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('❌ Error guardant client a Supabase:', error);
+  try {
+    const { data, error } = await window.supabase
+      .from('clients')
+      .upsert(clientData, { onConflict: 'id' })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ Error guardant client:', error);
+      throw error;
+    }
+    
+    console.log('✅ Client guardat:', data.name);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
     throw error;
   }
-  
-  console.log('✅ Client guardat a Supabase:', data);
-  return data;
 }
 
-// Carregar un client per ID
+/**
+ * Carregar un client per ID
+ */
 async function loadClientSupabase(clientId) {
-  const user = window.getCurrentUser();
-  if (!user) throw new Error('Usuari no autenticat');
+  console.log('📥 Carregant client:', clientId);
   
-  console.log('📥 Carregant client de Supabase:', clientId);
-  
-  // ✅ Validar que el clientId és un UUID vàlid
-  if (!clientId || !clientId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-    console.warn('⚠️ ID no és un UUID vàlid, intentant carregar de local:', clientId);
+  try {
+    const { data, error } = await window.supabase
+      .from('clients')
+      .select('*')
+      .eq('id', clientId)
+      .single();
+    
+    if (error) {
+      console.error('❌ Error carregant client:', error);
+      return null;
+    }
+    
+    console.log('✅ Client carregat:', data.name);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
     return null;
   }
-  
-  // Carregar client
-  const { data: client, error: clientError } = await window.supabase
-    .from('clients')
-    .select('*')
-    .eq('id', clientId)
-    .eq('user_id', user.id)
-    .single();
-  
-  if (clientError) {
-    console.error('❌ Error carregant client de Supabase:', clientError);
-    return null;
-  }
-  
-  console.log('✅ Client carregat de Supabase:', client);
-  
-  // Carregar fotos del client (si existeix la taula)
-  try {
-    const { data: photos, error: photosError } = await window.supabase
-      .from('photos')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('date', { ascending: false });
-    
-    if (!photosError && photos) {
-      client.photos = photos;
-    } else {
-      client.photos = [];
-    }
-  } catch (e) {
-    console.warn('⚠️ Taula photos no existeix, continuant sense fotos');
-    client.photos = [];
-  }
-  
-  // Carregar arxius del client (si existeix la taula)
-  try {
-    const { data: files, error: filesError } = await window.supabase
-      .from('files')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('date', { ascending: false });
-    
-    if (!filesError && files) {
-      client.files = files;
-    } else {
-      client.files = [];
-    }
-  } catch (e) {
-    console.warn('⚠️ Taula files no existeix, continuant sense arxius');
-    client.files = [];
-  }
-  
-  return client;
 }
 
-// Carregar tots els clients de l'usuari
+/**
+ * Carregar TOTS els clients (sense filtrar per user_id)
+ */
 async function loadAllClientsSupabase() {
-  const user = window.getCurrentUser();
-  if (!user) throw new Error('Usuari no autenticat');
+  console.log('📥 Carregant TOTS els clients de Supabase...');
   
-  console.log('📥 Carregant tots els clients de Supabase...');
-  
-  const { data, error } = await window.supabase
-    .from('clients')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('❌ Error carregant clients de Supabase:', error);
+  try {
+    const { data, error } = await window.supabase
+      .from('clients')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('❌ Error carregant clients:', error);
+      return {};
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('⚠️ No hi ha clients a Supabase');
+      return {};
+    }
+    
+    console.log(`✅ ${data.length} clients carregats de Supabase`);
+    
+    // Convertir array a objecte amb id com a clau
+    const clientsObj = {};
+    data.forEach(client => {
+      clientsObj[client.id] = client;
+    });
+    
+    return clientsObj;
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
     return {};
   }
-  
-  console.log(`✅ ${data.length} clients carregats de Supabase`);
-  
-  // Convertir array a objecte amb id com a clau
-  const clientsObj = {};
-  for (const client of data) {
-    // Afegir arrays buides si no existeixen
-    client.photos = client.photos || [];
-    client.files = client.files || [];
-    clientsObj[client.id] = client;
-  }
-  
-  return clientsObj;
 }
 
-// Esborrar client
+/**
+ * Esborrar client
+ */
 async function deleteClientSupabase(clientId) {
-  const user = window.getCurrentUser();
-  if (!user) throw new Error('Usuari no autenticat');
-  
-  console.log('🗑️ Esborrant client de Supabase:', clientId);
-  
-  const { error } = await window.supabase
-    .from('clients')
-    .delete()
-    .eq('id', clientId)
-    .eq('user_id', user.id);
-  
-  if (error) {
-    console.error('❌ Error esborrant client de Supabase:', error);
-    throw error;
-  }
-  
-  console.log('✅ Client esborrat de Supabase');
-  return true;
-}
-
-/* ================= FOTOS ================= */
-
-// Guardar foto
-async function savePhotoSupabase(photo, clientId) {
-  const user = window.getCurrentUser();
-  if (!user) throw new Error('Usuari no autenticat');
-  
-  const photoData = {
-    id: photo.id && photo.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
-      ? photo.id
-      : crypto.randomUUID(),
-    client_id: clientId,
-    user_id: user.id,
-    data: photo.data,
-    date: photo.date,
-    comment: photo.comment || ''
-  };
-  
-  const { data, error } = await window.supabase
-    .from('photos')
-    .upsert(photoData, { onConflict: 'id' })
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('❌ Error guardant foto:', error);
-    throw error;
-  }
-  
-  return data;
-}
-
-// Esborrar foto
-async function deletePhotoSupabase(photoId) {
-  const user = window.getCurrentUser();
-  if (!user) throw new Error('Usuari no autenticat');
-  
-  const { error } = await window.supabase
-    .from('photos')
-    .delete()
-    .eq('id', photoId)
-    .eq('user_id', user.id);
-  
-  if (error) {
-    console.error('❌ Error esborrant foto:', error);
-    throw error;
-  }
-  
-  return true;
-}
-
-/* ================= ARXIUS (PDFs, vídeos, etc.) ================= */
-
-// Guardar arxiu
-async function saveFileSupabase(file, clientId) {
-  const user = window.getCurrentUser();
-  if (!user) throw new Error('Usuari no autenticat');
-  
-  const fileData = {
-    id: file.id && file.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
-      ? file.id
-      : crypto.randomUUID(),
-    client_id: clientId,
-    user_id: user.id,
-    name: file.name,
-    type: file.type,
-    data: file.data,
-    date: file.date
-  };
-  
-  const { data, error } = await window.supabase
-    .from('files')
-    .upsert(fileData, { onConflict: 'id' })
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('❌ Error guardant arxiu:', error);
-    throw error;
-  }
-  
-  return data;
-}
-
-// Esborrar arxiu
-async function deleteFileSupabase(fileId) {
-  const user = window.getCurrentUser();
-  if (!user) throw new Error('Usuari no autenticat');
-  
-  const { error } = await window.supabase
-    .from('files')
-    .delete()
-    .eq('id', fileId)
-    .eq('user_id', user.id);
-  
-  if (error) {
-    console.error('❌ Error esborrant arxiu:', error);
-    throw error;
-  }
-  
-  return true;
-}
-
-/* ================= FUNCIONS DE SINCRONITZACIÓ ================= */
-
-// Variable global per evitar múltiples execucions
-let migrationInProgress = false;
-let migrationChecked = false;
-
-// Migrar dades locals a Supabase (només una vegada)
-async function migrateLocalToSupabase() {
-  if (migrationInProgress) {
-    console.log('⚠️ Migració ja en curs, esperant...');
-    return;
-  }
-  
-  migrationInProgress = true;
+  console.log('🗑️ Esborrant client:', clientId);
   
   try {
-    console.log('🔄 Migrant dades locals a Supabase...');
+    const { error } = await window.supabase
+      .from('clients')
+      .delete()
+      .eq('id', clientId);
     
-    // Verificar que la base de dades local existeix
-    if (typeof window.dbGetAll !== 'function') {
-      console.log('ℹ️ No hi ha funcions de IndexedDB disponibles - saltant migració');
-      localStorage.setItem('focuswork_migrated_to_supabase', 'no_local_data');
-      return;
+    if (error) {
+      console.error('❌ Error esborrant client:', error);
+      throw error;
     }
     
-    // Carregar clients locals d'IndexedDB
-    let localClients;
-    try {
-      localClients = await window.dbGetAll('clients');
-    } catch (error) {
-      console.log('ℹ️ No s\'ha pogut accedir a IndexedDB:', error.message);
-      localStorage.setItem('focuswork_migrated_to_supabase', 'no_local_data');
-      return;
-    }
+    console.log('✅ Client esborrat');
+    return true;
     
-    if (!localClients || localClients.length === 0) {
-      console.log('ℹ️ No hi ha clients locals per migrar');
-      localStorage.setItem('focuswork_migrated_to_supabase', 'no_local_data');
-      return;
-    }
+  } catch (error) {
+    console.error('❌ Error:', error);
+    throw error;
+  }
+}
+
+/* ================= SINCRONITZACIÓ ================= */
+
+/**
+ * Sincronitzar clients de Supabase a state
+ */
+async function syncClientsFromSupabase() {
+  console.log('🔄 Sincronitzant clients amb Supabase...');
+  
+  try {
+    // Carregar clients de Supabase
+    const clients = await loadAllClientsSupabase();
     
-    console.log(`📦 Migrant ${localClients.length} clients...`);
-    
-    for (const client of localClients) {
-      try {
-        // Guardar client a Supabase
-        await saveClientSupabase(client);
-        
-        // Migrar fotos del client
-        if (typeof window.dbGetByIndex === 'function') {
-          try {
-            const localPhotos = await window.dbGetByIndex('photos', 'clientId', client.id);
-            if (localPhotos && localPhotos.length > 0) {
-              console.log(`📸 Migrant ${localPhotos.length} fotos del client ${client.name}...`);
-              for (const photo of localPhotos) {
-                await savePhotoSupabase(photo, client.id);
-              }
-            }
-          } catch (error) {
-            console.warn('⚠️ Error migrant fotos del client:', client.name, error);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error migrant client:', client.name, error);
+    if (!clients || Object.keys(clients).length === 0) {
+      console.log('⚠️ No hi ha clients a Supabase');
+      
+      // Intentar carregar de localStorage com a fallback
+      const saved = localStorage.getItem('focuswork_clients');
+      if (saved) {
+        const localClients = JSON.parse(saved);
+        window.state.clients = localClients;
+        console.log(`📦 ${Object.keys(localClients).length} clients carregats de localStorage`);
+        return localClients;
       }
+      
+      window.state.clients = {};
+      return {};
     }
     
-    console.log('✅ Migració completada!');
-    localStorage.setItem('focuswork_migrated_to_supabase', 'true');
+    // Guardar a state
+    window.state.clients = clients;
+    
+    // Guardar també a localStorage com a cache
+    try {
+      localStorage.setItem('focuswork_clients', JSON.stringify(clients));
+    } catch (e) {
+      console.warn('⚠️ No s\'ha pogut guardar a localStorage');
+    }
+    
+    console.log(`✅ ${Object.keys(clients).length} clients sincronitzats`);
+    return clients;
     
   } catch (error) {
-    console.error('❌ Error durant la migració:', error);
-    localStorage.setItem('focuswork_migrated_to_supabase', 'error');
-    throw error;
-  } finally {
-    migrationInProgress = false;
+    console.error('❌ Error sincronitzant:', error);
+    
+    // Fallback a localStorage
+    try {
+      const saved = localStorage.getItem('focuswork_clients');
+      if (saved) {
+        const localClients = JSON.parse(saved);
+        window.state.clients = localClients;
+        console.log(`📦 ${Object.keys(localClients).length} clients de localStorage (Supabase no disponible)`);
+        return localClients;
+      }
+    } catch (e) {
+      console.error('❌ Error amb localStorage');
+    }
+    
+    return {};
   }
 }
 
-// Verificar si cal migrar (NOMÉS UNA VEGADA)
-async function checkMigration() {
-  // Evitar múltiples execucions
-  if (migrationChecked) {
-    console.log('ℹ️ Migració ja comprovada anteriorment');
+/**
+ * Guardar client actual a Supabase
+ */
+async function saveCurrentClientToSupabase() {
+  if (!window.state.currentClientId) {
+    console.log('⚠️ No hi ha client actual');
     return;
   }
   
-  migrationChecked = true;
-  
-  const migrated = localStorage.getItem('focuswork_migrated_to_supabase');
-  const user = window.getCurrentUser();
-  
-  console.log('🔍 Estat de migració:', migrated);
-  console.log('👤 Usuari actual:', user?.email);
-  
-  // Si ja s'ha migrat o saltat, no fer res
-  if (migrated) {
-    console.log('ℹ️ Migració ja gestionada:', migrated);
-    return;
-  }
-  
-  // Si no hi ha usuari, no fer res
-  if (!user) {
-    console.log('⚠️ No hi ha usuari autenticat - saltant migració');
-    return;
-  }
-  
-  // Preguntar només una vegada
   try {
-    const shouldMigrate = confirm(
-      '🔄 Vols migrar les teves dades locals al núvol?\n\n' +
-      'Això permetrà sincronitzar-les entre dispositius.\n\n' +
-      'Les dades locals no s\'esborraran.'
-    );
-    
-    if (shouldMigrate) {
-      await migrateLocalToSupabase();
-      alert('✅ Dades migrades correctament!');
-    } else {
-      console.log('ℹ️ Usuari ha saltat la migració');
-      localStorage.setItem('focuswork_migrated_to_supabase', 'skipped');
+    const client = window.state.clients[window.state.currentClientId];
+    if (!client) {
+      console.log('⚠️ Client no trobat a state');
+      return;
     }
+    
+    await saveClientSupabase(client);
+    console.log('✅ Client actual guardat a Supabase');
+    
   } catch (error) {
-    console.error('❌ Error durant checkMigration:', error);
-    localStorage.setItem('focuswork_migrated_to_supabase', 'error');
+    console.error('❌ Error guardant client actual:', error);
   }
 }
 
-// Exportar funcions
+/* ================= RENDERITZAR LLISTA ================= */
+
+/**
+ * Renderitzar llista de clients
+ */
+function renderClientList() {
+  console.log('🎨 Renderitzant llista de clients...');
+  
+  const container = document.querySelector('#projectList');
+  
+  if (!container) {
+    console.warn('⚠️ No s\'ha trobat #projectList');
+    return;
+  }
+  
+  container.innerHTML = '';
+  
+  // Obtenir clients de state
+  const clientsObj = window.state.clients || {};
+  const clients = Object.values(clientsObj);
+  
+  // Filtrar clients actius
+  const activeClients = clients.filter(c => {
+    // Si NO té la columna 'status', mostrar tots
+    if (!c.hasOwnProperty('status')) return true;
+    // Si té 'status', només mostrar actius
+    return c.status !== 'archived' && c.status !== 'deleted';
+  });
+  
+  if (activeClients.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #888;">
+        <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
+        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
+          No hi ha clients
+        </div>
+        <button onclick="window.syncClientsFromSupabase().then(() => window.renderClientList())" style="
+          padding: 10px 20px;
+          background: #2196F3;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          margin-top: 10px;
+        ">
+          🔄 Recarregar de Supabase
+        </button>
+        <button onclick="window.showSupabaseInfo()" style="
+          padding: 10px 20px;
+          background: #666;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          margin-top: 10px;
+          margin-left: 10px;
+        ">
+          ℹ️ Info Supabase
+        </button>
+      </div>
+    `;
+    return;
+  }
+  
+  // Ordenar per data de creació
+  activeClients.sort((a, b) => {
+    const dateA = new Date(a.created_at || 0);
+    const dateB = new Date(b.created_at || 0);
+    return dateB - dateA;
+  });
+  
+  console.log(`📋 Renderitzant ${activeClients.length} clients`);
+  
+  // Renderitzar cada client
+  activeClients.forEach(client => {
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.style.cssText = `
+      padding: 15px;
+      margin-bottom: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid #4CAF50;
+    `;
+    
+    card.onmouseover = () => {
+      card.style.background = 'rgba(255, 255, 255, 0.1)';
+      card.style.transform = 'translateX(5px)';
+    };
+    
+    card.onmouseout = () => {
+      card.style.background = 'rgba(255, 255, 255, 0.05)';
+      card.style.transform = 'translateX(0)';
+    };
+    
+    const totalTime = window.formatTime ? window.formatTime(client.total || 0) : '0h';
+    
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div style="flex: 1;">
+          <div style="font-size: 16px; font-weight: bold; color: white; margin-bottom: 5px;">
+            ${client.name || 'Sense nom'}
+          </div>
+          <div style="font-size: 12px; color: #888;">
+            ${client.email || ''} ${client.phone ? '• ' + client.phone : ''}
+          </div>
+          ${client.company ? `<div style="font-size: 12px; color: #666; margin-top: 3px;">${client.company}</div>` : ''}
+          ${client.total > 0 ? `<div style="font-size: 11px; color: #4CAF50; margin-top: 5px;">⏱️ ${totalTime}</div>` : ''}
+        </div>
+        <div style="font-size: 20px; opacity: 0.5;">✓</div>
+      </div>
+    `;
+    
+    card.onclick = () => {
+      console.log('📌 Seleccionant client:', client.id);
+      window.state.currentClientId = client.id;
+      if (window.save) window.save();
+      setTimeout(() => location.reload(), 300);
+    };
+    
+    container.appendChild(card);
+  });
+  
+  console.log(`✅ ${activeClients.length} clients renderitzats`);
+}
+
+/**
+ * Mostrar informació de Supabase
+ */
+async function showSupabaseInfo() {
+  console.log('ℹ️ Informació de Supabase');
+  
+  try {
+    const { data, error } = await window.supabase
+      .from('clients')
+      .select('*')
+      .limit(3);
+    
+    console.log('📊 Primers 3 clients:', data);
+    
+    if (data && data[0]) {
+      console.log('📋 Columnes disponibles:', Object.keys(data[0]));
+      console.log('📄 Exemple client:', data[0]);
+    }
+    
+    console.log('❌ Error (si n\'hi ha):', error);
+    
+    alert('Comprova la consola (F12) per veure la informació de Supabase');
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    alert('Error consultant Supabase. Comprova la consola.');
+  }
+}
+
+/* ================= INICIALITZACIÓ ================= */
+
+/**
+ * Inicialitzar sistema de sincronització
+ */
+async function initSupabaseSync() {
+  console.log('🚀 Inicialitzant sincronització amb Supabase...');
+  
+  // Esperar que state existeixi
+  let attempts = 0;
+  while (!window.state && attempts < 50) {
+    await new Promise(r => setTimeout(r, 100));
+    attempts++;
+  }
+  
+  if (!window.state) {
+    console.error('❌ state no disponible');
+    return;
+  }
+  
+  // Sincronitzar clients
+  await syncClientsFromSupabase();
+  
+  // Renderitzar llista
+  renderClientList();
+  
+  // Sincronització periòdica cada 30 segons
+  setInterval(async () => {
+    console.log('🔄 Sincronització automàtica...');
+    await syncClientsFromSupabase();
+  }, 30000);
+  
+  // Guardar client actual cada 10 segons
+  setInterval(async () => {
+    await saveCurrentClientToSupabase();
+  }, 10000);
+  
+  console.log('✅ Sincronització inicialitzada');
+}
+
+/* ================= EXPORTAR FUNCIONS ================= */
+
 window.saveClientSupabase = saveClientSupabase;
 window.loadClientSupabase = loadClientSupabase;
 window.loadAllClientsSupabase = loadAllClientsSupabase;
 window.deleteClientSupabase = deleteClientSupabase;
-window.savePhotoSupabase = savePhotoSupabase;
-window.deletePhotoSupabase = deletePhotoSupabase;
-window.saveFileSupabase = saveFileSupabase;
-window.deleteFileSupabase = deleteFileSupabase;
-window.migrateLocalToSupabase = migrateLocalToSupabase;
-window.checkMigration = checkMigration;
+window.syncClientsFromSupabase = syncClientsFromSupabase;
+window.saveCurrentClientToSupabase = saveCurrentClientToSupabase;
+window.renderClientList = renderClientList;
+window.showSupabaseInfo = showSupabaseInfo;
+window.initSupabaseSync = initSupabaseSync;
 
-console.log('✅ Funcions de base de dades Supabase carregades (VERSIÓ CORREGIDA)');
+// Auto-inicialització
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initSupabaseSync, 1000);
+  });
+} else {
+  setTimeout(initSupabaseSync, 1000);
+}
+
+console.log('✅ supabase-db.js CORREGIT carregat (sense user_id)');
+
+/*************************************************
+ * INSTRUCCIONS:
+ * 
+ * 1. REEMPLAÇA supabase-db.js a GitHub amb aquest fitxer
+ * 2. Commit changes
+ * 3. Neteja cache: Ctrl + Shift + Delete
+ * 4. Recarrega: Ctrl + Shift + R
+ * 5. Comprova consola: hauria de dir "✅ X clients carregats"
+ * 
+ * FUNCIONS DISPONIBLES:
+ * - syncClientsFromSupabase() - Sincronitzar clients
+ * - renderClientList() - Re-renderitzar llista
+ * - showSupabaseInfo() - Veure info de la BD
+ * - saveCurrentClientToSupabase() - Guardar client actual
+ *************************************************/
