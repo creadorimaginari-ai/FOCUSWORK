@@ -3485,17 +3485,11 @@ function updateProjectList() {
   const filterStatus = document.querySelector('[data-filter-status]')?.dataset.filterStatus || 'all';
   const searchTerm = document.querySelector('[data-search]')?.value?.toLowerCase() || '';
   
-  // Filtrar clients
-  let clients = Object.values(state.clients);
-  
-  // Filtrar per estat
-  if (filterStatus === 'todos') {
-    clients = clients.filter(c => c.status !== 'archived');
-  } else if (filterStatus === 'progres') {
-    clients = clients.filter(c => c.status === 'active' && c.hasActiveWork);
-  } else if (filterStatus === 'prova') {
-    clients = clients.filter(c => c.status === 'trial');
-  }
+  // Filtrar clients - mostrar tots excepte archived/deleted
+  let clients = Object.values(state.clients).filter(c => {
+    const s = (c.status||'').toLowerCase();
+    return s !== 'archived' && s !== 'deleted';
+  });
   
   // Filtrar per cerca
   if (searchTerm) {
@@ -4036,7 +4030,7 @@ async function loadAllClientsSupabase() {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('id, name, email, phone, company, notes, status, activities, tags, created_at')
+      .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -4052,7 +4046,9 @@ async function loadAllClientsSupabase() {
     // Convertir array a objecte amb id com a clau
     const clients = {};
     data.forEach(client => {
-      client.active = true; // Assegurar que active és true per compatibilitat
+      client.active = true; // Necessari per compatibilitat amb l'app
+      client.total = client.total || 0;
+      client.billableTime = 0;
       clients[client.id] = client;
     });
     
@@ -4072,7 +4068,7 @@ async function loadClientSupabase(clientId) {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('id, name, email, phone, company, notes, status, activities, tags, created_at')
+      .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
       .eq('id', clientId)
       .limit(1);
     
@@ -4084,6 +4080,8 @@ async function loadClientSupabase(clientId) {
     if (!data || data.length === 0) return null;
     const client = data[0];
     client.active = true;
+    client.total = client.total || 0;
+    client.billableTime = 0;
     return client;
     
   } catch (error) {
@@ -4223,10 +4221,10 @@ async function updateProjectList() {
   // Obtenir tots els clients
   let clients = Object.values(state.clients);
   
-  // Filtrar: excloure només els explícitament eliminats/arxivats
+  // Mostrar tots els clients excepte archived/deleted
   clients = clients.filter(c => {
-    const status = (c.status || '').toLowerCase();
-    return status !== 'deleted' && status !== 'archived' && c.active !== false;
+    const s = (c.status||'').toLowerCase();
+    return s !== 'archived' && s !== 'deleted';
   });
   
   // Ordenar per data de creació
