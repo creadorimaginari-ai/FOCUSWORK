@@ -669,6 +669,7 @@ async function closeClient() {
   const client = await loadClient(state.currentClientId);
   if (!client) return;
   
+  client.photos = client.photos || [];
   if (client.photos.length > 0 || (client.notes && client.notes.trim())) {
     $('exportBeforeCloseText').textContent = `Aquest client té ${client.photos.length} fotos i notes.\n\nVols exportar el treball abans de tancar?`;
     window.clientToClose = client.id;
@@ -3568,15 +3569,8 @@ function updateProjectList() {
   console.log(`✅ ${clients.length} clients renderitzats`);
 }
 
-// Funció per seleccionar un client
-async function selectClient(clientId) {
-  console.log('📌 Seleccionant client:', clientId);
-  state.currentClientId = clientId;
-  await save();
-  
-  // Recarregar per mostrar el client
-  location.reload();
-}
+// Funció per seleccionar un client (versió sense reload)
+// La versió completa ja està definida a dalt (línia ~635)
 
 // Funció updateUI que crida updateProjectList
 function updateUI() {
@@ -3861,11 +3855,8 @@ async function updateProjectListEnhanced() {
     `;
     
     // Click per seleccionar client
-    clientCard.onclick = async () => {
-      console.log('📌 Seleccionant client:', client.id);
-      state.currentClientId = client.id;
-      await save();
-      location.reload();
+    clientCard.onclick = () => {
+      selectClient(client.id);
     };
     
     container.appendChild(clientCard);
@@ -4030,7 +4021,7 @@ async function loadAllClientsSupabase() {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('*')
+      .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -4068,7 +4059,7 @@ async function loadClientSupabase(clientId) {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('*')
+      .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
       .eq('id', clientId)
       .limit(1);
     
@@ -4276,30 +4267,8 @@ async function updateProjectList() {
       </div>
     `;
     
-    card.onclick = async () => {
-      console.log('📌 Seleccionant client:', client.id);
-      state.currentClientId = client.id;
-      state.currentActivity = state.currentActivity || ACTIVITIES.WORK;
-      state.sessionElapsed = state.sessionElapsed || 0;
-      state.lastTick = Date.now();
-      isWorkpadInitialized = false;
-      areTasksInitialized = false;
-      await save();
-      // Carregar dades completes del client i actualitzar la UI sense reload
-      const fullClient = await loadClientSupabase(client.id);
-      if (fullClient) {
-        // Assegurar camps obligatoris
-        fullClient.active = true;
-        fullClient.photos = fullClient.photos || [];
-        fullClient.tasks = fullClient.tasks || { urgent: "", important: "", later: "" };
-        fullClient.total = fullClient.total || 0;
-        fullClient.billableTime = fullClient.billableTime || 0;
-        fullClient.notes = fullClient.notes || '';
-      }
-      await updateUI(fullClient);
-      // Tancar el panel de llista si existeix
-      const projectPanel = document.querySelector('#projectsPanel, #projectList')?.closest('.panel, [class*="panel"], [id*="panel"]');
-      if (projectPanel && typeof closePanel === 'function') closePanel(projectPanel.id);
+    card.onclick = () => {
+      selectClient(client.id);
     };
     
     container.appendChild(card);
@@ -4354,28 +4323,7 @@ async function initApp() {
   // Sincronitzar clients de Supabase
   await syncClientsFromSupabase();
   
-  // Si hi havia un client actiu, carregar-lo i mostrar les seves dades
-  if (state.currentClientId) {
-    console.log('🔄 Recuperant client actiu:', state.currentClientId);
-    const fullClient = await loadClientSupabase(state.currentClientId);
-    if (fullClient) {
-      fullClient.active = true;
-      fullClient.photos = fullClient.photos || [];
-      fullClient.tasks = fullClient.tasks || { urgent: "", important: "", later: "" };
-      fullClient.total = fullClient.total || 0;
-      fullClient.billableTime = fullClient.billableTime || 0;
-      fullClient.notes = fullClient.notes || '';
-      await updateUI(fullClient);
-    } else {
-      // Client no trobat, netejar selecció
-      state.currentClientId = null;
-      await updateUI();
-    }
-  } else {
-    await updateUI();
-  }
-  
-  // Actualitzar llista de projectes
+  // Actualitzar UI
   updateProjectList();
   
   // Configurar sincronització periòdica (cada 30 segons)

@@ -253,22 +253,9 @@ function renderClientsList() {
     // Click
     card.onclick = () => {
       console.log('📌 Seleccionat:', client.name);
-      
-      // Guardar a state
-      window.state.currentClientId = client.id;
-      
-      // Guardar a localStorage també
-      localStorage.setItem('focuswork_current_client', client.id);
-      
-      // Guardar state
-      if (window.save) {
-        window.save();
+      if (typeof selectClient === 'function') {
+        selectClient(client.id);
       }
-      
-      // Recarregar
-      setTimeout(() => {
-        location.reload();
-      }, 200);
     };
     
     container.appendChild(card);
