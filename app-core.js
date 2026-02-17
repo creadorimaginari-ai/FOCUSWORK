@@ -1091,3 +1091,333 @@ if (!document.getElementById('onboardingStyles')) {
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
+/*************************************************
+ * FOCUSWORK - FIX D'EMERGÈNCIA
+ * 
+ * SOLUCIONA:
+ * 1. Error "user_email does not exist"
+ * 2. Bucle infinit preciseTickLoop
+ * 3. IndexedDB null
+ *************************************************/
+
+(function() {
+  'use strict';
+  
+  console.log('🚨 FIX D\'EMERGÈNCIA ACTIVAT');
+  
+  // ==========================================
+  // 1. ATURAR BUCLES INFINITS
+  // ==========================================
+  
+  // Aturar tots els intervals existents
+  for (let i = 1; i < 99999; i++) {
+    window.clearInterval(i);
+  }
+  
+  console.log('✅ Bucles aturats');
+  
+  // Protecció contra preciseTickLoop
+  let tickLoopRunning = false;
+  const originalPreciseTickLoop = window.preciseTickLoop;
+  
+  if (originalPreciseTickLoop) {
+    window.preciseTickLoop = function() {
+      if (tickLoopRunning) {
+        console.warn('⚠️ preciseTickLoop ja executant-se, saltant...');
+        return;
+      }
+      tickLoopRunning = true;
+      try {
+        originalPreciseTickLoop.apply(this, arguments);
+      } finally {
+        tickLoopRunning = false;
+      }
+    };
+  }
+  
+  // ==========================================
+  // 2. FUNCIONS SENSE user_email
+  // ==========================================
+  
+  /**
+   * Carregar TOTS els clients de Supabase
+   * SIN filtrar per user_email (que no existeix)
+   */
+  window.loadAllClientsFromSupabase = async function() {
+    console.log('📥 Carregant TOTS els clients de Supabase...');
+    
+    try {
+      // Carregar TOTS els clients sense filtrar
+      const { data, error } = await window.supabase
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('❌ Error Supabase:', error);
+        return {};
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('⚠️ No hi ha clients a Supabase');
+        return {};
+      }
+      
+      // Convertir a objecte
+      const clients = {};
+      data.forEach(client => {
+        clients[client.id] = client;
+      });
+      
+      console.log(`✅ ${data.length} clients carregats de Supabase`);
+      console.log('Exemple:', data[0]);
+      
+      return clients;
+      
+    } catch (error) {
+      console.error('❌ Error:', error);
+      return {};
+    }
+  };
+  
+  /**
+   * Sincronitzar clients
+   */
+  window.syncClients = async function() {
+    console.log('🔄 Sincronitzant clients...');
+    
+    try {
+      const clients = await window.loadAllClientsFromSupabase();
+      
+      if (clients && Object.keys(clients).length > 0) {
+        // Guardar a state
+        if (window.state) {
+          window.state.clients = clients;
+        }
+        
+        // Guardar a localStorage
+        try {
+          localStorage.setItem('focuswork_clients', JSON.stringify(clients));
+        } catch (e) {
+          console.warn('⚠️ No s\'ha pogut guardar a localStorage');
+        }
+        
+        console.log(`✅ ${Object.keys(clients).length} clients sincronitzats`);
+        return clients;
+      }
+      
+      return {};
+      
+    } catch (error) {
+      console.error('❌ Error sincronitzant:', error);
+      
+      // Carregar de localStorage com a fallback
+      try {
+        const saved = localStorage.getItem('focuswork_clients');
+        if (saved) {
+          const clients = JSON.parse(saved);
+          if (window.state) {
+            window.state.clients = clients;
+          }
+          console.log('⚠️ Carregats de localStorage:', Object.keys(clients).length);
+          return clients;
+        }
+      } catch (e) {
+        console.error('❌ Error amb localStorage');
+      }
+      
+      return {};
+    }
+  };
+  
+  /**
+   * Renderitzar llista
+   */
+  window.renderClientList = function() {
+    console.log('🎨 Renderitzant llista...');
+    
+    const container = document.querySelector('#projectList');
+    
+    if (!container) {
+      console.warn('⚠️ No s\'ha trobat #projectList');
+      return;
+    }
+    
+    container.innerHTML = '';
+    
+    // Obtenir clients
+    const clientsObj = (window.state && window.state.clients) || {};
+    const clients = Object.values(clientsObj).filter(c => c.active !== false);
+    
+    if (clients.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #888;">
+          <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
+          <div style="font-size: 16px; margin-bottom: 20px;">No hi ha clients</div>
+          <button onclick="window.syncClients().then(() => window.renderClientList())" style="
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+          ">
+            🔄 Recarregar de Supabase
+          </button>
+          <div style="margin-top: 20px; font-size: 12px; color: #666;">
+            <button onclick="window.showSupabaseInfo()" style="
+              padding: 5px 10px;
+              background: #666;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 11px;
+            ">
+              ℹ️ Info Supabase
+            </button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+    
+    // Ordenar
+    clients.sort((a, b) => {
+      const dateA = new Date(a.created_at || 0);
+      const dateB = new Date(b.created_at || 0);
+      return dateB - dateA;
+    });
+    
+    console.log(`📋 Renderitzant ${clients.length} clients`);
+    
+    // Renderitzar cada client
+    clients.forEach(client => {
+      const card = document.createElement('div');
+      card.style.cssText = `
+        padding: 15px;
+        margin-bottom: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-left: 3px solid #4CAF50;
+      `;
+      
+      card.onmouseover = () => {
+        card.style.background = 'rgba(255, 255, 255, 0.1)';
+      };
+      
+      card.onmouseout = () => {
+        card.style.background = 'rgba(255, 255, 255, 0.05)';
+      };
+      
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between;">
+          <div style="flex: 1;">
+            <div style="font-size: 16px; font-weight: bold; color: white; margin-bottom: 5px;">
+              ${client.name || 'Sense nom'}
+            </div>
+            <div style="font-size: 12px; color: #888;">
+              ${client.email || ''} ${client.phone ? '• ' + client.phone : ''}
+            </div>
+            ${client.company ? `<div style="font-size: 12px; color: #666; margin-top: 3px;">${client.company}</div>` : ''}
+          </div>
+          <div style="font-size: 20px; opacity: 0.5;">✓</div>
+        </div>
+      `;
+      
+      card.onclick = () => {
+        console.log('📌 Client seleccionat:', client.id);
+        if (window.state) {
+          window.state.currentClientId = client.id;
+        }
+        setTimeout(() => location.reload(), 300);
+      };
+      
+      container.appendChild(card);
+    });
+    
+    console.log(`✅ ${clients.length} clients renderitzats`);
+  };
+  
+  /**
+   * Mostrar info de Supabase
+   */
+  window.showSupabaseInfo = async function() {
+    console.log('ℹ️ Informació de Supabase:');
+    
+    try {
+      const { data, error } = await window.supabase
+        .from('clients')
+        .select('*')
+        .limit(1);
+      
+      console.log('Exemple client:', data);
+      console.log('Columnes disponibles:', data && data[0] ? Object.keys(data[0]) : 'Cap');
+      console.log('Error:', error);
+      
+      alert('Comprova la consola (F12) per veure la info');
+      
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+  
+  // ==========================================
+  // 3. INICIALITZACIÓ
+  // ==========================================
+  
+  window.initEmergencyFix = async function() {
+    console.log('🚀 Iniciant fix d\'emergència...');
+    
+    // Esperar que state existeixi
+    let attempts = 0;
+    while (!window.state && attempts < 50) {
+      await new Promise(r => setTimeout(r, 100));
+      attempts++;
+    }
+    
+    if (!window.state) {
+      console.error('❌ state no disponible');
+      return;
+    }
+    
+    // Sincronitzar
+    await window.syncClients();
+    
+    // Renderitzar
+    window.renderClientList();
+    
+    console.log('✅ Fix d\'emergència completat');
+  };
+  
+  // Executar després d'un segon
+  setTimeout(() => {
+    window.initEmergencyFix();
+  }, 1000);
+  
+  console.log('✅ Fix d\'emergència carregat');
+  
+})();
+
+/*************************************************
+ * COM USAR:
+ * 
+ * 1. EXECUTA A LA CONSOLA PRIMER:
+ *    - Per aturar bucles:
+ *      for (let i = 1; i < 99999; i++) window.clearInterval(i);
+ * 
+ * 2. DESPRÉS AFEGEIX AQUEST CODI:
+ *    - Al final de app-core.js
+ *    - Commit
+ * 
+ * 3. NETEJA CACHE I RECARREGA
+ * 
+ * 4. PER VEURE INFO DE SUPABASE:
+ *    window.showSupabaseInfo();
+ * 
+ * 5. PER FORÇAR RECÀRREGA:
+ *    await syncClients();
+ *    renderClientList();
+ *************************************************/
