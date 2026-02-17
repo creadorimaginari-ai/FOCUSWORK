@@ -1,180 +1,129 @@
 /*
- * PATCH DEFINITIU - FocusWork
- * Problema 1: Els cards de client fan location.reload() en lloc de cridar selectClient()
- * Problema 2: Les fotos venen d'IndexedDB però de vegades no es carreguen
+ * PATCH.JS - FocusWork
+ * 
+ * PROBLEMA 1: renderClientCard() no existeix → error quan s'obre la llista de clients
+ * PROBLEMA 2: fotos no apareixen al client
  */
+
 console.log('🔧 [PATCH] Carregant...');
 
 window.checkMigration = async function() { return true; };
 
-// ─────────────────────────────────────────────────────────────
-// FIX 1: sobreescriure renderClientList de app-core.js
-// perquè el clic cridi selectClient() en lloc de location.reload()
-// ─────────────────────────────────────────────────────────────
-function patchRenderClientList() {
-  window.renderClientList = function() {
-    const container = document.querySelector('#projectList');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const clientsObj = (window.state && window.state.clients) || {};
-    let clients = Object.values(clientsObj).filter(c => {
-      const s = (c.status || '').toLowerCase();
-      return s !== 'archived' && s !== 'deleted' && c.active !== false;
-    });
-
-    if (clients.length === 0) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:40px;color:#888;">
-          <div style="font-size:48px;margin-bottom:20px;">📋</div>
-          <div style="font-size:16px;margin-bottom:20px;">No hi ha clients</div>
-          <button onclick="window.syncClients().then(()=>window.renderClientList())"
-            style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:6px;cursor:pointer;">
-            🔄 Recarregar de Supabase
-          </button>
-        </div>`;
-      return;
-    }
-
-    clients.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-
-    clients.forEach(client => {
-      const card = document.createElement('div');
-      card.className = 'project-card';
-      card.style.cssText = `
-        padding:15px; margin-bottom:10px;
-        background:rgba(255,255,255,0.05); border-radius:8px;
-        cursor:pointer; transition:all 0.2s;
-        border-left:3px solid #4CAF50;`;
-
-      card.onmouseover = () => { card.style.background = 'rgba(255,255,255,0.1)'; };
-      card.onmouseout  = () => { card.style.background = 'rgba(255,255,255,0.05)'; };
-
-      card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:start;">
-          <div style="flex:1;">
-            <div style="font-size:16px;font-weight:bold;color:white;margin-bottom:5px;">
-              ${client.name || 'Sense nom'}
-            </div>
-            <div style="font-size:12px;color:#888;">
-              ${client.email || ''} ${client.phone ? '• ' + client.phone : ''}
-            </div>
-            ${client.company ? `<div style="font-size:12px;color:#666;margin-top:3px;">${client.company}</div>` : ''}
-          </div>
-          <div style="font-size:20px;opacity:0.5;">✓</div>
-        </div>`;
-
-      // ✅ Cridar selectClient() que ja existeix a app-ui.js
-      card.onclick = () => {
-        console.log('📌 [PATCH] Obrint client:', client.id, client.name);
-        if (typeof selectClient === 'function') {
-          selectClient(client.id);
-        } else {
-          // Fallback directe
-          state.currentClientId = client.id;
-          state.currentActivity = ACTIVITIES.WORK;
-          state.sessionElapsed = 0;
-          state.lastTick = Date.now();
-          isWorkpadInitialized = false;
-          areTasksInitialized = false;
-          save().then(() => loadClient(client.id).then(c => updateUI(c)));
-        }
-      };
-
-      container.appendChild(card);
-    });
-
-    console.log(`✅ [PATCH] ${clients.length} clients renderitzats`);
+// ─────────────────────────────────────────────
+// FIX 1: renderClientCard — la funció que falta
+// ─────────────────────────────────────────────
+window.renderClientCard = function(client) {
+  const stateColors = {
+    in_progress:      '#3b82f6',
+    waiting_feedback: '#8b5cf6',
+    waiting_material: '#f59e0b',
+    paused:           '#64748b',
+    blocked:          '#ef4444',
+    ready_to_deliver: '#10b981',
   };
-  console.log('✅ [PATCH] renderClientList patchejat');
-}
+  const stateLabels = {
+    in_progress:      '🔵 En progrés',
+    waiting_feedback: '✉️ Prova enviada',
+    waiting_material: '🟡 Esperant material',
+    paused:           '⏸ Pausat',
+    blocked:          '🔴 Bloquejat',
+    ready_to_deliver: '✅ Llest per entregar',
+  };
 
-// ─────────────────────────────────────────────────────────────
-// FIX 2: patchejar updateProjectList i variants d'app-ui.js
-// que també fan location.reload() al clicar cards
-// ─────────────────────────────────────────────────────────────
-function patchUpdateProjectList() {
-  ['updateProjectList', 'updateProjectListEnhanced'].forEach(fnName => {
-    if (typeof window[fnName] !== 'function') return;
-    const _orig = window[fnName];
+  const clientState  = client.state || 'in_progress';
+  const color        = stateColors[clientState] || '#3b82f6';
+  const stateLabel   = stateLabels[clientState] || clientState;
+  const progress     = client.progress || 1;
+  const progressDots = Array.from({length: 5}, (_, i) =>
+    `<span style="
+      width:10px; height:10px; border-radius:50%; display:inline-block;
+      background:${i < progress ? color : 'rgba(255,255,255,0.15)'};
+      margin-right:3px;
+    "></span>`
+  ).join('');
 
-    window[fnName] = async function(...args) {
-      await _orig.apply(this, args);
+  // Data d'entrega
+  let deliveryHtml = '';
+  if (client.deliveryDate) {
+    const delivery  = new Date(client.deliveryDate);
+    const today     = new Date();
+    today.setHours(0,0,0,0);
+    delivery.setHours(0,0,0,0);
+    const diffDays  = Math.ceil((delivery - today) / 86400000);
+    let deliveryText, deliveryColor;
+    if      (diffDays < 0)  { deliveryText = `⚠️ Vençut fa ${Math.abs(diffDays)}d`;  deliveryColor = '#ef4444'; }
+    else if (diffDays === 0){ deliveryText = '🔴 Entrega AVUI';                       deliveryColor = '#ef4444'; }
+    else if (diffDays === 1){ deliveryText = '🟡 Entrega DEMÀ';                       deliveryColor = '#f59e0b'; }
+    else if (diffDays <= 3) { deliveryText = `🟡 Entrega en ${diffDays} dies`;        deliveryColor = '#f59e0b'; }
+    else                    { deliveryText = `📅 ${delivery.toLocaleDateString('ca-ES',{day:'2-digit',month:'2-digit'})}`; deliveryColor = '#94a3b8'; }
+    deliveryHtml = `<span style="font-size:11px;color:${deliveryColor};margin-left:8px;">${deliveryText}</span>`;
+  }
 
-      // Sobreescriure onclicks dels cards generats per la funció original
-      const container = document.querySelector('#projectList');
-      if (!container) return;
+  return `
+    <div class="client-card" data-client-id="${client.id}" style="
+      padding: 16px;
+      margin-bottom: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      cursor: pointer;
+      border-left: 4px solid ${color};
+      transition: all 0.2s;
+    "
+    onmouseover="this.style.background='rgba(255,255,255,0.09)'"
+    onmouseout="this.style.background='rgba(255,255,255,0.05)'"
+    >
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:4px;">
+            ${client.name || 'Sense nom'}
+          </div>
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:6px;">
+            ${client.email || ''} ${client.phone ? '· ' + client.phone : ''}
+            ${client.company ? '· ' + client.company : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:${color};background:${color}22;
+              padding:2px 8px;border-radius:10px;">${stateLabel}</span>
+            ${deliveryHtml}
+          </div>
+        </div>
+        <div style="text-align:right;margin-left:12px;flex-shrink:0;">
+          <div style="font-size:12px;color:#4ade80;margin-bottom:6px;">
+            ${client.total ? '⏱ ' + formatTime(client.total) : ''}
+          </div>
+          <div>${progressDots}</div>
+        </div>
+      </div>
+    </div>`;
+};
 
-      container.querySelectorAll('.project-card:not([data-patched])').forEach(card => {
-        card.dataset.patched = '1';
-        const origOnclick = card.onclick;
-        if (!origOnclick) return;
-
-        card.onclick = async (e) => {
-          // Interceptar location.reload temporalment
-          const origReload = window.location.reload.bind(window.location);
-          window.location.reload = () => console.log('🛑 [PATCH] reload() bloquejat');
-
-          // Interceptar save() per capturar l'id que l'onclick assigna
-          let capturedId = null;
-          const origSave = window.save;
-          window.save = async function() {
-            capturedId = window.state ? window.state.currentClientId : null;
-            return true; // No guardem res aquí, ho fa selectClient
-          };
-
-          try {
-            await origOnclick.call(card, e);
-          } catch(err) {}
-
-          window.save = origSave;
-          window.location.reload = origReload;
-
-          const targetId = capturedId || (window.state ? window.state.currentClientId : null);
-          if (targetId) {
-            console.log('📌 [PATCH] Obrint client via updateProjectList:', targetId);
-            if (typeof selectClient === 'function') {
-              await selectClient(targetId);
-            }
-          }
-        };
-      });
-    };
-
-    console.log(`✅ [PATCH] ${fnName} patchejat`);
-  });
-}
-
-// ─────────────────────────────────────────────────────────────
-// FIX 3: garantir que loadClient sempre carrega fotos d'IndexedDB
-// ─────────────────────────────────────────────────────────────
-function patchLoadClientForPhotos() {
+// ─────────────────────────────────────────────
+// FIX 2: fotos d'IndexedDB
+// S'executa quan loadClient ja existeix
+// ─────────────────────────────────────────────
+function patchLoadClient() {
   if (typeof window.loadClient !== 'function') return false;
 
   const _orig = window.loadClient;
-
   window.loadClient = async function(clientId) {
     if (!clientId) return null;
-
     const client = await _orig(clientId);
     if (!client) return null;
 
     // Si ja té fotos no cal fer res
     if (client.photos && client.photos.length > 0) return client;
 
-    // Carregar fotos d'IndexedDB directament
+    // Carregar fotos d'IndexedDB
     if (window.db) {
       try {
         const photos = await new Promise(resolve => {
           try {
-            const tx = window.db.transaction(['photos'], 'readonly');
+            const tx  = window.db.transaction(['photos'], 'readonly');
             const req = tx.objectStore('photos').index('clientId').getAll(clientId);
             req.onsuccess = () => resolve(req.result || []);
-            req.onerror = () => resolve([]);
+            req.onerror   = () => resolve([]);
           } catch(e) { resolve([]); }
         });
-
         if (photos.length > 0) {
           client.photos = photos.map(p => ({
             id: p.id, data: p.data, date: p.date, comment: p.comment || ''
@@ -184,14 +133,13 @@ function patchLoadClientForPhotos() {
       } catch(e) {}
     }
 
-    client.photos       = client.photos || [];
-    client.files        = client.files  || [];
-    client.tasks        = client.tasks  || { urgent: '', important: '', later: '' };
-    client.notes        = client.notes  || '';
-    client.total        = client.total  || 0;
+    client.photos       = client.photos       || [];
+    client.files        = client.files        || [];
+    client.tasks        = client.tasks        || { urgent:'', important:'', later:'' };
+    client.notes        = client.notes        || '';
+    client.total        = client.total        || 0;
     client.billableTime = client.billableTime || 0;
     client.active       = true;
-
     return client;
   };
 
@@ -199,51 +147,23 @@ function patchLoadClientForPhotos() {
   return true;
 }
 
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // INICIALITZACIÓ
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 async function initPatch() {
-  // Esperar que loadClient existeixi (carregat per app-core.js)
   let tries = 0;
   while (typeof window.loadClient !== 'function' && tries < 80) {
     await new Promise(r => setTimeout(r, 100));
     tries++;
   }
-
-  patchLoadClientForPhotos();
-  patchRenderClientList();
-  patchUpdateProjectList();
-
-  // Sincronitzar clients i renderitzar llista
-  if (typeof window.syncClients === 'function') {
-    await window.syncClients();
-  } else if (typeof window.syncClientsFromSupabase === 'function') {
-    await window.syncClientsFromSupabase();
-  }
-
-  window.renderClientList();
-
-  // Si hi havia un client actiu guardat, restaurar-lo sense reload
-  if (window.state && window.state.currentClientId) {
-    console.log('🔄 [PATCH] Restaurant client actiu:', window.state.currentClientId);
-    const client = await window.loadClient(window.state.currentClientId);
-    if (client && typeof updateUI === 'function') {
-      await updateUI(client);
-      const panel = document.getElementById('clientInfoPanel');
-      const btns  = document.getElementById('clientFixedButtons');
-      if (panel) panel.style.display = 'block';
-      if (btns)  btns.style.display  = 'grid';
-      console.log('✅ [PATCH] Client restaurat:', client.name);
-    }
-  }
-
-  console.log('✅ [PATCH] Inicialització completada');
+  patchLoadClient();
+  console.log('✅ [PATCH] Inicialitzat');
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => setTimeout(initPatch, 1200));
+  document.addEventListener('DOMContentLoaded', () => setTimeout(initPatch, 500));
 } else {
-  setTimeout(initPatch, 1200);
+  setTimeout(initPatch, 500);
 }
 
 console.log('✅ [PATCH] Fitxer carregat');
