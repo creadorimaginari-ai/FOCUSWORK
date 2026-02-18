@@ -3,6 +3,16 @@
  * Llicències, Importació i Exportació
  *************************************************/
 
+/* ─────────────────────────────────────────────
+   FUNCIÓ AUXILIAR: obtenir la font d'una foto
+   Suporta tant URL Supabase Storage com base64 local.
+   photos-storage.js guarda  data: null  quan té URL,
+   per això cal mirar photo.url com a primer candidat.
+───────────────────────────────────────────── */
+function getPhotoSrc(photo) {
+  return photo?.url || photo?.data || null;
+}
+
 /*
  * CSS NECESSARI PER AL CORRECTE FUNCIONAMENT:
  * 
@@ -277,7 +287,7 @@ async function savePhotoComment(text) {
     await dbPut('photos', {
       id: photo.id,
       clientId: clientId,
-      data: photo.data,
+      data: getPhotoSrc(photo),   // ✅ suporta URL Supabase i base64 local
       date: photo.date,
       comment: photo.comment || ""
     });
@@ -2011,7 +2021,7 @@ if (photoCanvas && photoCtx) {
     photoCtx.drawImage(img, 0, 0);
     
     // Guardar foto original
-    originalPhotoData = photo.data;
+    originalPhotoData = getPhotoSrc(photo);   // ✅ suporta URL Supabase i base64 local
     
     // Iniciar historial
     drawHistory = [];
@@ -2031,7 +2041,7 @@ if (photoCanvas && photoCtx) {
     if (text) text.textContent = 'Dibuixar';
     photoCanvas.classList.remove('drawing-mode');
   };
-  img.src = photo.data;
+  img.src = getPhotoSrc(photo);   // ✅ suporta URL Supabase i base64 local
 }
   const commentInput = $('lightboxComment');
 
@@ -2136,7 +2146,7 @@ async function downloadCurrentPhoto() {
   
   const photo = photos[currentLightboxIndex];
   const a = document.createElement('a');
-  a.href = photo.data;
+  a.href = getPhotoSrc(photo);   // ✅ suporta URL Supabase i base64 local
   
   const client = await loadClient(state.currentClientId);
   const fileName = client ? 
@@ -2157,7 +2167,7 @@ async function shareCurrentPhoto() {
   
   if (navigator.share && navigator.canShare) {
     try {
-      const res = await fetch(photo.data);
+      const res = await fetch(getPhotoSrc(photo));   // ✅ suporta URL Supabase i base64 local
       const blob = await res.blob();
       const file = new File([blob], `foto_${currentLightboxIndex + 1}.jpg`, { type: 'image/jpeg' });
       
@@ -3135,7 +3145,8 @@ async function renderFileGallery(preloadedClient = null) {
         type: 'image',
         name: 'Imatge',
         mimeType: 'image/jpeg',
-        data: photo.data,
+        url:  photo.url  || null,   // ✅ preservar URL Supabase si existeix
+        data: photo.data || null,   // ✅ preservar base64 local si existeix
         comment: photo.comment || ""
       });
     });
