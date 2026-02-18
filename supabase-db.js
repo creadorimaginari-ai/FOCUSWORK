@@ -30,7 +30,10 @@ async function loadAllClientsSupabase() {
 
     const clients = {};
     (data || []).forEach(client => {
-      client.active       = true;
+      // ✅ BUGFIX: NO forçar active=true — llegir l'estat real de Supabase
+      // Abans sempre era true, fent que clients tancats tornessin a aparèixer
+      // active = true si status és 'active' o no té status; false si és qualsevol altra cosa
+      client.active       = (client.status === 'active' || client.status === null || client.status === undefined || client.status === '');
       client.total        = client.total         || 0;
       // Supabase guarda 'billable_time', el codi JS usa 'billableTime'
       client.billableTime = client.billable_time || client.billableTime || 0;
@@ -60,7 +63,8 @@ async function loadClientSupabase(clientId) {
 
     if (error || !data) return null;
 
-    data.active       = true;
+    // ✅ BUGFIX: NO forçar active=true — llegir l'estat real de Supabase
+    data.active       = (data.status === 'active' || data.status === null || data.status === undefined || data.status === '');
     data.total        = data.total         || 0;
     // Mapeja billable_time → billableTime
     data.billableTime = data.billable_time  || data.billableTime || 0;
@@ -106,7 +110,10 @@ async function saveClientSupabase(client) {
     phone:         client.phone       || null,
     company:       client.company     || null,
     notes:         client.notes       || null,
-    status:        client.status      || 'active',
+    // ✅ BUGFIX: mapejar active (JS) → status (Supabase) correctament
+    // Si active=false → 'closed'; si active=true o no definit → 'active'
+    status:        client.active === false ? 'closed' : (client.status || 'active'),
+    closed_at:     client.closedAt ? new Date(client.closedAt).toISOString() : null,
     total:         client.total       || 0,
     billable_time: client.billableTime || client.billable_time || 0,  // ← snake_case per Supabase
     activities:    client.activities  || {},
