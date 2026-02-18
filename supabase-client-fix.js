@@ -25,7 +25,7 @@
       return;
     }
     
-    if (!window.supabase || !window.db || !window.state) return;
+    if (!window.supabase) return;
     
     clearInterval(waitForReady);
     init();
@@ -176,7 +176,7 @@
     async function loadClients() {
       console.log('📥 Carregant clients...');
       const clients = await window.loadAllClientsSupabase();
-      window.state.clients = clients;
+      if (window.state) window.state.clients = clients;
       console.log('✅ ' + Object.keys(clients).length + ' clients carregats');
       
       // Només renderitzar si el contenidor és visible
