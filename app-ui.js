@@ -316,16 +316,14 @@ function updatePhotoBadge(photoId, comment) {
   const gallery = $("photoGallery");
   if (!gallery) return;
   
-  // Buscar la miniatura corresponent
-  const thumbnails = gallery.querySelectorAll('.photo-thumb');
-  const photos = window.currentClientPhotos;
+  // Buscar el contenidor per data-id o per índex
+  const items = gallery.querySelectorAll('.file-item, .photo-thumb');
+  const photos = window.currentClientPhotos || window.currentClientFiles;
+  if (!photos) return;
   
   photos.forEach((p, index) => {
     if (p.id === photoId) {
-      const img = thumbnails[index];
-      if (!img) return;
-      
-      const container = img.parentElement;
+      const container = items[index];
       if (!container) return;
       
       // Eliminar badge anterior si existeix
