@@ -416,8 +416,14 @@ async function loadClient(clientId) {
       }
     } catch(e) {}
     
-    // 4. SEMPRE actiu
-    client.active = true;
+    // 4. Respectar l'estat real de Supabase (active/closed)
+    // ✅ BUGFIX: NO forçar active=true — si Supabase diu que és closed, cal respectar-ho
+    // Sense aquest fix, els clients tancats no es podien esborrar mai
+    if (client.status !== undefined) {
+      client.active = (client.status === 'active' || client.status === null || client.status === '' || client.status === undefined);
+    } else {
+      client.active = client.active !== false;
+    }
     
     // 5. SEMPRE carregar fotos de IndexedDB
     try {
