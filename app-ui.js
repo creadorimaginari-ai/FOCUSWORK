@@ -2082,17 +2082,31 @@ initPhotoCanvas();
 if (photoCanvas && photoCtx) {
   const img = new Image();
   img.onload = () => {
-    // Adaptar canvas a la pantalla mantenint proporció
+    // Calcular mida adaptada a la pantalla
     const maxW = window.innerWidth * 0.95;
-    const maxH = window.innerHeight * 0.75;
+    const maxH = window.innerHeight * 0.60;
     const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
-    photoCanvas.width = img.width * ratio;
-    photoCanvas.height = img.height * ratio;
+    const canvasW = Math.round(img.width * ratio);
+    const canvasH = Math.round(img.height * ratio);
+    
+    // Definir mida del canvas
+    photoCanvas.width  = canvasW;
+    photoCanvas.height = canvasH;
+    photoCanvas.style.position = 'relative';
+    photoCanvas.style.width    = canvasW + 'px';
+    photoCanvas.style.height   = canvasH + 'px';
     photoCanvas.style.maxWidth = '100%';
-    photoCanvas.style.maxHeight = '75vh';
-    photoCanvas.style.display = 'block';
-    photoCanvas.style.margin = '0 auto';
-    photoCtx.drawImage(img, 0, 0, photoCanvas.width, photoCanvas.height);
+    photoCanvas.style.display  = 'block';
+    photoCanvas.style.margin   = '0 auto';
+    
+    // Definir altura del contenidor
+    const container = document.querySelector('.lightbox-canvas-container');
+    if (container) {
+      container.style.height = canvasH + 'px';
+      container.style.minHeight = canvasH + 'px';
+    }
+    
+    photoCtx.drawImage(img, 0, 0, canvasW, canvasH);
     
     // Guardar foto original
     originalPhotoData = getPhotoSrc(photo);   // ✅ suporta URL Supabase i base64 local
@@ -2582,11 +2596,24 @@ function initPhotoCanvas() {
   photoCanvas.style.display       = 'block';
   photoCanvas.style.visibility    = 'visible';
   photoCanvas.style.opacity       = '1';
-  photoCanvas.style.position      = 'relative';
-  photoCanvas.style.maxWidth      = '100%';
-  photoCanvas.style.maxHeight     = '70vh';
-  photoCanvas.style.margin        = '0 auto';
+  photoCanvas.style.position      = 'absolute';
+  photoCanvas.style.top           = '0';
+  photoCanvas.style.left          = '0';
+  photoCanvas.style.width         = '100%';
+  photoCanvas.style.height        = '100%';
   photoCanvas.style.zIndex        = '10';
+  
+  // Assegurar que el contenidor té dimensions
+  const container = document.querySelector('.lightbox-canvas-container');
+  if (container) {
+    container.style.position       = 'relative';
+    container.style.width          = '100%';
+    container.style.maxHeight      = '65vh';
+    container.style.overflow       = 'hidden';
+    container.style.display        = 'flex';
+    container.style.alignItems     = 'center';
+    container.style.justifyContent = 'center';
+  }
   // Per defecte: NO captura events (permet swipe/scroll al lightbox)
   // toggleDrawing() el canvia a 'auto' quan s'activa el llapis
   photoCanvas.style.pointerEvents = 'none';
