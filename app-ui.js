@@ -267,38 +267,48 @@ async function savePhotoComment(text) {
   if (!clientId) return;
 
   const client = await loadClient(clientId);
-  if (!client || !client.photos) return;
+  if (!client) return;
 
-  const photo = client.photos.find(
-    p => p.id === window.currentClientPhotos[currentLightboxIndex]?.id
-  );
+  const currentId = window.currentClientPhotos?.[currentLightboxIndex]?.id;
+  if (!currentId) return;
+
+  // ✅ BUGFIX: buscar tant a photos[] (antic) com a files[] (Supabase)
+  // Abans només buscava a photos[] i perdia els comentaris de fotos noves
+  let photo = (client.photos || []).find(p => p.id === currentId);
+  let inFiles = false;
+  if (!photo) {
+    photo = (client.files || []).find(f => f.id === currentId);
+    inFiles = true;
+  }
   if (!photo) return;
 
   photo.comment = text;
 
-  // Guardar el client complet (inclou les fotos)
+  // Actualitzar còpia en memòria
+  window.currentClientPhotos[currentLightboxIndex].comment = text;
+
+  // Guardar client complet a Supabase + IndexedDB
   await saveClient(client);
 
-  // Actualitzar còpia en memòria perquè UI i dades coincideixin
-  window.currentClientPhotos[currentLightboxIndex].comment = text;
-  
-  // AFEGIT: Guardar també la foto directament a IndexedDB per seguretat
-  try {
-    await dbPut('photos', {
-      id: photo.id,
-      clientId: clientId,
-      data: getPhotoSrc(photo),   // ✅ suporta URL Supabase i base64 local
-      date: photo.date,
-      comment: photo.comment || ""
-    });
-    console.log('💬 Comentari guardat correctament');
-    
-    // ✅ AFEGIT: Actualitzar badge 💬 de la miniatura
-    updatePhotoBadge(photo.id, text);
-    
-  } catch (e) {
-    console.error('Error guardant comentari a IndexedDB:', e);
+  // Si era una foto de l'array antic (photos[]), actualitzar IndexedDB per seguretat
+  if (!inFiles) {
+    try {
+      await dbPut('photos', {
+        id:       photo.id,
+        clientId: clientId,
+        url:      photo.url  || null,
+        data:     getPhotoSrc(photo),
+        date:     photo.date,
+        comment:  text
+      });
+    } catch (e) {
+      console.error('Error guardant comentari a IndexedDB:', e);
+    }
   }
+
+  // Actualitzar badge visual a la galeria
+  updatePhotoBadge(photo.id, text);
+  console.log('💬 Comentari guardat correctament');
 }
 
 // Funció auxiliar per actualitzar el badge d'una foto específica
@@ -486,6 +496,13 @@ if (fixedBtns) {
   
   // Ejecutar inmediatamente pero sin bloquear
   asyncUpdate().catch(err => console.error('asyncUpdate failed:', err));
+
+  // ✅ BUGFIX: refrescar la llista de clients SEMPRE que la UI s'actualitza
+  // Sense això, tancar/esborrar un client no desapareix de la llista
+  // perquè updateProjectList() mai era cridat per updateUI()
+  if (typeof updateProjectList === 'function') {
+    updateProjectList();
+  }
 }
 
 function updateDeliveryDateDisplay(client) {
@@ -579,6 +596,12 @@ async function confirmNewClient() {
   };
   
   await saveClient(client);
+
+  // ✅ BUGFIX: afegir a state.clients en memòria immediatament
+  // Sense això, el client nou no apareixia a la llista fins a recarregar
+  if (!state.clients) state.clients = {};
+  state.clients[id] = client;
+
   state.currentClientId = id;
   state.currentActivity = ACTIVITIES.WORK;
   state.sessionElapsed = 0;
@@ -981,8 +1004,10 @@ async function confirmDeletePhoto() {
   try {
     await dbDelete('photos', photoToDelete);
     
-    client.photos = client.photos.filter(f => f.id !== photoToDelete);
-    
+    // ✅ BUGFIX: eliminar tant de photos[] com de files[]
+    client.photos = (client.photos || []).filter(f => f.id !== photoToDelete);
+    client.files  = (client.files  || []).filter(f => f.id !== photoToDelete);
+
     await saveClient(client);
     
     closeModal('modalDeletePhoto');
@@ -1212,12 +1237,17 @@ async function updateWorkpad(preloadedClient = null) {
 }
 
 async function handleWorkpadInput(e) {
-  const client = await loadClient(state.currentClientId);
-  if (!client) return;
-  
-  client.notes = e.target.value;
+  if (!state.currentClientId) return;
+  // ✅ BUGFIX: capturar el valor IMMEDIATAMENT (no en el timeout)
+  // Si l'usuari escriu ràpid i loadClient tarda, el valor de e.target pot canviar
+  const noteValue = e.target.value;
   clearTimeout(workpadTimeout);
   workpadTimeout = setTimeout(async () => {
+    // Recarregar el client just abans de guardar per no sobreescriure
+    // canvis que hagin pogut arribar de Supabase entremig
+    const client = await loadClient(state.currentClientId);
+    if (!client) return;
+    client.notes = noteValue;
     await saveClient(client);
   }, 1000);
 }
@@ -1288,11 +1318,14 @@ async function updateTasks(preloadedClient = null) {
 }
 
 async function handleTaskInput(taskType, e) {
-  const client = await loadClient(state.currentClientId);
-  if (!client || !client.tasks) return;
-  client.tasks[taskType] = e.target.value;
+  if (!state.currentClientId) return;
+  // ✅ BUGFIX: capturar el valor IMMEDIATAMENT igual que handleWorkpadInput
+  const taskValue = e.target.value;
   clearTimeout(taskTimeouts[taskType]);
   taskTimeouts[taskType] = setTimeout(async () => {
+    const client = await loadClient(state.currentClientId);
+    if (!client || !client.tasks) return;
+    client.tasks[taskType] = taskValue;
     await saveClient(client);
   }, 1000);
 }
@@ -1459,17 +1492,26 @@ async function generateReport() {
 
   let photosSection = '';
 
-if (client.photos && client.photos.length > 0) {
+// ✅ BUGFIX: llegir tant photos[] (antic) com files[] (Supabase)
+const allPhotosForReport = [
+  ...(client.photos || []),
+  ...(client.files  || []).filter(f => f.type === 'image')
+];
+// Deduplicar per id
+const seenIds = new Set();
+const uniquePhotos = allPhotosForReport.filter(p => {
+  if (seenIds.has(p.id)) return false;
+  seenIds.add(p.id);
+  return true;
+});
+
+if (uniquePhotos.length > 0) {
   photosSection += '\n📷 FOTOGRAFIES\n\n';
-
-  client.photos.forEach((photo, index) => {
+  uniquePhotos.forEach((photo, index) => {
     photosSection += `Foto ${index + 1}\n`;
-
-    // només el comentari, no la imatge
     if (photo.comment && photo.comment.trim() !== '') {
       photosSection += photo.comment.trim() + '\n';
     }
-
     photosSection += '\n';
   });
 }
@@ -1820,6 +1862,10 @@ async function confirmBulkDelete(period) {
   for (const client of toDelete) {
     try {
       await deleteClient(client.id);
+      // ✅ BUGFIX: eliminar de state.clients en memòria
+      if (state.clients && state.clients[client.id]) {
+        delete state.clients[client.id];
+      }
       deleted++;
     } catch (e) {
       console.error('Error esborrant client:', client.name, e);
@@ -2043,11 +2089,10 @@ if (photoCanvas && photoCtx) {
     drawHistory = [];
     saveDrawState();
     
-    // Inicialitzar sistema de dibuix (només una vegada)
-    if (!photoCanvas._drawingInitialized) {
-      setupCanvasDrawing();
-      photoCanvas._drawingInitialized = true;
-    }
+    // ✅ BUGFIX: sempre reinicialitzar els listeners de dibuix quan s'obre una foto
+    // El flag _drawingInitialized causava que els listeners vells quedessin actius
+    // sobre el canvas incorrecte si es reobria el lightbox amb una foto diferent
+    setupCanvasDrawing();
     
     // Reset mode dibuix
     drawingEnabled = false;
@@ -2515,10 +2560,19 @@ function initPhotoCanvas() {
     return;
   }
   
-  // Assegurar visibilitat
-  photoCanvas.style.display = 'block';
-  photoCanvas.style.visibility = 'visible';
-  photoCanvas.style.opacity = '1';
+  // Assegurar visibilitat i posicionament via JS (independent del CSS extern)
+  photoCanvas.style.display       = 'block';
+  photoCanvas.style.visibility    = 'visible';
+  photoCanvas.style.opacity       = '1';
+  photoCanvas.style.position      = 'absolute';
+  photoCanvas.style.top           = '0';
+  photoCanvas.style.left          = '0';
+  photoCanvas.style.width         = '100%';
+  photoCanvas.style.height        = '100%';
+  photoCanvas.style.zIndex        = '10';
+  // Per defecte: NO captura events (permet swipe/scroll al lightbox)
+  // toggleDrawing() el canvia a 'auto' quan s'activa el llapis
+  photoCanvas.style.pointerEvents = 'none';
   
   photoCtx = photoCanvas.getContext('2d');
   
@@ -2535,38 +2589,26 @@ function toggleDrawing() {
   const btn = $('drawToggle');
   const text = $('drawToggleText');
   const canvas = $('photoCanvas');
+  if (!canvas) return;
   
   if (drawingEnabled) {
     btn.classList.add('active');
     text.textContent = 'Activat';
     canvas.classList.add('drawing-mode');
-
-    // ✅ BUGFIX: quan s'activa el llapis, resetar zoom/pan
-    // El transform CSS (scale/translate) fa que getBoundingClientRect() retorni
-    // coordenades incorrectes i el traç apareix desplaçat. El dibuix funciona
-    // correctament només amb zoom = 1 i sense translació.
-    if (typeof resetZoom === 'function') {
-      resetZoom();
-    } else {
-      // Fallback si resetZoom no està disponible
-      if (canvas) {
-        canvas.style.transform = '';
-        canvas.style.transformOrigin = '';
-      }
-    }
-
-    // Bloquejar scroll del lightbox mentre es dibuixa
-    const lightbox = $('lightbox');
-    if (lightbox) lightbox.style.overflow = 'hidden';
-
+    // ✅ CRÍTIC: activar pointer-events via JS perquè el canvas rebi clicks/touch
+    // No dependre del CSS extern (drawing-mode) per a la funcionalitat crítica
+    canvas.style.pointerEvents = 'auto';
+    canvas.style.cursor = 'crosshair';
+    // Resetar zoom per evitar desplaçament de coordenades
+    if (typeof resetZoom === 'function') resetZoom();
   } else {
     btn.classList.remove('active');
     text.textContent = 'Dibuixar';
     canvas.classList.remove('drawing-mode');
-
-    // Restaurar scroll
-    const lightbox = $('lightbox');
-    if (lightbox) lightbox.style.overflow = '';
+    // ✅ Desactivar pointer-events: el canvas torna transparent als events
+    // perquè el swipe/zoom del lightbox torni a funcionar
+    canvas.style.pointerEvents = 'none';
+    canvas.style.cursor = '';
   }
 }
 
@@ -2689,21 +2731,32 @@ function getCanvasPoint(e) {
 function setupCanvasDrawing() {
   if (!photoCanvas || !photoCtx) return;
 
+  // ✅ Netejar listeners anteriors per evitar duplicats en reobrir el lightbox
+  if (photoCanvas._drawHandlers) {
+    const h = photoCanvas._drawHandlers;
+    photoCanvas.removeEventListener('mousedown',  h.startDraw);
+    photoCanvas.removeEventListener('mousemove',  h.draw);
+    photoCanvas.removeEventListener('mouseup',    h.endDraw);
+    photoCanvas.removeEventListener('mouseleave', h.endDraw);
+    photoCanvas.removeEventListener('touchstart', h.startDraw);
+    photoCanvas.removeEventListener('touchmove',  h.draw);
+    photoCanvas.removeEventListener('touchend',   h.endDraw);
+  }
+
   let isDrawing = false;
 
   function startDraw(e) {
     if (!drawingEnabled) return;
     e.preventDefault();
+    e.stopPropagation();
 
     isDrawing = true;
     const { x, y } = getCanvasPoint(e);
     
-    // Aplicar color i gruix ABANS de dibuixar
     photoCtx.strokeStyle = drawColor;
-    photoCtx.lineWidth = drawSize;
-    photoCtx.lineCap = 'round';
-    photoCtx.lineJoin = 'round';
-    
+    photoCtx.lineWidth   = drawSize;
+    photoCtx.lineCap     = 'round';
+    photoCtx.lineJoin    = 'round';
     photoCtx.beginPath();
     photoCtx.moveTo(x, y);
   }
@@ -2711,6 +2764,7 @@ function setupCanvasDrawing() {
   function draw(e) {
     if (!isDrawing || !drawingEnabled) return;
     e.preventDefault();
+    e.stopPropagation();
 
     const { x, y } = getCanvasPoint(e);
     photoCtx.lineTo(x, y);
@@ -2719,23 +2773,26 @@ function setupCanvasDrawing() {
 
   function endDraw(e) {
     if (!isDrawing) return;
-    if (e) e.preventDefault();
+    if (e) { e.preventDefault(); e.stopPropagation(); }
 
     isDrawing = false;
     photoCtx.closePath();
     saveDrawState();
   }
 
+  // Guardar referències per poder eliminar-les la propera vegada
+  photoCanvas._drawHandlers = { startDraw, draw, endDraw };
+
   // Mouse
-  photoCanvas.addEventListener('mousedown', startDraw);
-  photoCanvas.addEventListener('mousemove', draw);
-  photoCanvas.addEventListener('mouseup', endDraw);
+  photoCanvas.addEventListener('mousedown',  startDraw);
+  photoCanvas.addEventListener('mousemove',  draw);
+  photoCanvas.addEventListener('mouseup',    endDraw);
   photoCanvas.addEventListener('mouseleave', endDraw);
 
-  // Touch
+  // Touch (stopPropagation impedeix que el swipe del lightbox interfereixi)
   photoCanvas.addEventListener('touchstart', startDraw, { passive: false });
-  photoCanvas.addEventListener('touchmove', draw, { passive: false });
-  photoCanvas.addEventListener('touchend', endDraw);
+  photoCanvas.addEventListener('touchmove',  draw,      { passive: false });
+  photoCanvas.addEventListener('touchend',   endDraw,   { passive: false });
 }
 
 // Exportar funcions
