@@ -2014,6 +2014,10 @@ function openLightbox(photos, index) {
   if (lightbox) {
     lightbox.classList.add('active');
     
+    // Assegurar scroll vertical al lightbox
+    lightbox.style.overflowY = 'auto';
+    lightbox.style.overflowX = 'hidden';
+    
     // CANVI: Inicialitzar canvas PRIMER
     initPhotoCanvas();
     
@@ -2078,9 +2082,17 @@ initPhotoCanvas();
 if (photoCanvas && photoCtx) {
   const img = new Image();
   img.onload = () => {
-    photoCanvas.width = img.width;
-    photoCanvas.height = img.height;
-    photoCtx.drawImage(img, 0, 0);
+    // Adaptar canvas a la pantalla mantenint proporció
+    const maxW = window.innerWidth * 0.95;
+    const maxH = window.innerHeight * 0.75;
+    const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+    photoCanvas.width = img.width * ratio;
+    photoCanvas.height = img.height * ratio;
+    photoCanvas.style.maxWidth = '100%';
+    photoCanvas.style.maxHeight = '75vh';
+    photoCanvas.style.display = 'block';
+    photoCanvas.style.margin = '0 auto';
+    photoCtx.drawImage(img, 0, 0, photoCanvas.width, photoCanvas.height);
     
     // Guardar foto original
     originalPhotoData = getPhotoSrc(photo);   // ✅ suporta URL Supabase i base64 local
@@ -3333,7 +3345,7 @@ async function renderFileGallery(preloadedClient = null) {
       if (file.type === 'image') {
         // Mostrar thumbnail d'imatge
         const img = document.createElement("img");
-        img.src = file.data;
+        img.src = file.url || file.data;
         img.className = "photo-thumb";
         img.style.cssText = `
           width: 100%;
@@ -3343,6 +3355,26 @@ async function renderFileGallery(preloadedClient = null) {
           pointer-events: none;
         `;
         container.appendChild(img);
+        
+        // Badge de comentari si en té
+        if (file.comment && file.comment.trim()) {
+          const badge = document.createElement('div');
+          badge.className = 'comment-badge';
+          badge.style.cssText = `
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            backdrop-filter: blur(5px);
+            pointer-events: none;
+          `;
+          badge.textContent = '💬';
+          container.appendChild(badge);
+        }
       } else if (file.type === 'video' && file.thumbnail) {
         // Mostrar thumbnail de vídeo
         const img = document.createElement("img");
