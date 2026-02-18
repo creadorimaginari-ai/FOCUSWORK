@@ -2114,7 +2114,13 @@ if (photoCanvas && photoCtx) {
     if (text) text.textContent = 'Dibuixar';
     photoCanvas.classList.remove('drawing-mode');
   };
-  img.src = getPhotoSrc(photo);   // ✅ suporta URL Supabase i base64 local
+  const src = getPhotoSrc(photo);
+  console.log('📸 Foto src:', src ? src.substring(0, 80) : 'NULL', '| photo keys:', Object.keys(photo));
+  if (!src) {
+    console.error('❌ No hi ha src per aquesta foto:', photo);
+    return;
+  }
+  img.src = src;
 }
   const commentInput = $('lightboxComment');
 
@@ -2576,11 +2582,10 @@ function initPhotoCanvas() {
   photoCanvas.style.display       = 'block';
   photoCanvas.style.visibility    = 'visible';
   photoCanvas.style.opacity       = '1';
-  photoCanvas.style.position      = 'absolute';
-  photoCanvas.style.top           = '0';
-  photoCanvas.style.left          = '0';
-  photoCanvas.style.width         = '100%';
-  photoCanvas.style.height        = '100%';
+  photoCanvas.style.position      = 'relative';
+  photoCanvas.style.maxWidth      = '100%';
+  photoCanvas.style.maxHeight     = '70vh';
+  photoCanvas.style.margin        = '0 auto';
   photoCanvas.style.zIndex        = '10';
   // Per defecte: NO captura events (permet swipe/scroll al lightbox)
   // toggleDrawing() el canvia a 'auto' quan s'activa el llapis
