@@ -949,7 +949,8 @@ async function initApp() {
     await loadState();
     
     // 4. Verificar si cal migrar dades locals
-    await checkMigration();
+    // ✅ BUGFIX: checkMigration no existia — era migrateFromLocalStorage
+    await migrateFromLocalStorage();
     
     // 5. Continuar com abans
     if (!userName) {
