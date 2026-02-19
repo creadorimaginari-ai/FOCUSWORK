@@ -64,14 +64,24 @@ async function loadClientSupabase(clientId) {
     if (error || !data) return null;
 
     // ✅ BUGFIX: NO forçar active=true — llegir l'estat real de Supabase
-    data.active       = (data.status === 'active' || data.status === null || data.status === undefined || data.status === '');
-    data.total        = data.total         || 0;
-    // Mapeja billable_time → billableTime
-    data.billableTime = data.billable_time  || data.billableTime || 0;
-    data.activities   = data.activities    || {};
-    data.tasks        = data.tasks         || { urgent: '', important: '', later: '' };
-    data.photos       = data.photos        || [];
-    data.files        = data.files         || [];
+    data.active         = (data.status === 'active' || data.status === null || data.status === undefined || data.status === '');
+    data.total          = data.total           || 0;
+    data.billableTime   = data.billable_time   || data.billableTime || 0;
+    data.activities     = data.activities      || {};
+    data.tasks          = data.tasks           || { urgent: '', important: '', later: '' };
+    data.photos         = data.photos          || [];
+    data.files          = data.files           || [];
+    // ✅ FIX: Mapejar camps d'estat i progrés de tornada
+    data.state          = data.state           || 'in_progress';
+    data.stateLabel     = data.state_label     || null;
+    data.stateIcon      = data.state_icon      || null;
+    data.stateColor     = data.state_color     || null;
+    data.stateUpdatedAt = data.state_updated_at ? new Date(data.state_updated_at).getTime() : null;
+    data.stateHistory   = data.state_history   || [];
+    data.progress       = data.progress        || 1;
+    data.progressLabel  = data.progress_label  || null;
+    data.progressPercent= data.progress_percent|| null;
+    data.progressColor  = data.progress_color  || null;
     return data;
   } catch (error) {
     console.error('❌ Error carregant client:', error.message);
@@ -120,8 +130,19 @@ async function saveClientSupabase(client) {
     tasks:         client.tasks       || {},
     tags:          client.tags        || [],
     files:         files,
-    created_at:    client.created_at  || new Date().toISOString(),
-    updated_at:    new Date().toISOString()
+    // ✅ FIX: Camps d'estat i progrés (abans no es guardaven!)
+    state:              client.state              || 'in_progress',
+    state_label:        client.stateLabel         || null,
+    state_icon:         client.stateIcon          || null,
+    state_color:        client.stateColor         || null,
+    state_updated_at:   client.stateUpdatedAt     ? new Date(client.stateUpdatedAt).toISOString() : null,
+    state_history:      client.stateHistory       || [],
+    progress:           client.progress           || 1,
+    progress_label:     client.progressLabel      || null,
+    progress_percent:   client.progressPercent    || null,
+    progress_color:     client.progressColor      || null,
+    created_at:         client.created_at         || new Date().toISOString(),
+    updated_at:         new Date().toISOString()
   };
 
   try {

@@ -543,11 +543,9 @@ function updateDeliveryDateDisplay(client) {
 }
 
 function updateLicenseInfo() {
+  // ✅ Informació de llicència privada — no mostrar
   const infoEl = $("licenseInfo");
-  if (!infoEl || !state.license) return;
-  const expiryText = state.license.expiryDate ? `Vàlida fins: ${new Date(state.license.expiryDate).toLocaleDateString()}` : "Sense límit";
-  infoEl.textContent = `✓ Llicència activa - ${state.license.clientName} - ${expiryText}`;
-  infoEl.style.display = "block";
+  if (infoEl) infoEl.style.display = "none";
 }
 
 function updateFocusScheduleStatus() {
