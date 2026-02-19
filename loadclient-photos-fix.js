@@ -39,9 +39,6 @@
       let client = await _original(clientId);
       if (!client) return null;
       
-      // Assegurar active:true
-      client.active = true;
-      
       // Carregar fotos de IndexedDB
       try {
         const photos = await new Promise(function(resolve) {
@@ -60,7 +57,8 @@
         client.photos = photos.map(function(p) {
           return {
             id: p.id,
-            data: p.data,
+            url: p.url  || null,   // ✅ FIX: preservar URL de Supabase Storage
+            data: p.data || null,
             date: p.date,
             comment: p.comment || ''
           };

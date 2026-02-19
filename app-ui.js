@@ -317,7 +317,7 @@ function updatePhotoBadge(photoId, comment) {
   if (!gallery) return;
   
   // Buscar el contenidor per data-id o per índex
-  const items = gallery.querySelectorAll('.file-item, .photo-thumb');
+  const items = gallery.querySelectorAll('.file-item'); // ✅ FIX: era '.file-item, .photo-thumb' que barrejava contenidors i imatges
   const photos = window.currentClientPhotos || window.currentClientFiles;
   if (!photos) return;
   
@@ -2079,6 +2079,7 @@ function updateLightboxDisplay() {
 initPhotoCanvas();
 if (photoCanvas && photoCtx) {
   const img = new Image();
+  img.crossOrigin = 'anonymous'; // ✅ FIX: evitar canvas "tainted" amb URLs de Supabase Storage
   img.onload = () => {
     photoCanvas.width = img.width;
     photoCanvas.height = img.height;
@@ -2690,6 +2691,7 @@ async function saveEditedPhoto() {
     await dbPut('photos', {
       id: photo.id,
       clientId: state.currentClientId,
+      url:  photo.url  || null,   // ✅ FIX: preservar URL de Supabase Storage
       data: photo.data,
       date: photo.date,
       comment: photo.comment || ""
