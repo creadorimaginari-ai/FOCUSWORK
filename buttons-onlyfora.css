@@ -1,35 +1,28 @@
 /* ===============================
    BOTONES - SOBRESCRITURA FORZADA
-   COLGAR ESTE ARCHIVO AL FINAL DE TODOS LOS CSS
    =============================== */
-
-/* ⚠️ IMPORTANTE: Añadir ?v=3 al final del enlace para forzar recarga
-   <link rel="stylesheet" href="buttons-only.css?v=3">
-*/
 
 /* Paleta de colores */
 :root {
-  --coral-start: #FF6B6B;
-  --coral-end: #FF8E53;
+  --orange-start: #F97316;
+  --orange-end:   #EA580C;
   --turquoise-start: #4ECDC4;
-  --turquoise-end: #44A08D;
+  --turquoise-end:   #44A08D;
 }
 
 /* ===============================
-   SOBRESCRIBIR TODOS LOS BOTONES DEL GRID
+   BOTÓ "Nou encàrrec" → TARONJA
    =============================== */
-
-/* Selector súper específico para el botón "Nou encàrrec" */
 .grid.centered button:first-child,
 #clientMainButtons button:first-child,
 button[id*="new"],
 button[id*="New"],
 #newClientBtn,
 #newClient {
-  background: linear-gradient(135deg, #FF6B6B, #FF8E53) !important;
+  background: linear-gradient(135deg, #F97316, #EA580C) !important;
   color: #ffffff !important;
-  border: 2px solid rgba(255, 107, 107, 0.6) !important;
-  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4) !important;
+  border: 2px solid rgba(249, 115, 22, 0.6) !important;
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4) !important;
   font-weight: 700 !important;
   animation: none !important;
   position: relative !important;
@@ -42,13 +35,15 @@ button[id*="new"]:hover,
 button[id*="New"]:hover,
 #newClientBtn:hover,
 #newClient:hover {
-  background: linear-gradient(135deg, #FF8E53, #FF6B6B) !important;
-  border-color: rgba(255, 107, 107, 0.8) !important;
-  box-shadow: 0 12px 35px rgba(255, 107, 107, 0.6) !important;
+  background: linear-gradient(135deg, #EA580C, #F97316) !important;
+  border-color: rgba(249, 115, 22, 0.9) !important;
+  box-shadow: 0 12px 35px rgba(249, 115, 22, 0.6) !important;
   transform: translateY(-3px) !important;
 }
 
-/* Selector súper específico para el botón "Revisar encàrrecs" */
+/* ===============================
+   BOTÓ "Revisar encàrrecs" → TURQUESA
+   =============================== */
 .grid.centered button:last-child,
 #clientMainButtons button:last-child,
 button[id*="focus"],
@@ -79,7 +74,7 @@ button[id*="Priority"]:hover,
 }
 
 /* ===============================
-   CLASE PRIMARY (por si acaso)
+   CLASSE PRIMARY → TURQUESA
    =============================== */
 button.primary,
 .primary {
@@ -97,7 +92,7 @@ button.primary:hover,
 }
 
 /* ===============================
-   EFECTO DE BRILLO (común para todos)
+   EFECTE BRILLANTOR (comú)
    =============================== */
 .grid.centered button::before,
 #clientMainButtons button::before {
@@ -107,7 +102,7 @@ button.primary:hover,
   left: -100% !important;
   width: 100% !important;
   height: 100% !important;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent) !important;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent) !important;
   transition: left 0.7s ease !important;
   pointer-events: none !important;
 }

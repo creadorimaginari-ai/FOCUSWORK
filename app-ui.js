@@ -1757,7 +1757,7 @@ async function showBulkDeleteModal() {
   
   const list = $('bulkDeleteList');
   list.innerHTML = `
-    <div style="margin-bottom: 20px; padding: 15px; background: #fef3c7; border-radius: 10px; border-left: 4px solid #f59e0b;">
+    <div style="margin-bottom: 20px; padding: 15px; background: rgba(245, 158, 11, 0.15); border-radius: 10px; border-left: 4px solid #f59e0b; color: #fde68a;">
       <strong>⚠️ Atenció:</strong> Aquesta acció NO es pot desfer.<br>
       <strong>Recomanació:</strong> Fes una còpia de seguretat abans d'esborrar.
     </div>
@@ -2108,6 +2108,7 @@ if (photoCanvas && photoCtx) {
     originalPhotoData = getPhotoSrc(photo);   // ✅ suporta URL Supabase i base64 local
     
     // Iniciar historial
+    currentRotation = 0;
     drawHistory = [];
     saveDrawState();
     
@@ -2431,6 +2432,48 @@ let isPanning = false;
 let startPanX = 0;
 let startPanY = 0;
 let lastTouchDistance = 0;
+let lastTouchAngle = null;       // ✅ Rotació amb dos dits
+let accumulatedRotation = 0;     // Graus acumulats (per disparar cada 45°)
+
+// ✅ Rotació de la imatge
+let currentRotation = 0; // 0, 90, 180, 270
+
+function rotatePhoto(degrees) {
+  if (!photoCanvas || !photoCtx) return;
+
+  currentRotation = (currentRotation + degrees + 360) % 360;
+
+  const oldWidth  = photoCanvas.width;
+  const oldHeight = photoCanvas.height;
+
+  // Per 90° i 270° cal intercanviar width i height
+  const swap = (currentRotation % 180 !== 0);
+  const newWidth  = swap ? oldHeight : oldWidth;
+  const newHeight = swap ? oldWidth  : oldHeight;
+
+  // Copiar contingut actual
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width  = oldWidth;
+  tmpCanvas.height = oldHeight;
+  tmpCanvas.getContext('2d').drawImage(photoCanvas, 0, 0);
+
+  // Redimensionar canvas i redibuixar rotat
+  photoCanvas.width  = newWidth;
+  photoCanvas.height = newHeight;
+
+  photoCtx.save();
+  photoCtx.translate(newWidth / 2, newHeight / 2);
+  photoCtx.rotate((degrees * Math.PI) / 180);
+  photoCtx.drawImage(tmpCanvas, -oldWidth / 2, -oldHeight / 2);
+  photoCtx.restore();
+
+  // Guardar estat a l'historial
+  saveDrawState();
+
+  // Reset zoom/pan per adaptar-se a la nova mida
+  resetZoom();
+}
+window.rotatePhoto = rotatePhoto;
 
 // Funcions de zoom
 function zoomIn() {
@@ -2501,7 +2544,7 @@ function initZoomSystem() {
     isPanning = false;
   };
   
-  // Touch pinch zoom
+  // Touch pinch zoom + rotació amb dos dits
   const touchStartHandler = (e) => {
     if (drawingEnabled) return;
     if (e.touches.length === 2) {
@@ -2512,6 +2555,12 @@ function initZoomSystem() {
         touch2.clientX - touch1.clientX,
         touch2.clientY - touch1.clientY
       );
+      // Guardar angle inicial per detectar rotació
+      lastTouchAngle = Math.atan2(
+        touch2.clientY - touch1.clientY,
+        touch2.clientX - touch1.clientX
+      );
+      accumulatedRotation = 0;
     } else if (e.touches.length === 1 && currentZoom > 1) {
       isPanning = true;
       startPanX = e.touches[0].clientX - panX;
@@ -2533,13 +2582,28 @@ function initZoomSystem() {
       if (lastTouchDistance > 0) {
         const zoomDelta = newDistance / lastTouchDistance;
         currentZoom = Math.max(1, Math.min(5, currentZoom * zoomDelta));
-        if (currentZoom === 1) {
-          panX = 0;
-          panY = 0;
-        }
+        if (currentZoom === 1) { panX = 0; panY = 0; }
         applyZoomTransform();
       }
       lastTouchDistance = newDistance;
+
+      // ✅ Detectar rotació amb dos dits
+      if (lastTouchAngle !== null) {
+        const newAngle = Math.atan2(
+          touch2.clientY - touch1.clientY,
+          touch2.clientX - touch1.clientX
+        );
+        const angleDelta = (newAngle - lastTouchAngle) * (180 / Math.PI);
+        accumulatedRotation += angleDelta;
+        lastTouchAngle = newAngle;
+
+        // Disparar rotació cada 45° acumulats
+        if (Math.abs(accumulatedRotation) >= 45) {
+          const steps = Math.round(accumulatedRotation / 45);
+          rotatePhoto(steps * 45);
+          accumulatedRotation = 0;
+        }
+      }
     } else if (isPanning && e.touches.length === 1) {
       e.preventDefault();
       panX = e.touches[0].clientX - startPanX;
@@ -2552,6 +2616,8 @@ function initZoomSystem() {
     if (drawingEnabled) return;
     isPanning = false;
     lastTouchDistance = 0;
+    lastTouchAngle = null;
+    accumulatedRotation = 0;
   };
   
   // Afegir event listeners
@@ -2645,8 +2711,8 @@ function toggleDrawing() {
     // No dependre del CSS extern (drawing-mode) per a la funcionalitat crítica
     canvas.style.pointerEvents = 'auto';
     canvas.style.cursor = 'crosshair';
-    // Resetar zoom per evitar desplaçament de coordenades
-    if (typeof resetZoom === 'function') resetZoom();
+    // ✅ FIX: NO resetar zoom — getBoundingClientRect() ja calcula coords correctament
+    // L'usuari pot ara dibuixar mentre està fet zoom sense perdre la posició
   } else {
     btn.classList.remove('active');
     text.textContent = 'Dibuixar';

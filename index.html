@@ -278,34 +278,46 @@
     </section>
 
     <!-- FOOTER -->
-    <footer class="footer">
-      <button id="focusBtn">🎯 Focus</button>
-      <button id="scheduleBtn">⏰ Activar Horari</button>
-      <button id="todayBtn">📄 Report</button>
-        <button onclick="signOut()" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5;">
-    🚪 Sortir
-  </button>
+    <!-- FOOTER + LLICÈNCIA: un sol panel elegant -->
+    <div class="footer-panel">
+
+      <!-- Fila 1: Focus i Activar Horari en 2 columnes -->
+      <div class="footer-main-btns">
+        <button id="focusBtn" class="footer-btn">🎯 Focus</button>
+        <button id="scheduleBtn" class="footer-btn">⏰ Activar Horari</button>
+      </div>
+
+      <!-- Fila 2: Sortir centrat, taronja -->
+      <button onclick="signOut()" class="footer-btn footer-btn-exit">
+        🚪 Sortir
+      </button>
+
+      <!-- Separador -->
+      <div class="footer-divider"></div>
+
+      <!-- Fila 3: Llicència -->
+      <div class="footer-license-text">
+        🔒 Versió de mostra: fins a 2 clients actius &nbsp;·&nbsp;
+        ⭐ Llicència completa: clients il·limitats · pagament únic 34€ (Bizum)
+      </div>
+
+      <div class="footer-license-btns">
+        <button id="loadLicenseBtn" type="button" class="footer-license-btn">
+          📄 Carregar llicència
+        </button>
+        <button id="requestLicenseBtn" type="button" class="footer-license-btn">
+          💬 Sol·licitar per WhatsApp
+        </button>
+      </div>
+
+      <div id="licenseInfo" style="display:none"></div>
+    </div>
+
+    <!-- footer i versionBox ocults per compatibilitat JS -->
+    <footer id="footerHidden" style="display:none">
+      <button id="todayBtn" style="display:none">📄 Report</button>
     </footer>
-
-    <!-- VERSIÓN / ACTIVACIÓN -->
-   <div id="versionBox" class="version-box">
-  <div class="lock">
-    🔒 Versió de mostra: fins a 2 clients actius ·
-    ⭐ Llicència completa: clients il·limitats · pagament únic 34€ (Bizum)
-  </div>
-
-  <div class="version-actions">
-    <button id="loadLicenseBtn" type="button">
-      📄 Carregar arxiu amb la llicència
-    </button>
-
-    <button id="requestLicenseBtn" type="button">
-      💬 Sol·licitar llicència per WhatsApp
-    </button>
-  </div>
-
-  <div id="licenseInfo" style="display:none"></div>
-</div>
+    <div id="versionBox" style="display:none"></div>
 
   <!-- ===============================================
        MODALES
@@ -1449,9 +1461,9 @@ label.primary {
   align-items: center !important;
   justify-content: center !important;
   margin: 0 auto 16px auto !important;
-  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
-  border: 3px solid rgba(255, 255, 255, 0.2) !important;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+  background: linear-gradient(135deg, #F97316, #EA580C) !important;
+  border: 3px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.5) !important;
   transition: all 0.3s ease !important;
   cursor: pointer !important;
 }
@@ -1459,7 +1471,7 @@ label.primary {
 #newClientBtn:hover,
 #newClientBtn:active {
   transform: scale(1.05) !important;
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6) !important;
+  box-shadow: 0 6px 24px rgba(249, 115, 22, 0.7) !important;
 }
 
 #clientMainButtons {
@@ -1468,24 +1480,25 @@ label.primary {
   align-items: center !important;
 }
 
-/* ✅ Alinear els 3 botons del footer en grid */
+/* Footer botons (no sticky, scroll normal) */
 .footer {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  padding: 12px;
-  background: rgba(15, 23, 42, 0.95);
-  position: sticky;
-  bottom: 0;
-  z-index: 100;
+  padding: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255,255,255,0.08);
+  margin-top: 8px;
 }
 
 .footer button {
   padding: 12px;
   font-size: 14px;
   border-radius: 8px;
-  border: none;
-  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.6);
   color: #e2e8f0;
   cursor: pointer;
   transition: all 0.2s;
@@ -1495,7 +1508,8 @@ label.primary {
 
 .footer button:hover,
 .footer button:active {
-  background: rgba(30, 41, 59, 1);
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(255, 255, 255, 0.25);
   transform: scale(0.98);
 }
 
@@ -1504,8 +1518,7 @@ label.primary {
 <script src="buttons-ripple.js?v=1"></script>
      <script src="supabase-client-fix.js"></script>
    <script src="loadclient-photos-fix.js"></script>
-  <!-- EmailJS de moment directe des de gmail del propi treballador + Mòdul de facturació -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script -->
+  <!-- Mòdul de facturació (Gmail) -->
   <script src="facturacio.js"></script>
 </body>
 
