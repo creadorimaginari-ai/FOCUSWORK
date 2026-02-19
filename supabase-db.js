@@ -17,38 +17,71 @@ function getCurrentUserId() {
   return null;
 }
 
+/* ── CACHE EN MEMÒRIA (redueix crides a Supabase) ── */
+let _clientsCache = null;
+let _clientsCacheTime = 0;
+const CACHE_TTL = 8000; // 8 segons — evita crides duplicades en ràfegues
+
+function _mapClient(client) {
+  client.active         = (client.status === 'active' || !client.status);
+  client.total          = client.total           || 0;
+  client.billableTime   = client.billable_time   || client.billableTime || 0;
+  client.activities     = client.activities      || {};
+  client.tasks          = client.tasks           || { urgent: '', important: '', later: '' };
+  client.photos         = client.photos          || [];
+  client.files          = client.files           || [];
+  client.state          = client.state           || 'in_progress';
+  client.stateLabel     = client.state_label     || null;
+  client.stateIcon      = client.state_icon      || null;
+  client.stateColor     = client.state_color     || null;
+  client.stateUpdatedAt = client.state_updated_at ? new Date(client.state_updated_at).getTime() : null;
+  client.stateHistory   = client.state_history   || [];
+  client.progress       = client.progress        || 1;
+  client.progressLabel  = client.progress_label  || null;
+  client.progressPercent= client.progress_percent|| null;
+  client.progressColor  = client.progress_color  || null;
+  return client;
+}
+
+function invalidateClientsCache() {
+  _clientsCache = null;
+  _clientsCacheTime = 0;
+}
+window.invalidateClientsCache = invalidateClientsCache;
+
 /* ── CARREGAR TOTS ELS CLIENTS ── */
 async function loadAllClientsSupabase() {
-  console.log('📥 Carregant clients de Supabase...');
+  // Retornar cache si és fresca
+  if (_clientsCache && (Date.now() - _clientsCacheTime) < CACHE_TTL) {
+    return _clientsCache;
+  }
+
+  const userId = getCurrentUserId();
+  if (!userId) return {};
+
   try {
     const { data, error } = await window.supabase
       .from('clients')
       .select('*')
+      .eq('user_id', userId)           // ✅ filtre per usuari — evita llegir tota la taula
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
     const clients = {};
     (data || []).forEach(client => {
-      // ✅ BUGFIX: NO forçar active=true — llegir l'estat real de Supabase
-      // Abans sempre era true, fent que clients tancats tornessin a aparèixer
-      // active = true si status és 'active' o no té status; false si és qualsevol altra cosa
-      client.active       = (client.status === 'active' || client.status === null || client.status === undefined || client.status === '');
-      client.total        = client.total         || 0;
-      // Supabase guarda 'billable_time', el codi JS usa 'billableTime'
-      client.billableTime = client.billable_time || client.billableTime || 0;
-      client.activities   = client.activities    || {};
-      client.tasks        = client.tasks         || { urgent: '', important: '', later: '' };
-      client.photos       = client.photos        || [];
-      client.files        = client.files         || [];
-      clients[client.id]  = client;
+      clients[client.id] = _mapClient(client);
     });
 
-    console.log('✅ ' + Object.keys(clients).length + ' clients carregats de Supabase');
+    // Guardar a cache
+    _clientsCache = clients;
+    _clientsCacheTime = Date.now();
+
+    console.log('✅ ' + Object.keys(clients).length + ' clients carregats');
     return clients;
   } catch (error) {
     console.error('❌ Error carregant clients:', error.message);
-    return {};
+    return _clientsCache || {};
   }
 }
 
@@ -62,27 +95,7 @@ async function loadClientSupabase(clientId) {
       .single();
 
     if (error || !data) return null;
-
-    // ✅ BUGFIX: NO forçar active=true — llegir l'estat real de Supabase
-    data.active         = (data.status === 'active' || data.status === null || data.status === undefined || data.status === '');
-    data.total          = data.total           || 0;
-    data.billableTime   = data.billable_time   || data.billableTime || 0;
-    data.activities     = data.activities      || {};
-    data.tasks          = data.tasks           || { urgent: '', important: '', later: '' };
-    data.photos         = data.photos          || [];
-    data.files          = data.files           || [];
-    // ✅ FIX: Mapejar camps d'estat i progrés de tornada
-    data.state          = data.state           || 'in_progress';
-    data.stateLabel     = data.state_label     || null;
-    data.stateIcon      = data.state_icon      || null;
-    data.stateColor     = data.state_color     || null;
-    data.stateUpdatedAt = data.state_updated_at ? new Date(data.state_updated_at).getTime() : null;
-    data.stateHistory   = data.state_history   || [];
-    data.progress       = data.progress        || 1;
-    data.progressLabel  = data.progress_label  || null;
-    data.progressPercent= data.progress_percent|| null;
-    data.progressColor  = data.progress_color  || null;
-    return data;
+    return _mapClient(data);
   } catch (error) {
     console.error('❌ Error carregant client:', error.message);
     return null;
@@ -153,6 +166,7 @@ async function saveClientSupabase(client) {
     if (error) throw error;
 
     console.log('✅ Client guardat a Supabase:', client.name);
+    invalidateClientsCache(); // ✅ Invalidar cache per forçar recàrrega fresca
     return true;
   } catch (error) {
     console.error('❌ Error guardant client:', error.message);
