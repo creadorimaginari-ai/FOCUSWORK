@@ -1,22 +1,11 @@
 /*************************************************
  * FOCUSWORK – FACTURACIÓ VIA GMAIL (mailto)
- *
- * Quan es tanca un client, mostra un modal per
- * introduir les dades de facturació i obre Gmail
- * amb el correu ja preparat. El treballador només
- * ha de prémer "Enviar".
- *
- * CONFIGURACIÓ:
- *  Canvia únicament la línia BILLING_EMAIL de sota.
  *************************************************/
 
-// ─── ÚNIC VALOR A CANVIAR ────────────────────────────────────────────────────
-const BILLING_EMAIL = 'carlesglobalgrafic@gmail.com'; // ← posa el correu de facturació
-// ────────────────────────────────────────────────────────────────────────────
+// ─── ÚNIC VALOR A CANVIAR ─────────────────────
+const BILLING_EMAIL = 'carlesglobalgrafic@gmail.com';
+// ──────────────────────────────────────────────
 
-/* ─────────────────────────────────────────────
-   MOSTRAR MODAL DE FACTURACIÓ
-───────────────────────────────────────────── */
 function openBillingModal(clientId) {
   window._billingClientId = clientId;
 
@@ -34,9 +23,6 @@ function openBillingModal(clientId) {
   }
 }
 
-/* ─────────────────────────────────────────────
-   CONFIRMAR: recollir dades, obrir Gmail i tancar
-───────────────────────────────────────────── */
 async function confirmBillingAndClose() {
   const clientId = window._billingClientId;
   if (!clientId) return;
@@ -64,7 +50,6 @@ async function confirmBillingAndClose() {
   });
 
   const subject = `[FACTURACIÓ] ${clientName} – ${tancarData}`;
-
   const body =
 `RESUM DE TREBALL TANCAT
 ═══════════════════════════════
@@ -80,26 +65,25 @@ Hores disseny:       ${horesDisseny}
 Hores col·locació:   ${horesCollocacio}
 Material i mides:    ${material}
 Desplaçament:        ${desplacament}
-${notes ? `\nNotes addicionals:\n${notes}\n` : ''}
+${notes ? `\nNotes addicionals:\n${notes}` : ''}
 ═══════════════════════════════
-Enviat automàticament des de FOCUSWORK`;
+Enviat des de FOCUSWORK`;
 
-  // Mòbil → mailto (obre app Gmail directament)
-  // Desktop → Gmail web en nova pestanya
-  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-  if (isMobile) {
-    window.location.href = `mailto:${BILLING_EMAIL}`
-      + `?subject=${encodeURIComponent(subject)}`
-      + `&body=${encodeURIComponent(body)}`;
-  } else {
-    window.open(
-      `https://mail.google.com/mail/?view=cm`
-      + `&to=${encodeURIComponent(BILLING_EMAIL)}`
-      + `&su=${encodeURIComponent(subject)}`
-      + `&body=${encodeURIComponent(body)}`,
-      '_blank'
-    );
-  }
+  // ✅ FIX: Sempre usar mailto: — funciona a mòbil i desktop sense bloqueig de popups
+  const mailtoLink = `mailto:${BILLING_EMAIL}`
+    + `?subject=${encodeURIComponent(subject)}`
+    + `&body=${encodeURIComponent(body)}`;
+
+  // ✅ FIX: Crear un <a> ocult i fer-li click — evita que el navegador bloquegi l'obertura
+  const a = document.createElement('a');
+  a.href = mailtoLink;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // ✅ FIX: Esperar 800ms abans de tancar el client perquè Gmail tingui temps d'obrir-se
+  await new Promise(resolve => setTimeout(resolve, 800));
 
   closeBillingModal();
   window._billingClientId  = null;
@@ -108,9 +92,6 @@ Enviat automàticament des de FOCUSWORK`;
   await confirmCloseClient();
 }
 
-/* ─────────────────────────────────────────────
-   TANCAR MODAL (cancel·lar)
-───────────────────────────────────────────── */
 function closeBillingModal() {
   const modal = document.getElementById('modalBillingDetails');
   if (modal) {
@@ -119,10 +100,7 @@ function closeBillingModal() {
   }
 }
 
-/* ─────────────────────────────────────────────
-   MODE TREBALLADOR: amagar esborrar
-   Afegeix ?worker=1 a la URL per activar-lo
-───────────────────────────────────────────── */
+/* MODE TREBALLADOR: afegeix ?worker=1 a la URL */
 (function applyWorkerMode() {
   const isWorker = new URLSearchParams(window.location.search).get('worker') === '1';
   if (!isWorker) return;
