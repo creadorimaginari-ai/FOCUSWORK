@@ -716,7 +716,19 @@ async function confirmCloseClient() {
   const clientId = window.clientToClose || state.currentClientId;
   const client = await loadClient(clientId);
   if (!client) return;
-  
+
+  // ✅ Si s'ha cridat directament (no des de facturació), obrir modal de dades
+  if (!window._billingConfirmed) {
+    window.clientToClose = clientId;
+    closeModal('modalCloseClient');
+    closeModal('modalExportBeforeClose');
+    if (typeof openBillingModal === 'function') {
+      openBillingModal(clientId);
+      return;
+    }
+  }
+  window._billingConfirmed = false;
+
   client.active = false;
   client.closedAt = Date.now();
   await saveClient(client);
@@ -2055,6 +2067,13 @@ function closeLightbox() {
   if (lightbox) {
     lightbox.classList.remove('active');
     
+    // ✅ FIX: Guardar comentari pendent abans de tancar
+    const commentInput = $('lightboxComment');
+    if (commentInput) {
+      if (commentInput._debounceTimer) clearTimeout(commentInput._debounceTimer);
+      savePhotoComment(commentInput.value);
+    }
+    
     // Netejar sistema de zoom
     if (typeof cleanupZoomSystem === 'function') {
       cleanupZoomSystem();
@@ -2135,7 +2154,26 @@ Entrega:
   }
 
   commentInput.value = commentText;
-  commentInput.oninput = () => savePhotoComment(commentInput.value);
+  
+  // ✅ FIX: Debounce per evitar race conditions (oninput dispara a cada lletra)
+  if (commentInput._debounceTimer) clearTimeout(commentInput._debounceTimer);
+  commentInput.oninput = () => {
+    // Actualitzar en memoria immediament
+    const photos = window.currentClientPhotos;
+    if (photos && photos[currentLightboxIndex]) {
+      photos[currentLightboxIndex].comment = commentInput.value;
+    }
+    // Guardar a DB amb debounce
+    if (commentInput._debounceTimer) clearTimeout(commentInput._debounceTimer);
+    commentInput._debounceTimer = setTimeout(() => {
+      savePhotoComment(commentInput.value);
+    }, 600);
+  };
+  // ✅ FIX: Guardar immediatament quan es perd el focus (usuari surt del camp)
+  commentInput.onblur = () => {
+    if (commentInput._debounceTimer) clearTimeout(commentInput._debounceTimer);
+    savePhotoComment(commentInput.value);
+  };
 }
   
   const counter = $('lightboxCounter');
@@ -2192,6 +2230,10 @@ function prevPhoto() {
     if (!confirmed) return;
   }
   
+
+  // ✅ FIX: Guardar comentari pendent
+  const _ci = $('lightboxComment');
+  if (_ci) { if (_ci._debounceTimer) clearTimeout(_ci._debounceTimer); savePhotoComment(_ci.value); }
   if (currentLightboxIndex > 0) {
     currentLightboxIndex--;
     updateLightboxDisplay();
@@ -2204,6 +2246,10 @@ function nextPhoto() {
     if (!confirmed) return;
   }
   
+
+  // ✅ FIX: Guardar comentari pendent
+  const _ci = $('lightboxComment');
+  if (_ci) { if (_ci._debounceTimer) clearTimeout(_ci._debounceTimer); savePhotoComment(_ci.value); }
   const photos = window.currentClientPhotos;
   if (photos && currentLightboxIndex < photos.length - 1) {
     currentLightboxIndex++;

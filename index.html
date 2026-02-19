@@ -734,7 +734,60 @@
     </div>
   </div>
 
-    <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
+  
+  <!-- MODAL: Dades de Facturació (s'obre en tancar client) -->
+  <div id="modalBillingDetails" class="modal-overlay hidden" style="display:none;">
+    <div class="modal" style="max-width: 480px; width: 95%;">
+      <div class="modal-header">
+        <span class="modal-icon">📋</span>
+        <h2 class="modal-title">Dades per a facturació</h2>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
+        <p style="font-size:13px; opacity:0.7; margin:0;">Omple les dades del treball per enviar-les automàticament a facturació.</p>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+            ⏱️ Hores disseny
+            <input id="billingHoresDisseny" type="text" placeholder="ex: 3h 30m"
+              style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
+          </label>
+          <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+            🔧 Hores col·locació
+            <input id="billingHoresCollocacio" type="text" placeholder="ex: 5h"
+              style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
+          </label>
+        </div>
+
+        <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+          🏗️ Material i mides <span style="color:#f87171;">*</span>
+          <textarea id="billingMaterial" placeholder="ex: Vinil mat negre 3x1.2m, xapa alumini 2mm..."
+            rows="3"
+            style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px; resize:vertical; font-family:inherit;"></textarea>
+        </label>
+
+        <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+          🚗 Desplaçament
+          <input id="billingDesplacament" type="text" placeholder="ex: 45 km / 2 viatges"
+            style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
+        </label>
+
+        <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+          💬 Notes addicionals <span style="opacity:0.5;">(opcional)</span>
+          <textarea id="billingNotes" placeholder="Observacions, incidències, extras..."
+            rows="2"
+            style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px; resize:vertical; font-family:inherit;"></textarea>
+        </label>
+
+        <p style="font-size:11px; opacity:0.5; margin:0;">* Camp obligatori. S'enviarà un email automàtic a facturació.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeBillingModal()">Cancel·lar</button>
+        <button class="btn-primary" onclick="confirmBillingAndClose()">📧 Enviar i tancar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
 <!-- Llibreria Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -1451,6 +1504,9 @@ label.primary {
 <script src="buttons-ripple.js?v=1"></script>
      <script src="supabase-client-fix.js"></script>
    <script src="loadclient-photos-fix.js"></script>
+  <!-- EmailJS + Mòdul de facturació -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="facturacio.js"></script>
 </body>
 
 </html>
