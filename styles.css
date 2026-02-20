@@ -1319,3 +1319,64 @@ textarea:focus-visible {
   position: static !important;
   display: none !important;
 }
+
+
+/* ===============================
+   LIGHTBOX FIXES MÒBIL - TOOLBAR SEMPRE VISIBLE
+   =============================== */
+
+/* El lightbox és un flex column que NO fa scroll — tot ha de cabre */
+.lightbox-overlay {
+  overflow: hidden !important;
+}
+
+/* Canvas container ocupa l'espai disponible però cedeix espai al toolbar */
+.lightbox-canvas-container {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  width: 100% !important;
+  max-height: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* El canvas no pot sortir del seu contenidor */
+#photoCanvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
+/* Toolbar sempre al final, mai s'amaga */
+.editor-toolbar {
+  flex: 0 0 auto !important;
+  z-index: 10003 !important;
+  position: relative !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: auto !important;
+  flex-wrap: nowrap !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Footer del lightbox (comentaris) */
+.lightbox-footer {
+  flex: 0 0 auto !important;
+  z-index: 10002 !important;
+  position: relative !important;
+}
+
+/* Slider de mida — visible sempre */
+.size-slider-mini {
+  width: 70px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Botó pot de pintura */
+.editor-btn-small.paint-bucket-active {
+  background: rgba(249, 115, 22, 0.4) !important;
+  border-color: rgba(249, 115, 22, 0.7) !important;
+}

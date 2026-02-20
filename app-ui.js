@@ -2431,41 +2431,58 @@ let lastTouchAngle = null;       // ✅ Rotació amb dos dits
 let accumulatedRotation = 0;     // Graus acumulats (per disparar cada 45°)
 
 // ✅ Rotació de la imatge
-let currentRotation = 0; // 0, 90, 180, 270
+let currentRotation = 0;         // rotació total acumulada (canvas)
+let cssRotationAngle = 0;        // rotació CSS suau durant el gest
+let isRotating = false;
 
-function rotatePhoto(degrees) {
-  if (!photoCanvas || !photoCtx) return;
+// Aplicar rotació CSS temporal (suau, sense tocar el canvas)
+function applyCSSSmoothRotation(angle) {
+  if (!photoCanvas) return;
+  const existingTransform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+  photoCanvas.style.transform = existingTransform + ` rotate(${angle}deg)`;
+}
 
-  currentRotation = (currentRotation + degrees + 360) % 360;
+// Cremar la rotació CSS al canvas (quan l'usuari deixa anar els dits)
+function commitRotationToCanvas() {
+  if (!photoCanvas || !photoCtx || cssRotationAngle === 0) {
+    cssRotationAngle = 0;
+    return;
+  }
 
-  const oldWidth  = photoCanvas.width;
-  const oldHeight = photoCanvas.height;
+  const deg = cssRotationAngle;
+  cssRotationAngle = 0;
 
-  // Per 90° i 270° cal intercanviar width i height
-  const swap = (currentRotation % 180 !== 0);
-  const newWidth  = swap ? oldHeight : oldWidth;
-  const newHeight = swap ? oldWidth  : oldHeight;
+  const rad = (deg * Math.PI) / 180;
+  const oldW = photoCanvas.width;
+  const oldH = photoCanvas.height;
 
-  // Copiar contingut actual
-  const tmpCanvas = document.createElement('canvas');
-  tmpCanvas.width  = oldWidth;
-  tmpCanvas.height = oldHeight;
-  tmpCanvas.getContext('2d').drawImage(photoCanvas, 0, 0);
+  // Mida del nou canvas per contenir la imatge rotada
+  const newW = Math.round(Math.abs(oldW * Math.cos(rad)) + Math.abs(oldH * Math.sin(rad)));
+  const newH = Math.round(Math.abs(oldW * Math.sin(rad)) + Math.abs(oldH * Math.cos(rad)));
 
-  // Redimensionar canvas i redibuixar rotat
-  photoCanvas.width  = newWidth;
-  photoCanvas.height = newHeight;
+  const tmp = document.createElement('canvas');
+  tmp.width  = oldW;
+  tmp.height = oldH;
+  tmp.getContext('2d').drawImage(photoCanvas, 0, 0);
 
+  photoCanvas.width  = newW;
+  photoCanvas.height = newH;
   photoCtx.save();
-  photoCtx.translate(newWidth / 2, newHeight / 2);
-  photoCtx.rotate((degrees * Math.PI) / 180);
-  photoCtx.drawImage(tmpCanvas, -oldWidth / 2, -oldHeight / 2);
+  photoCtx.translate(newW / 2, newH / 2);
+  photoCtx.rotate(rad);
+  photoCtx.drawImage(tmp, -oldW / 2, -oldH / 2);
   photoCtx.restore();
 
-  // Guardar estat a l'historial
+  // Treure CSS rotation (ja cremada)
+  applyZoomTransform();
   saveDrawState();
+}
 
-  // Reset zoom/pan per adaptar-se a la nova mida
+// Botó manual (↺ ↻): gira 90° i crema directament
+function rotatePhoto(degrees) {
+  if (!photoCanvas || !photoCtx) return;
+  cssRotationAngle = degrees;
+  commitRotationToCanvas();
   resetZoom();
 }
 window.rotatePhoto = rotatePhoto;
@@ -2582,7 +2599,7 @@ function initZoomSystem() {
       }
       lastTouchDistance = newDistance;
 
-      // ✅ Detectar rotació amb dos dits
+      // ✅ Rotació CSS fluida amb dos dits (sense snap)
       if (lastTouchAngle !== null) {
         const newAngle = Math.atan2(
           touch2.clientY - touch1.clientY,
@@ -2591,13 +2608,10 @@ function initZoomSystem() {
         const angleDelta = (newAngle - lastTouchAngle) * (180 / Math.PI);
         accumulatedRotation += angleDelta;
         lastTouchAngle = newAngle;
-
-        // Disparar rotació cada 45° acumulats
-        if (Math.abs(accumulatedRotation) >= 45) {
-          const steps = Math.round(accumulatedRotation / 45);
-          rotatePhoto(steps * 45);
-          accumulatedRotation = 0;
-        }
+        cssRotationAngle = accumulatedRotation;
+        isRotating = true;
+        // Mostrar rotació CSS en temps real (suau)
+        applyCSSSmoothRotation(accumulatedRotation);
       }
     } else if (isPanning && e.touches.length === 1) {
       e.preventDefault();
@@ -2611,8 +2625,16 @@ function initZoomSystem() {
     if (drawingEnabled) return;
     isPanning = false;
     lastTouchDistance = 0;
+    // ✅ Cremar rotació CSS al canvas quan l'usuari deixa anar
+    if (isRotating && Math.abs(accumulatedRotation) > 2) {
+      commitRotationToCanvas();
+    } else {
+      cssRotationAngle = 0;
+      applyZoomTransform(); // restaurar transform net
+    }
     lastTouchAngle = null;
     accumulatedRotation = 0;
+    isRotating = false;
   };
   
   // Afegir event listeners
@@ -2789,26 +2811,49 @@ async function saveEditedPhoto() {
   try {
     const editedData = photoCanvas.toDataURL('image/jpeg', 0.85);
     const photo = window.currentClientPhotos[currentLightboxIndex];
-    
-    // Actualitzar dades
+    const clientId = state.currentClientId;
+
+    // Mostrar progrés
+    showAlert('Guardant...', 'Pujant foto editada al núvol...', '⏳');
+
+    // ✅ FIX: Pujar a Supabase Storage (substitueix la foto original al núvol)
+    let newUrl = photo.url || null;
+    if (typeof uploadPhotoToStorage === 'function') {
+      const uploadedUrl = await uploadPhotoToStorage(editedData, photo.id, clientId);
+      if (uploadedUrl) newUrl = uploadedUrl;
+    }
+
+    // Actualitzar dades en memòria
     photo.data = editedData;
+    photo.url  = newUrl;
     originalPhotoData = editedData;
-    
+
     // Guardar a IndexedDB
     await dbPut('photos', {
-      id: photo.id,
-      clientId: state.currentClientId,
-      url:  photo.url  || null,   // ✅ FIX: preservar URL de Supabase Storage
-      data: photo.data,
-      date: photo.date,
-      comment: photo.comment || ""
+      id:       photo.id,
+      clientId: clientId,
+      url:      newUrl,
+      data:     editedData,
+      date:     photo.date,
+      comment:  photo.comment || ""
     });
-    
+
+    // ✅ FIX: Actualitzar també el client (files[]) a Supabase
+    const client = await loadClient(clientId);
+    if (client) {
+      const fileIdx = (client.files || []).findIndex(f => f.id === photo.id);
+      if (fileIdx >= 0) {
+        client.files[fileIdx].url  = newUrl;
+        client.files[fileIdx].data = newUrl ? null : editedData;
+      }
+      await saveClient(client);
+    }
+
     // Re-generar historial
     drawHistory = [];
     saveDrawState();
-    
-    showAlert('Foto guardada', 'Els canvis s\'han guardat correctament', '✅');
+
+    showAlert('Foto guardada', 'Els canvis s\'han guardat al núvol', '✅');
   } catch (e) {
     console.error('Error guardant foto editada:', e);
     showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
@@ -2834,6 +2879,108 @@ function getCanvasPoint(e) {
     y: (clientY - rect.top)   * scaleY
   };
 }
+
+// ─── POT DE PINTURA (Flood Fill) ───────────────────────────────────────────
+let fillModeEnabled = false;
+
+function toggleFillMode() {
+  fillModeEnabled = !fillModeEnabled;
+  const btn = document.getElementById('fillToggle');
+  if (fillModeEnabled) {
+    // Desactivar dibuix si estava actiu
+    if (drawingEnabled) toggleDrawing();
+    btn?.classList.add('paint-bucket-active');
+    if (photoCanvas) {
+      photoCanvas.style.cursor = 'crosshair';
+      photoCanvas.style.pointerEvents = 'auto';
+    }
+  } else {
+    btn?.classList.remove('paint-bucket-active');
+    if (photoCanvas) {
+      photoCanvas.style.cursor = 'default';
+      photoCanvas.style.pointerEvents = 'none';
+    }
+  }
+}
+window.toggleFillMode = toggleFillMode;
+
+function floodFill(startX, startY, fillColor) {
+  if (!photoCanvas || !photoCtx) return;
+
+  const imgData = photoCtx.getImageData(0, 0, photoCanvas.width, photoCanvas.height);
+  const data    = imgData.data;
+  const w       = photoCanvas.width;
+  const h       = photoCanvas.height;
+
+  // Color del punt inicial
+  const idx = (startY * w + startX) * 4;
+  const targetR = data[idx];
+  const targetG = data[idx + 1];
+  const targetB = data[idx + 2];
+  const targetA = data[idx + 3];
+
+  // Parse fill color hex → rgba
+  const tmp = document.createElement('canvas');
+  tmp.width = tmp.height = 1;
+  const tc = tmp.getContext('2d');
+  tc.fillStyle = fillColor;
+  tc.fillRect(0, 0, 1, 1);
+  const fc = tc.getImageData(0, 0, 1, 1).data;
+  const fillR = fc[0], fillG = fc[1], fillB = fc[2], fillA = 255;
+
+  // Si el color ja és igual, no fer res
+  if (targetR === fillR && targetG === fillG && targetB === fillB && targetA === fillA) return;
+
+  // Tolerància de color (per no ser massa precís)
+  const TOLERANCE = 30;
+  function colorMatch(i) {
+    return Math.abs(data[i]   - targetR) <= TOLERANCE &&
+           Math.abs(data[i+1] - targetG) <= TOLERANCE &&
+           Math.abs(data[i+2] - targetB) <= TOLERANCE &&
+           Math.abs(data[i+3] - targetA) <= TOLERANCE;
+  }
+
+  // Stack-based flood fill (iteratiu, no recursiu per evitar overflow)
+  const stack = [[startX, startY]];
+  const visited = new Uint8Array(w * h);
+  visited[startY * w + startX] = 1;
+
+  while (stack.length > 0) {
+    const [x, y] = stack.pop();
+    const i = (y * w + x) * 4;
+
+    if (!colorMatch(i)) continue;
+
+    data[i]   = fillR;
+    data[i+1] = fillG;
+    data[i+2] = fillB;
+    data[i+3] = fillA;
+
+    if (x > 0   && !visited[y*w + x-1])     { visited[y*w+x-1] = 1;     stack.push([x-1, y]); }
+    if (x < w-1 && !visited[y*w + x+1])     { visited[y*w+x+1] = 1;     stack.push([x+1, y]); }
+    if (y > 0   && !visited[(y-1)*w + x])   { visited[(y-1)*w+x] = 1;   stack.push([x, y-1]); }
+    if (y < h-1 && !visited[(y+1)*w + x])   { visited[(y+1)*w+x] = 1;   stack.push([x, y+1]); }
+  }
+
+  photoCtx.putImageData(imgData, 0, 0);
+  saveDrawState();
+}
+
+// Event listener per al fill — s'activa en setupCanvasDrawing
+function handleFillClick(e) {
+  if (!fillModeEnabled) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  const { x, y } = getCanvasPoint(e);
+  const cx = Math.round(x);
+  const cy = Math.round(y);
+
+  if (cx >= 0 && cy >= 0 && cx < photoCanvas.width && cy < photoCanvas.height) {
+    floodFill(cx, cy, drawColor);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Event listeners per dibuixar - VERSIÓ FINAL CORRECTA
 function setupCanvasDrawing() {
@@ -2901,6 +3048,16 @@ function setupCanvasDrawing() {
   photoCanvas.addEventListener('touchstart', startDraw, { passive: false });
   photoCanvas.addEventListener('touchmove',  draw,      { passive: false });
   photoCanvas.addEventListener('touchend',   endDraw,   { passive: false });
+
+  // ✅ Pot de pintura — click i touch
+  photoCanvas.addEventListener('click', handleFillClick);
+  photoCanvas.addEventListener('touchend', (e) => {
+    if (!fillModeEnabled || e.changedTouches?.length !== 1) return;
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    handleFillClick({ clientX: t.clientX, clientY: t.clientY,
+      preventDefault: ()=>{}, stopPropagation: ()=>{}, touches: null });
+  }, { passive: false });
 }
 
 // Exportar funcions
