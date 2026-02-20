@@ -357,7 +357,14 @@ function updatePhotoBadge(photoId, comment) {
 /* ================= UI OPTIMIZADO ================= */
 async function updateUI(preloadedClient = null) {
   const activitiesPanel = $('activitiesPanel');
-  
+
+  // ✅ FIX: si no hi ha client seleccionat, sempre mostrar activitiesPanel
+  if (!state.currentClientId && activitiesPanel) {
+    activitiesPanel.style.display = 'block';
+    const overviewPanel = document.getElementById('clientsOverviewPanel');
+    // No amagar overview si s'està mostrant intencionalment
+  }
+
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
   
   const updates = [];
@@ -767,6 +774,15 @@ function exitClient() {
   state.currentActivity = null;
   state.lastTick = null;
   save();
+
+  // ✅ FIX: assegurar que activitiesPanel és visible en tornar a l'inici
+  const activitiesPanel = document.getElementById('activitiesPanel');
+  const overviewPanel   = document.getElementById('clientsOverviewPanel');
+  const clientInfoPanel = document.getElementById('clientInfoPanel');
+  if (activitiesPanel) activitiesPanel.style.display = 'block';
+  if (overviewPanel)   overviewPanel.style.display   = 'none';
+  if (clientInfoPanel) clientInfoPanel.style.display  = 'none';
+
   updateUI();
 }
 /*************************************************
