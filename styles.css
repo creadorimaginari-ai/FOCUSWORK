@@ -1380,3 +1380,100 @@ textarea:focus-visible {
   background: rgba(249, 115, 22, 0.4) !important;
   border-color: rgba(249, 115, 22, 0.7) !important;
 }
+
+
+/* ===============================
+   LIGHTBOX LAYOUT COMPLET - SENSE GAP NEGRE
+   =============================== */
+
+/* El lightbox és un flex column que omple tota la pantalla */
+.lightbox-overlay {
+  display: none;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.lightbox-overlay.active {
+  display: flex !important;
+}
+
+/* Header fixat a dalt */
+.lightbox-header {
+  position: relative !important;
+  flex: 0 0 auto !important;
+  background: rgba(0,0,0,0.7) !important;
+  z-index: 10003 !important;
+}
+
+/* Canvas container: ocupa TOT l'espai disponible entre header i toolbar */
+.lightbox-canvas-container {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  background: #000 !important;
+}
+
+/* Canvas s'adapta sense sortir */
+#photoCanvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  display: block !important;
+}
+
+/* Toolbar: sempre al fons, no s'amaga mai */
+.editor-toolbar {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
+  padding: 8px 10px !important;
+  background: rgba(0,0,0,0.85) !important;
+  border-top: 1px solid rgba(255,255,255,0.1) !important;
+  z-index: 10003 !important;
+  position: relative !important;
+  display: flex !important;
+  gap: 6px !important;
+  align-items: center !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Footer comentaris */
+.lightbox-footer {
+  flex: 0 0 auto !important;
+  position: relative !important;
+  background: rgba(0,0,0,0.85) !important;
+  padding: 12px !important;
+  z-index: 10002 !important;
+}
+
+/* Slider sempre visible */
+.size-slider-mini {
+  min-width: 60px !important;
+  max-width: 80px !important;
+  flex-shrink: 0 !important;
+}
+
+.editor-btn-small {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+.color-picker-mini {
+  flex-shrink: 0 !important;
+}

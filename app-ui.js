@@ -2521,21 +2521,21 @@ function applyZoomTransform() {
 // Sistema d'inicialització de zoom
 function initZoomSystem() {
   if (!photoCanvas) return;
-  
+
+  // ✅ FIX CRÍTIC: registrar zoom al contenidor, no al canvas
+  // Quan drawing=false el canvas té pointerEvents:none i perd els events
+  const zoomTarget = photoCanvas.parentElement || photoCanvas;
+
   // Mouse wheel zoom
   const wheelHandler = (e) => {
-    if (drawingEnabled) return;
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     currentZoom = Math.max(1, Math.min(5, currentZoom * delta));
-    if (currentZoom === 1) {
-      panX = 0;
-      panY = 0;
-    }
+    if (currentZoom === 1) { panX = 0; panY = 0; }
     applyZoomTransform();
   };
-  
-  // Mouse pan
+
+  // Mouse pan (només quan no s'està dibuixant)
   const mouseDownHandler = (e) => {
     if (drawingEnabled || currentZoom <= 1) return;
     isPanning = true;
@@ -2543,22 +2543,20 @@ function initZoomSystem() {
     startPanY = e.clientY - panY;
     e.preventDefault();
   };
-  
+
   const mouseMoveHandler = (e) => {
-    if (!isPanning || drawingEnabled) return;
+    if (!isPanning) return;
     panX = e.clientX - startPanX;
     panY = e.clientY - startPanY;
     applyZoomTransform();
   };
-  
-  const mouseUpHandler = () => {
-    if (drawingEnabled) return;
-    isPanning = false;
-  };
-  
+
+  const mouseUpHandler = () => { isPanning = false; };
+
   // Touch pinch zoom + rotació amb dos dits
   const touchStartHandler = (e) => {
-    if (drawingEnabled) return;
+    // Amb 2 dits: sempre zoom/rotació (fins i tot en mode dibuix)
+    if (e.touches.length === 1 && drawingEnabled) return;
     if (e.touches.length === 2) {
       e.preventDefault();
       const touch1 = e.touches[0];
@@ -2637,46 +2635,45 @@ function initZoomSystem() {
     isRotating = false;
   };
   
-  // Afegir event listeners
-  photoCanvas.addEventListener('wheel', wheelHandler, { passive: false });
-  photoCanvas.addEventListener('mousedown', mouseDownHandler);
-  photoCanvas.addEventListener('mousemove', mouseMoveHandler);
-  photoCanvas.addEventListener('mouseup', mouseUpHandler);
-  photoCanvas.addEventListener('mouseleave', mouseUpHandler);
-  photoCanvas.addEventListener('touchstart', touchStartHandler, { passive: false });
-  photoCanvas.addEventListener('touchmove', touchMoveHandler, { passive: false });
-  photoCanvas.addEventListener('touchend', touchEndHandler);
-  photoCanvas.addEventListener('touchcancel', touchEndHandler);
-  
-  // Guardar referències per poder eliminar-les després
+  // ✅ FIX: listeners al contenidor, no al canvas
+  zoomTarget.addEventListener('wheel',       wheelHandler,      { passive: false });
+  zoomTarget.addEventListener('mousedown',   mouseDownHandler);
+  zoomTarget.addEventListener('mousemove',   mouseMoveHandler);
+  zoomTarget.addEventListener('mouseup',     mouseUpHandler);
+  zoomTarget.addEventListener('mouseleave',  mouseUpHandler);
+  zoomTarget.addEventListener('touchstart',  touchStartHandler, { passive: false });
+  zoomTarget.addEventListener('touchmove',   touchMoveHandler,  { passive: false });
+  zoomTarget.addEventListener('touchend',    touchEndHandler);
+  zoomTarget.addEventListener('touchcancel', touchEndHandler);
+
+  // Guardar ref per cleanup
+  photoCanvas._zoomTarget = zoomTarget;
   photoCanvas._zoomHandlers = {
-    wheel: wheelHandler,
-    mousedown: mouseDownHandler,
-    mousemove: mouseMoveHandler,
-    mouseup: mouseUpHandler,
-    mouseleave: mouseUpHandler,
-    touchstart: touchStartHandler,
-    touchmove: touchMoveHandler,
-    touchend: touchEndHandler,
+    wheel: wheelHandler, mousedown: mouseDownHandler,
+    mousemove: mouseMoveHandler, mouseup: mouseUpHandler,
+    mouseleave: mouseUpHandler, touchstart: touchStartHandler,
+    touchmove: touchMoveHandler, touchend: touchEndHandler,
     touchcancel: touchEndHandler
   };
 }
 
 function cleanupZoomSystem() {
   if (!photoCanvas || !photoCanvas._zoomHandlers) return;
-  
+
+  const t = photoCanvas._zoomTarget || photoCanvas;
   const h = photoCanvas._zoomHandlers;
-  photoCanvas.removeEventListener('wheel', h.wheel);
-  photoCanvas.removeEventListener('mousedown', h.mousedown);
-  photoCanvas.removeEventListener('mousemove', h.mousemove);
-  photoCanvas.removeEventListener('mouseup', h.mouseup);
-  photoCanvas.removeEventListener('mouseleave', h.mouseleave);
-  photoCanvas.removeEventListener('touchstart', h.touchstart);
-  photoCanvas.removeEventListener('touchmove', h.touchmove);
-  photoCanvas.removeEventListener('touchend', h.touchend);
-  photoCanvas.removeEventListener('touchcancel', h.touchcancel);
-  
+  t.removeEventListener('wheel',       h.wheel);
+  t.removeEventListener('mousedown',   h.mousedown);
+  t.removeEventListener('mousemove',   h.mousemove);
+  t.removeEventListener('mouseup',     h.mouseup);
+  t.removeEventListener('mouseleave',  h.mouseleave);
+  t.removeEventListener('touchstart',  h.touchstart);
+  t.removeEventListener('touchmove',   h.touchmove);
+  t.removeEventListener('touchend',    h.touchend);
+  t.removeEventListener('touchcancel', h.touchcancel);
+
   delete photoCanvas._zoomHandlers;
+  delete photoCanvas._zoomTarget;
   
   // Reset valors
   currentZoom = 1;
@@ -2724,20 +2721,18 @@ function toggleDrawing() {
     btn.classList.add('active');
     text.textContent = 'Activat';
     canvas.classList.add('drawing-mode');
-    // ✅ CRÍTIC: activar pointer-events via JS perquè el canvas rebi clicks/touch
-    // No dependre del CSS extern (drawing-mode) per a la funcionalitat crítica
     canvas.style.pointerEvents = 'auto';
     canvas.style.cursor = 'crosshair';
-    // ✅ FIX: NO resetar zoom — getBoundingClientRect() ja calcula coords correctament
-    // L'usuari pot ara dibuixar mentre està fet zoom sense perdre la posició
+    // Desactivar fill si estava actiu
+    if (fillModeEnabled) toggleFillMode();
   } else {
     btn.classList.remove('active');
     text.textContent = 'Dibuixar';
     canvas.classList.remove('drawing-mode');
-    // ✅ Desactivar pointer-events: el canvas torna transparent als events
-    // perquè el swipe/zoom del lightbox torni a funcionar
-    canvas.style.pointerEvents = 'none';
-    canvas.style.cursor = '';
+    // ✅ FIX: mantenir pointerEvents:auto perquè el contenidor gestiona el zoom
+    // Abans posàvem 'none' i els events de zoom deixaven de funcionar
+    canvas.style.pointerEvents = 'auto';
+    canvas.style.cursor = 'default';
   }
 }
 
