@@ -10,7 +10,9 @@
    per això cal mirar photo.url com a primer candidat.
 ───────────────────────────────────────────── */
 function getPhotoSrc(photo) {
-  return photo?.url || photo?.data || null;
+  // ✅ Preferir base64 local si existeix — evita cache del navegador amb URL de Supabase
+  // Quan es guarda una foto editada, sempre guardem photo.data = base64
+  return photo?.data || photo?.url || null;
 }
 
 /*
@@ -2818,44 +2820,63 @@ async function saveEditedPhoto() {
     // Mostrar progrés
     showAlert('Guardant...', 'Pujant foto editada al núvol...', '⏳');
 
-    // ✅ FIX: Pujar a Supabase Storage (substitueix la foto original al núvol)
-    let newUrl = photo.url || null;
+    // Pujar a Supabase Storage
+    let newUrl = null;
     if (typeof uploadPhotoToStorage === 'function') {
-      const uploadedUrl = await uploadPhotoToStorage(editedData, photo.id, clientId);
-      if (uploadedUrl) newUrl = uploadedUrl;
+      newUrl = await uploadPhotoToStorage(editedData, photo.id, clientId);
     }
 
-    // Actualitzar dades en memòria
+    // ✅ FIX CACHE: URL neta a Supabase però en memòria usem base64
+    // El navegador fa cache de la URL (path idèntic), per tant si tornem a
+    // carregar la URL veiem la versió antiga. Guardem el base64 com a font
+    // de veritat per a la sessió actual.
     photo.data = editedData;
-    photo.url  = newUrl;
+    photo.url  = newUrl || photo.url || null;
     originalPhotoData = editedData;
 
-    // Guardar a IndexedDB
+    // IndexedDB: guardar base64 + URL
     await dbPut('photos', {
       id:       photo.id,
       clientId: clientId,
-      url:      newUrl,
+      url:      photo.url,
       data:     editedData,
       date:     photo.date,
       comment:  photo.comment || ""
     });
 
-    // ✅ FIX: Actualitzar també el client (files[]) a Supabase
+    // Supabase (client.files[] o client.photos[])
     const client = await loadClient(clientId);
     if (client) {
-      const fileIdx = (client.files || []).findIndex(f => f.id === photo.id);
-      if (fileIdx >= 0) {
-        client.files[fileIdx].url  = newUrl;
-        client.files[fileIdx].data = newUrl ? null : editedData;
+      let updated = false;
+      (client.files || []).forEach(f => {
+        if (f.id === photo.id) {
+          f.url  = photo.url;
+          f.data = editedData;
+          updated = true;
+        }
+      });
+      if (!updated) {
+        (client.photos || []).forEach(p => {
+          if (p.id === photo.id) { p.data = editedData; p.url = photo.url; }
+        });
       }
       await saveClient(client);
     }
 
-    // Re-generar historial
-    drawHistory = [];
-    saveDrawState();
+    // ✅ FIX VISUAL: re-dibuixar el canvas des del base64 local (no de la URL)
+    // Evita que el navegador mostri la versió antiga en cache
+    const refreshImg = new Image();
+    refreshImg.onload = () => {
+      if (!photoCanvas || !photoCtx) return;
+      photoCanvas.width  = refreshImg.width;
+      photoCanvas.height = refreshImg.height;
+      photoCtx.drawImage(refreshImg, 0, 0);
+      drawHistory = [];
+      saveDrawState();
+    };
+    refreshImg.src = editedData;
 
-    showAlert('Foto guardada', 'Els canvis s\'han guardat al núvol', '✅');
+    showAlert('Foto guardada', 'Els canvis s\'han guardat al núvol ✅', '✅');
   } catch (e) {
     console.error('Error guardant foto editada:', e);
     showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
