@@ -563,10 +563,7 @@ function updateFocusScheduleStatus() {
 async function newClient() {
   const allClients = await loadAllClients();
   const activeClients = Object.values(allClients).filter(c => c.active);
-  if (!state.isFull && activeClients.length >= 2) {
-    showAlert('Versió demo', 'Màxim 2 clients actius.\n\nActiva la versió completa per clients il·limitats.', '🔒');
-    return;
-  }
+  // ✅ Llicència completa activa — sense límit de clients
   $('newClientInput').value = '';
   openModal('modalNewClient');
   setTimeout(() => $('newClientInput').focus(), 300);
