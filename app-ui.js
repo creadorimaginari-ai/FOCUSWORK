@@ -561,9 +561,16 @@ function updateFocusScheduleStatus() {
 
 /* ================= CLIENTS OPTIMIZADO ================= */
 async function newClient() {
-  const allClients = await loadAllClients();
-  const activeClients = Object.values(allClients).filter(c => c.active);
-  // ✅ Llicència completa activa — sense límit de clients
+  // ✅ Comprovar límit per usuari (configurable des de Supabase per cada usuari)
+  if (typeof canCreateMoreClients === 'function') {
+    const check = await canCreateMoreClients();
+    if (!check.ok) {
+      showAlert('Límit de clients', 
+        `Has arribat al màxim de ${check.limit} clients actius per al teu compte.\n\nContacta amb nosaltres per ampliar el límit.`, 
+        '🔒');
+      return;
+    }
+  }
   $('newClientInput').value = '';
   openModal('modalNewClient');
   setTimeout(() => $('newClientInput').focus(), 300);

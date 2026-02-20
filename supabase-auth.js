@@ -43,12 +43,44 @@ async function signIn(email, password) {
 // Fer logout
 async function signOut() {
   const { error } = await supabase.auth.signOut();
-  
+
   if (error) {
     console.error('Error fent logout:', error);
     throw error;
   }
-  
+
+  // ✅ FIX: Netejar TOTA la informació de l'usuari anterior
+  // Sense això, al canviar d'usuari es veu brevament la info de l'anterior
+  try {
+    // Reset estat global
+    if (typeof state !== 'undefined') {
+      state.currentClientId = null;
+      state.clients = {};
+      state.isFull = false;
+      state.license = null;
+      state.currentActivity = null;
+      state.sessionElapsed = 0;
+    }
+    // Buidar cache de clients
+    if (typeof invalidateClientsCache === 'function') {
+      invalidateClientsCache();
+    }
+    // Netejar fotos en memòria
+    if (typeof window !== 'undefined') {
+      window.currentClientPhotos = [];
+    }
+    // Netejar UI: amagar panell client
+    const clientInfoPanel = document.getElementById('clientInfoPanel');
+    const activitiesPanel = document.getElementById('activitiesPanel');
+    if (clientInfoPanel) clientInfoPanel.style.display = 'none';
+    if (activitiesPanel) activitiesPanel.style.display = 'none';
+  } catch(e) {
+    console.warn('Error netejant estat:', e);
+  }
+
+  // Mostrar login
+  if (typeof showLoginScreen === 'function') showLoginScreen();
+
   return true;
 }
 
@@ -328,9 +360,22 @@ function showLoginScreen() {
 function hideLoginScreen() {
   const loginScreen = document.getElementById('loginScreen');
   if (loginScreen) loginScreen.remove();
-  
+
   const app = document.querySelector('.app');
   if (app) app.style.display = 'block';
+
+  // ✅ FIX: Reiniciar app per al nou usuari — netejar qualsevol residu
+  try {
+    if (typeof state !== 'undefined') {
+      state.currentClientId = null;
+      state.clients = {};
+    }
+    if (typeof invalidateClientsCache === 'function') invalidateClientsCache();
+    if (typeof updateUI === 'function') updateUI();
+    if (typeof loadState === 'function') loadState();
+  } catch(e) {
+    console.warn('Error reiniciant per nou usuari:', e);
+  }
 }
 
 function switchTab(tab) {
@@ -455,6 +500,40 @@ function showResetPassword() {
 
 // Exportar funcions
 window.signUp = signUp;
+/* ── LÍMIT DE CLIENTS PER USUARI ── */
+
+// Llegir el límit de clients de l'usuari (des de user_metadata de Supabase)
+// Per defecte: 5 clients. Admin pot canviar via Supabase Dashboard → Auth → Users
+// Format: user_metadata.max_clients = 10 (o -1 per il·limitat)
+async function getUserClientLimit() {
+  try {
+    const { data } = await supabase.auth.getUser();
+    const meta = data?.user?.user_metadata || {};
+    // Si max_clients és -1 = il·limitat
+    if (meta.max_clients === -1 || meta.plan === 'full') return Infinity;
+    return meta.max_clients || 5; // per defecte 5
+  } catch(e) {
+    return 5;
+  }
+}
+
+// Comprovar si l'usuari pot crear més clients
+async function canCreateMoreClients() {
+  const limit = await getUserClientLimit();
+  if (limit === Infinity) return { ok: true };
+
+  const allClients = await loadAllClients();
+  const active = Object.values(allClients).filter(c => c.active).length;
+
+  if (active >= limit) {
+    return { ok: false, current: active, limit };
+  }
+  return { ok: true, current: active, limit };
+}
+
+window.getUserClientLimit = getUserClientLimit;
+window.canCreateMoreClients = canCreateMoreClients;
+
 window.signIn = signIn;
 window.signOut = signOut;
 window.showLoginScreen = showLoginScreen;
