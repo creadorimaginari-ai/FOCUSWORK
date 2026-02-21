@@ -1486,25 +1486,30 @@ textarea:focus-visible {
 .editor-toolbar-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  padding: 10px;
-  background: rgba(0,0,0,0.88);
+  /* ✅ Mida fixa per files — evita que el grid creixi i tapi la imatge */
+  grid-auto-rows: 34px;
+  gap: 5px;
+  padding: 8px;
+  background: rgba(0,0,0,0.92);
   border-top: 1px solid rgba(255,255,255,0.08);
-  flex: 0 0 auto;
+  flex: 0 0 auto !important;
   width: 100%;
   box-sizing: border-box;
   z-index: 10004;
   position: relative;
+  /* Màxim per no superar mai ~230px d'alçada */
+  max-height: 240px;
+  overflow-y: auto;
 }
 
-/* Colors rodons */
+/* Colors rodons — mida fixa, NO aspect-ratio */
 .etb-color {
-  aspect-ratio: 1;
+  width: 100%;
+  height: 34px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.15);
   cursor: pointer;
   transition: transform 0.15s, border-color 0.15s;
-  min-height: 34px;
 }
 .etb-color:hover,
 .etb-color:active  { transform: scale(1.15); }
@@ -1516,11 +1521,13 @@ textarea:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
   background: rgba(255,255,255,0.05);
   border-radius: 8px;
-  padding: 4px 8px;
+  padding: 2px 8px;
   border: 1px solid rgba(255,255,255,0.1);
+  height: 34px;
+  box-sizing: border-box;
 }
 .etb-slider {
   width: 100%;
@@ -1534,16 +1541,17 @@ textarea:focus-visible {
   border: 1px solid rgba(255,255,255,0.15);
   color: #f1f5f9;
   border-radius: 8px;
-  padding: 8px 4px;
-  font-size: 12px;
+  padding: 0 4px;
+  font-size: 11px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 3px;
   transition: background 0.15s, transform 0.1s;
-  min-height: 38px;
+  height: 34px;
   white-space: nowrap;
+  overflow: hidden;
 }
 .etb-btn:hover  { background: rgba(255,255,255,0.14); }
 .etb-btn:active { transform: scale(0.96); }
@@ -1590,7 +1598,8 @@ textarea:focus-visible {
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  min-height: 34px;
+  height: 34px;
+  box-sizing: border-box;
 }
 .etb-colorpicker-wrap span {
   font-size: 9px;
