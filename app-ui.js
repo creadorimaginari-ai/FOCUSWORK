@@ -433,6 +433,7 @@ async function updateUI(preloadedClient = null) {
   }
   
   updates.push(() => updateFocusScheduleStatus());
+  updates.push(() => updateLicenseUI());
   
   const exitContainer = $("exitClientContainer");
   const deletePanel = $("deleteClientPanel");
@@ -552,10 +553,27 @@ function updateDeliveryDateDisplay(client) {
 }
 
 function updateLicenseInfo() {
-  // ✅ Informació de llicència privada — no mostrar
   const infoEl = $("licenseInfo");
   if (infoEl) infoEl.style.display = "none";
 }
+
+function updateLicenseUI() {
+  // ✅ Amagar botons de llicència si l'usuari ja la té activa
+  const licBtns  = document.querySelector('.footer-license-btns');
+  const licText  = document.querySelector('.footer-license-text');
+  const licDivider = document.querySelector('.footer-divider');
+
+  if (state.isFull) {
+    if (licBtns)    licBtns.style.display    = 'none';
+    if (licText)    licText.style.display    = 'none';
+    if (licDivider) licDivider.style.display = 'none';
+  } else {
+    if (licBtns)    licBtns.style.display    = '';
+    if (licText)    licText.style.display    = '';
+    if (licDivider) licDivider.style.display = '';
+  }
+}
+window.updateLicenseUI = updateLicenseUI;
 
 function updateFocusScheduleStatus() {
   const statusEl = $("focusScheduleStatus");
@@ -2836,21 +2854,27 @@ async function saveEditedPhoto() {
     // Mostrar progrés
     showAlert('Guardant...', 'Pujant foto editada al núvol...', '⏳');
 
-    // Pujar a Supabase Storage
+    // ✅ FIX SYNC: usar un ID únic amb timestamp per la versió editada
+    // Supabase Storage retorna sempre la mateixa URL per al mateix path
+    // → altres dispositius carreguen la versió antiga del cache
+    // Solució: guardar amb un path nou (photoId_timestamp) → URL nova → cache buit
+    const editedPhotoId = photo.id + '_v' + Date.now();
     let newUrl = null;
     if (typeof uploadPhotoToStorage === 'function') {
-      newUrl = await uploadPhotoToStorage(editedData, photo.id, clientId);
+      newUrl = await uploadPhotoToStorage(editedData, editedPhotoId, clientId);
     }
 
-    // ✅ FIX CACHE: URL neta a Supabase però en memòria usem base64
-    // El navegador fa cache de la URL (path idèntic), per tant si tornem a
-    // carregar la URL veiem la versió antiga. Guardem el base64 com a font
-    // de veritat per a la sessió actual.
+    // Esborrar versió antiga de Storage si tenia URL (cleanup)
+    if (photo.url && typeof deletePhotoFromStorage === 'function') {
+      try { await deletePhotoFromStorage(photo.id, clientId); } catch(e) {}
+    }
+
+    // Actualitzar referència en memòria
     photo.data = editedData;
-    photo.url  = newUrl || photo.url || null;
+    photo.url  = newUrl || null;
     originalPhotoData = editedData;
 
-    // IndexedDB: guardar base64 + URL
+    // IndexedDB: guardar base64 + nova URL
     await dbPut('photos', {
       id:       photo.id,
       clientId: clientId,
@@ -2860,27 +2884,22 @@ async function saveEditedPhoto() {
       comment:  photo.comment || ""
     });
 
-    // Supabase (client.files[] o client.photos[])
+    // Supabase BD: actualitzar files[] o photos[] amb nova URL
     const client = await loadClient(clientId);
     if (client) {
       let updated = false;
       (client.files || []).forEach(f => {
-        if (f.id === photo.id) {
-          f.url  = photo.url;
-          f.data = editedData;
-          updated = true;
-        }
+        if (f.id === photo.id) { f.url = photo.url; f.data = editedData; updated = true; }
       });
       if (!updated) {
         (client.photos || []).forEach(p => {
-          if (p.id === photo.id) { p.data = editedData; p.url = photo.url; }
+          if (p.id === photo.id) { p.url = photo.url; p.data = editedData; }
         });
       }
       await saveClient(client);
     }
 
-    // ✅ FIX VISUAL: re-dibuixar el canvas des del base64 local (no de la URL)
-    // Evita que el navegador mostri la versió antiga en cache
+    // Re-dibuixar canvas des del base64 local (instantani, sense esperar xarxa)
     const refreshImg = new Image();
     refreshImg.onload = () => {
       if (!photoCanvas || !photoCtx) return;
@@ -3034,7 +3053,10 @@ function setupCanvasDrawing() {
     photoCanvas.removeEventListener('mouseleave', h.endDraw);
     photoCanvas.removeEventListener('touchstart', h.startDraw);
     photoCanvas.removeEventListener('touchmove',  h.draw);
+    // ✅ FIX: eliminar també listeners de fill (causaven duplicació)
     photoCanvas.removeEventListener('touchend',   h.endDraw);
+    if (h.handleFillClick)   photoCanvas.removeEventListener('click',     h.handleFillClick);
+    if (h.fillTouchHandler)  photoCanvas.removeEventListener('touchend',  h.fillTouchHandler);
   }
 
   let isDrawing = false;
@@ -3074,8 +3096,16 @@ function setupCanvasDrawing() {
     saveDrawState();
   }
 
-  // Guardar referències per poder eliminar-les la propera vegada
-  photoCanvas._drawHandlers = { startDraw, draw, endDraw };
+  // ✅ FIX DUPLICACIÓ: guardar TOTS els listeners (inclòs fill) per netejar-los
+  const fillTouchHandler = (e) => {
+    if (!fillModeEnabled || e.changedTouches?.length !== 1) return;
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    handleFillClick({ clientX: t.clientX, clientY: t.clientY,
+      preventDefault: ()=>{}, stopPropagation: ()=>{}, touches: null });
+  };
+
+  photoCanvas._drawHandlers = { startDraw, draw, endDraw, handleFillClick, fillTouchHandler };
 
   // Mouse
   photoCanvas.addEventListener('mousedown',  startDraw);
@@ -3083,20 +3113,14 @@ function setupCanvasDrawing() {
   photoCanvas.addEventListener('mouseup',    endDraw);
   photoCanvas.addEventListener('mouseleave', endDraw);
 
-  // Touch (stopPropagation impedeix que el swipe del lightbox interfereixi)
-  photoCanvas.addEventListener('touchstart', startDraw, { passive: false });
-  photoCanvas.addEventListener('touchmove',  draw,      { passive: false });
-  photoCanvas.addEventListener('touchend',   endDraw,   { passive: false });
+  // Touch
+  photoCanvas.addEventListener('touchstart', startDraw,        { passive: false });
+  photoCanvas.addEventListener('touchmove',  draw,             { passive: false });
+  photoCanvas.addEventListener('touchend',   endDraw,          { passive: false });
 
-  // ✅ Pot de pintura — click i touch
-  photoCanvas.addEventListener('click', handleFillClick);
-  photoCanvas.addEventListener('touchend', (e) => {
-    if (!fillModeEnabled || e.changedTouches?.length !== 1) return;
-    e.preventDefault();
-    const t = e.changedTouches[0];
-    handleFillClick({ clientX: t.clientX, clientY: t.clientY,
-      preventDefault: ()=>{}, stopPropagation: ()=>{}, touches: null });
-  }, { passive: false });
+  // Pot de pintura
+  photoCanvas.addEventListener('click',      handleFillClick);
+  photoCanvas.addEventListener('touchend',   fillTouchHandler, { passive: false });
 }
 
 // Exportar funcions
@@ -3822,69 +3846,113 @@ function openFileViewer(files, index) {
 }
 
 function showVideoModal(file) {
-  // Crear modal per vídeo
-  const modal = document.createElement('div');
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.9);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.92); z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; padding: 20px;
   `;
-  
+
   const video = document.createElement('video');
-  video.src = file.data;
+  video.src = file.url || file.data;
   video.controls = true;
-  video.style.cssText = 'max-width: 90%; max-height: 80vh;';
-  modal.appendChild(video);
-  
+  video.style.cssText = 'max-width: 100%; max-height: 70vh; border-radius: 10px;';
+  overlay.appendChild(video);
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex; gap:12px;';
+
   const closeBtn = document.createElement('button');
   closeBtn.textContent = '✕ Tancar';
-  closeBtn.style.cssText = 'margin-top: 20px; padding: 10px 20px; font-size: 16px;';
-  closeBtn.onclick = () => document.body.removeChild(modal);
-  modal.appendChild(closeBtn);
-  
-  document.body.appendChild(modal);
+  closeBtn.style.cssText = `
+    padding: 10px 24px; border-radius: 8px; font-size:14px; cursor:pointer;
+    border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color:#fff;
+  `;
+  closeBtn.onclick = () => { video.pause(); document.body.removeChild(overlay); };
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.textContent = '🗑️ Esborrar';
+  deleteBtn.style.cssText = `
+    padding: 10px 24px; border-radius: 8px; font-size:14px; cursor:pointer;
+    border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.15); color:#fca5a5;
+  `;
+  deleteBtn.onclick = async () => {
+    video.pause();
+    document.body.removeChild(overlay);
+    await confirmDeleteFile(file);
+  };
+
+  btnRow.appendChild(closeBtn);
+  btnRow.appendChild(deleteBtn);
+  overlay.appendChild(btnRow);
+
+  document.body.appendChild(overlay);
 }
 
 function showAudioModal(file) {
+  // Overlay fosc
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 9999;
+  `;
+  overlay.onclick = () => document.body.removeChild(overlay);
+
   const modal = document.createElement('div');
   modal.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
+    position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    z-index: 10000;
+    background: #1e293b; color: #f1f5f9;
+    padding: 24px; border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    min-width: 300px; max-width: 90vw;
+    border: 1px solid rgba(255,255,255,0.1);
   `;
-  
-  const title = document.createElement('h3');
-  title.textContent = file.name;
-  title.style.marginBottom = '20px';
+  overlay.appendChild(modal);
+
+  // Nom arxiu
+  const title = document.createElement('div');
+  title.textContent = '🎵 ' + (file.name || 'Àudio');
+  title.style.cssText = 'font-weight:600; font-size:15px; margin-bottom:16px; opacity:0.9;';
   modal.appendChild(title);
-  
+
+  // Player
   const audio = document.createElement('audio');
-  audio.src = file.data;
+  audio.src = file.url || file.data;
   audio.controls = true;
-  audio.style.width = '100%';
+  audio.style.cssText = 'width:100%; border-radius:8px;';
   modal.appendChild(audio);
-  
+
+  // Botons
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;';
+
   const closeBtn = document.createElement('button');
-  closeBtn.textContent = 'Tancar';
-  closeBtn.style.cssText = 'margin-top: 20px; padding: 10px 20px; width: 100%;';
-  closeBtn.onclick = () => document.body.removeChild(modal);
-  modal.appendChild(closeBtn);
-  
-  document.body.appendChild(modal);
+  closeBtn.textContent = '✕ Tancar';
+  closeBtn.style.cssText = `
+    padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.07); color: #f1f5f9; cursor: pointer; font-size:14px;
+  `;
+  closeBtn.onclick = () => { audio.pause(); document.body.removeChild(overlay); };
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.textContent = '🗑️ Esborrar';
+  deleteBtn.style.cssText = `
+    padding: 10px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.4);
+    background: rgba(239,68,68,0.15); color: #fca5a5; cursor: pointer; font-size:14px;
+  `;
+  deleteBtn.onclick = async () => {
+    audio.pause();
+    document.body.removeChild(overlay);
+    await confirmDeleteFile(file);
+  };
+
+  btnRow.appendChild(closeBtn);
+  btnRow.appendChild(deleteBtn);
+  modal.appendChild(btnRow);
+
+  document.body.appendChild(overlay);
 }
 
 function downloadFile(file) {
