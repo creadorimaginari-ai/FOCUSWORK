@@ -1184,42 +1184,51 @@ function setupProgressListeners() {
   <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
 </div>
 
-<!-- Toolbar d'edició (just després del canvas) -->
-<div class="editor-toolbar">
-  <button class="color-picker-mini active" style="background: #ef4444;" onclick="setDrawColor('#ef4444')" data-color="#ef4444"></button>
-  <button class="color-picker-mini" style="background: #f59e0b;" onclick="setDrawColor('#f59e0b')" data-color="#f59e0b"></button>
-  <button class="color-picker-mini" style="background: #10b981;" onclick="setDrawColor('#10b981')" data-color="#10b981"></button>
-  <button class="color-picker-mini" style="background: #3b82f6;" onclick="setDrawColor('#3b82f6')" data-color="#3b82f6"></button>
-  <button class="color-picker-mini" style="background: white;" onclick="setDrawColor('#ffffff')" data-color="#ffffff"></button>
-  
-  <div style="width: 2px; height: 25px; background: rgba(255,255,255,0.2);"></div>
-  
-  <input type="range" class="size-slider-mini" min="2" max="8" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
-  
-  <button class="editor-btn-small" onclick="toggleDrawing()" id="drawToggle">
-    <span>✏️</span>
-    <span id="drawToggleText">Dibuixar</span>
-  </button>
+<!-- Toolbar d'edició — grid fix 4 columnes -->
+<div class="editor-toolbar-grid">
 
-  <button class="editor-btn-small" onclick="toggleFillMode()" id="fillToggle" title="Pot de pintura — clica per omplir una àrea">
-    <span>🪣</span>
-    <span>Omplir</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="undoDraw()">
-    <span>↶</span>
-    <span>Desfer</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="clearDrawing()">
-    <span>🗑️</span>
-    <span>Netejar</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="saveEditedPhoto()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
-    <span>💾</span>
-    <span>Guardar canvis</span>
-  </button>
+  <!-- FILA 1: Colors ràpids + selector RGB -->
+  <button class="etb-color active" style="background:#ef4444;" onclick="setDrawColor('#ef4444')" data-color="#ef4444"></button>
+  <button class="etb-color" style="background:#f59e0b;" onclick="setDrawColor('#f59e0b')" data-color="#f59e0b"></button>
+  <button class="etb-color" style="background:#10b981;" onclick="setDrawColor('#10b981')" data-color="#10b981"></button>
+  <button class="etb-color" style="background:#3b82f6;" onclick="setDrawColor('#3b82f6')" data-color="#3b82f6"></button>
+
+  <button class="etb-color" style="background:#ffffff;" onclick="setDrawColor('#ffffff')" data-color="#ffffff"></button>
+  <button class="etb-color" style="background:#000000;" onclick="setDrawColor('#000000')" data-color="#000000"></button>
+  <button class="etb-color" style="background:#f97316;" onclick="setDrawColor('#f97316')" data-color="#f97316"></button>
+
+  <!-- Selector RGB complet — ocupa 1 cel·la -->
+  <div class="etb-colorpicker-wrap">
+    <input type="color" id="rgbColorPicker" value="#ef4444"
+           oninput="setDrawColorFromPicker(this.value)"
+           title="Selector de color RGB complet">
+    <span>RGB</span>
+  </div>
+
+  <!-- FILA 3: Slider mida + Desfer + Netejar -->
+  <div class="etb-slider-wrap" style="grid-column: span 2;">
+    <span class="etb-label">Mida</span>
+    <input type="range" class="etb-slider" min="2" max="60" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
+  </div>
+  <button class="etb-btn" onclick="undoDraw()">↶ Desfer</button>
+  <button class="etb-btn" onclick="clearDrawing()">✕ Canvas</button>
+
+  <!-- FILA 4: Eines de dibuix -->
+  <button class="etb-btn" onclick="setDrawTool('pencil')" id="drawToggle">✏️ Llapis</button>
+  <button class="etb-btn" onclick="setDrawTool('eraser')" id="eraserToggle">🧹 Goma</button>
+  <button class="etb-btn" onclick="setDrawTool('fill')" id="fillToggle">🪣 Omplir</button>
+  <button class="etb-btn" onclick="setDrawTool('rect')" id="rectToggle">⬜ Rect.</button>
+
+  <!-- FILA 5: Formes i guardar -->
+  <button class="etb-btn" onclick="setDrawTool('circle')" id="circleToggle">⭕ Cercle</button>
+  <button class="etb-btn" onclick="setDrawTool('line')" id="lineToggle">╱ Línia</button>
+  <button class="etb-btn etb-save" onclick="saveEditedPhoto()" style="grid-column: span 2;">💾 Guardar</button>
+
+  <!-- FILA 6: Gestió foto -->
+  <button class="etb-btn etb-danger" onclick="deleteCurrentPhoto()" style="grid-column: span 2;">🗑️ Esborrar foto</button>
+  <button class="etb-btn" onclick="downloadCurrentPhoto()">⬇️ Baixar</button>
+  <button class="etb-btn" onclick="shareCurrentPhoto()">📤 Comp.</button>
+
 </div>
   
 <div class="lightbox-footer">

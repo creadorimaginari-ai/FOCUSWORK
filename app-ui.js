@@ -2761,19 +2761,16 @@ function toggleDrawing() {
   if (!canvas) return;
   
   if (drawingEnabled) {
-    btn.classList.add('active');
-    text.textContent = 'Activat';
+    btn?.classList.add('active');
+    if (text) text.textContent = 'Activat';
     canvas.classList.add('drawing-mode');
     canvas.style.pointerEvents = 'auto';
     canvas.style.cursor = 'crosshair';
-    // Desactivar fill si estava actiu
     if (fillModeEnabled) toggleFillMode();
   } else {
-    btn.classList.remove('active');
-    text.textContent = 'Dibuixar';
+    btn?.classList.remove('active');
+    if (text) text.textContent = 'Llapis';
     canvas.classList.remove('drawing-mode');
-    // ✅ FIX: mantenir pointerEvents:auto perquè el contenidor gestiona el zoom
-    // Abans posàvem 'none' i els events de zoom deixaven de funcionar
     canvas.style.pointerEvents = 'auto';
     canvas.style.cursor = 'default';
   }
@@ -2781,11 +2778,9 @@ function toggleDrawing() {
 
 function setDrawColor(color) {
   drawColor = color;
-  document.querySelectorAll('.color-picker-mini').forEach(btn => {
+  document.querySelectorAll('.etb-color, .color-picker-mini').forEach(btn => {
     btn.classList.remove('active');
-    if (btn.dataset.color === color) {
-      btn.classList.add('active');
-    }
+    if (btn.dataset.color === color) btn.classList.add('active');
   });
 }
 
@@ -2938,29 +2933,60 @@ function getCanvasPoint(e) {
   };
 }
 
-// ─── POT DE PINTURA (Flood Fill) ───────────────────────────────────────────
-let fillModeEnabled = false;
+// ═══════════════════════════════════════════════════════
+//  SISTEMA D'EINES UNIFICAT
+//  Eines: pencil | eraser | fill | rect | circle | line
+// ═══════════════════════════════════════════════════════
+let currentTool   = 'none';  // eina activa
+let fillModeEnabled = false; // compat. backward
 
-function toggleFillMode() {
-  fillModeEnabled = !fillModeEnabled;
-  const btn = document.getElementById('fillToggle');
-  if (fillModeEnabled) {
-    // Desactivar dibuix si estava actiu
-    if (drawingEnabled) toggleDrawing();
-    btn?.classList.add('paint-bucket-active');
-    if (photoCanvas) {
-      photoCanvas.style.cursor = 'crosshair';
-      photoCanvas.style.pointerEvents = 'auto';
-    }
-  } else {
-    btn?.classList.remove('paint-bucket-active');
-    if (photoCanvas) {
-      photoCanvas.style.cursor = 'default';
-      photoCanvas.style.pointerEvents = 'none';
-    }
+const TOOL_IDS = {
+  pencil: 'drawToggle',
+  eraser: 'eraserToggle',
+  fill:   'fillToggle',
+  rect:   'rectToggle',
+  circle: 'circleToggle',
+  line:   'lineToggle',
+};
+
+function setDrawTool(tool) {
+  // Toggle: si ja estava activa, desactivar
+  if (currentTool === tool) tool = 'none';
+  currentTool = tool;
+  drawingEnabled  = (tool === 'pencil' || tool === 'eraser');
+  fillModeEnabled = (tool === 'fill');
+
+  // Actualitzar cursor i pointerEvents
+  if (photoCanvas) {
+    photoCanvas.style.pointerEvents = (tool !== 'none') ? 'auto' : 'auto';
+    photoCanvas.style.cursor = (tool === 'none') ? 'default' : 'crosshair';
+    photoCanvas.classList.toggle('drawing-mode', tool === 'pencil' || tool === 'eraser');
   }
+
+  // Highlight botó actiu
+  Object.entries(TOOL_IDS).forEach(([t, id]) => {
+    const btn = document.getElementById(id);
+    btn?.classList.toggle('active', t === tool);
+  });
+  // Compat: mantenir drawToggle sense id duplicat
+  const dt = document.getElementById('drawToggle');
+  if (dt) dt.classList.toggle('active', tool === 'pencil');
 }
+window.setDrawTool = setDrawTool;
+
+// Compat: toggleDrawing crida setDrawTool
+function toggleDrawing() { setDrawTool(drawingEnabled ? 'none' : 'pencil'); }
+function toggleFillMode() { setDrawTool(fillModeEnabled ? 'none' : 'fill'); }
 window.toggleFillMode = toggleFillMode;
+
+// Selector RGB complet
+function setDrawColorFromPicker(hex) {
+  setDrawColor(hex);
+  // Actualitzar el picker visualment
+  const picker = document.getElementById('rgbColorPicker');
+  if (picker) picker.value = hex;
+}
+window.setDrawColorFromPicker = setDrawColorFromPicker;
 
 function floodFill(startX, startY, fillColor) {
   if (!photoCanvas || !photoCtx) return;
@@ -3044,84 +3070,195 @@ function handleFillClick(e) {
 function setupCanvasDrawing() {
   if (!photoCanvas || !photoCtx) return;
 
-  // ✅ Netejar listeners anteriors per evitar duplicats en reobrir el lightbox
+  // Netejar listeners anteriors
   if (photoCanvas._drawHandlers) {
     const h = photoCanvas._drawHandlers;
-    photoCanvas.removeEventListener('mousedown',  h.startDraw);
-    photoCanvas.removeEventListener('mousemove',  h.draw);
-    photoCanvas.removeEventListener('mouseup',    h.endDraw);
-    photoCanvas.removeEventListener('mouseleave', h.endDraw);
-    photoCanvas.removeEventListener('touchstart', h.startDraw);
-    photoCanvas.removeEventListener('touchmove',  h.draw);
-    // ✅ FIX: eliminar també listeners de fill (causaven duplicació)
-    photoCanvas.removeEventListener('touchend',   h.endDraw);
-    if (h.handleFillClick)   photoCanvas.removeEventListener('click',     h.handleFillClick);
-    if (h.fillTouchHandler)  photoCanvas.removeEventListener('touchend',  h.fillTouchHandler);
+    ['mousedown','mousemove','mouseup','mouseleave'].forEach(ev =>
+      photoCanvas.removeEventListener(ev, h[ev])
+    );
+    photoCanvas.removeEventListener('touchstart', h.touchstart);
+    photoCanvas.removeEventListener('touchmove',  h.touchmove);
+    photoCanvas.removeEventListener('touchend',   h.touchend);
+    photoCanvas.removeEventListener('click',      h.click);
+    photoCanvas.removeEventListener('touchend',   h.fillTouch);
   }
 
-  let isDrawing = false;
+  let isDrawing  = false;
+  let shapeStart = null;   // punt inicial per formes
+  let snapShot   = null;   // còpia canvas per dibuixar formes en temps real
 
-  function startDraw(e) {
-    if (!drawingEnabled) return;
-    e.preventDefault();
-    e.stopPropagation();
+  // ── Inici de traç / forma ─────────────────────────────────────────────
+  function onStart(e) {
+    const tool = currentTool;
+    if (tool === 'none') return;
+    if (tool === 'fill') return; // fill gestiona per click
+    e.preventDefault(); e.stopPropagation();
 
     isDrawing = true;
     const { x, y } = getCanvasPoint(e);
-    
-    photoCtx.strokeStyle = drawColor;
-    photoCtx.lineWidth   = drawSize;
-    photoCtx.lineCap     = 'round';
-    photoCtx.lineJoin    = 'round';
-    photoCtx.beginPath();
-    photoCtx.moveTo(x, y);
+    shapeStart = { x, y };
+
+    if (tool === 'pencil') {
+      photoCtx.globalCompositeOperation = 'source-over';
+      photoCtx.strokeStyle = drawColor;
+      photoCtx.lineWidth   = drawSize;
+      photoCtx.lineCap     = 'round';
+      photoCtx.lineJoin    = 'round';
+      photoCtx.beginPath();
+      photoCtx.moveTo(x, y);
+    } else if (tool === 'eraser') {
+      photoCtx.globalCompositeOperation = 'destination-out';
+      photoCtx.lineWidth = drawSize * 3; // goma més gran
+      photoCtx.lineCap   = 'round';
+      photoCtx.lineJoin  = 'round';
+      photoCtx.beginPath();
+      photoCtx.moveTo(x, y);
+    } else if (tool === 'rect' || tool === 'circle' || tool === 'line') {
+      // Guardar snapshot per redibuixar en cada moviment
+      snapShot = photoCtx.getImageData(0, 0, photoCanvas.width, photoCanvas.height);
+    }
   }
 
-  function draw(e) {
-    if (!isDrawing || !drawingEnabled) return;
-    e.preventDefault();
-    e.stopPropagation();
+  // ── Moviment ──────────────────────────────────────────────────────────
+  function onMove(e) {
+    if (!isDrawing) return;
+    const tool = currentTool;
+    if (tool === 'none' || tool === 'fill') return;
+    e.preventDefault(); e.stopPropagation();
 
     const { x, y } = getCanvasPoint(e);
-    photoCtx.lineTo(x, y);
-    photoCtx.stroke();
+
+    if (tool === 'pencil') {
+      photoCtx.globalCompositeOperation = 'source-over';
+      photoCtx.strokeStyle = drawColor;
+      photoCtx.lineTo(x, y);
+      photoCtx.stroke();
+    } else if (tool === 'eraser') {
+      photoCtx.globalCompositeOperation = 'destination-out';
+      photoCtx.lineTo(x, y);
+      photoCtx.stroke();
+    } else if (tool === 'rect' && shapeStart && snapShot) {
+      // Restaurar snapshot i dibuixar rectangle actual
+      photoCtx.putImageData(snapShot, 0, 0);
+      photoCtx.globalCompositeOperation = 'source-over';
+      photoCtx.strokeStyle = drawColor;
+      photoCtx.lineWidth   = drawSize;
+      photoCtx.lineCap     = 'square';
+      photoCtx.strokeRect(
+        shapeStart.x, shapeStart.y,
+        x - shapeStart.x, y - shapeStart.y
+      );
+    } else if (tool === 'circle' && shapeStart && snapShot) {
+      photoCtx.putImageData(snapShot, 0, 0);
+      photoCtx.globalCompositeOperation = 'source-over';
+      photoCtx.strokeStyle = drawColor;
+      photoCtx.lineWidth   = drawSize;
+      const rx = (x - shapeStart.x) / 2;
+      const ry = (y - shapeStart.y) / 2;
+      const cx = shapeStart.x + rx;
+      const cy = shapeStart.y + ry;
+      photoCtx.beginPath();
+      photoCtx.ellipse(cx, cy, Math.abs(rx), Math.abs(ry), 0, 0, Math.PI * 2);
+      photoCtx.stroke();
+    } else if (tool === 'line' && shapeStart && snapShot) {
+      photoCtx.putImageData(snapShot, 0, 0);
+      photoCtx.globalCompositeOperation = 'source-over';
+      photoCtx.strokeStyle = drawColor;
+      photoCtx.lineWidth   = drawSize;
+      photoCtx.lineCap     = 'round';
+      photoCtx.beginPath();
+      photoCtx.moveTo(shapeStart.x, shapeStart.y);
+      photoCtx.lineTo(x, y);
+      photoCtx.stroke();
+    }
   }
 
-  function endDraw(e) {
+  // ── Fi de traç ────────────────────────────────────────────────────────
+  function onEnd(e) {
     if (!isDrawing) return;
     if (e) { e.preventDefault(); e.stopPropagation(); }
-
-    isDrawing = false;
+    isDrawing  = false;
+    shapeStart = null;
+    snapShot   = null;
+    // Restaurar mode normal
+    photoCtx.globalCompositeOperation = 'source-over';
     photoCtx.closePath();
     saveDrawState();
   }
 
-  // ✅ FIX DUPLICACIÓ: guardar TOTS els listeners (inclòs fill) per netejar-los
-  const fillTouchHandler = (e) => {
-    if (!fillModeEnabled || e.changedTouches?.length !== 1) return;
+  // ── Fill per click ────────────────────────────────────────────────────
+  function onClickFill(e) {
+    if (currentTool !== 'fill') return;
+    e.preventDefault(); e.stopPropagation();
+    const { x, y } = getCanvasPoint(e);
+    const cx = Math.round(x), cy = Math.round(y);
+    if (cx >= 0 && cy >= 0 && cx < photoCanvas.width && cy < photoCanvas.height) {
+      floodFill(cx, cy, drawColor);
+    }
+  }
+
+  const fillTouchH = (e) => {
+    if (currentTool !== 'fill' || e.changedTouches?.length !== 1) return;
     e.preventDefault();
     const t = e.changedTouches[0];
-    handleFillClick({ clientX: t.clientX, clientY: t.clientY,
-      preventDefault: ()=>{}, stopPropagation: ()=>{}, touches: null });
+    onClickFill({ clientX: t.clientX, clientY: t.clientY,
+      preventDefault: ()=>{}, stopPropagation: ()=>{} });
   };
 
-  photoCanvas._drawHandlers = { startDraw, draw, endDraw, handleFillClick, fillTouchHandler };
+  // Guardar refs per cleanup
+  photoCanvas._drawHandlers = {
+    mousedown: onStart, mousemove: onMove, mouseup: onEnd, mouseleave: onEnd,
+    touchstart: onStart, touchmove: onMove, touchend: onEnd,
+    click: onClickFill, fillTouch: fillTouchH
+  };
 
-  // Mouse
-  photoCanvas.addEventListener('mousedown',  startDraw);
-  photoCanvas.addEventListener('mousemove',  draw);
-  photoCanvas.addEventListener('mouseup',    endDraw);
-  photoCanvas.addEventListener('mouseleave', endDraw);
-
-  // Touch
-  photoCanvas.addEventListener('touchstart', startDraw,        { passive: false });
-  photoCanvas.addEventListener('touchmove',  draw,             { passive: false });
-  photoCanvas.addEventListener('touchend',   endDraw,          { passive: false });
-
-  // Pot de pintura
-  photoCanvas.addEventListener('click',      handleFillClick);
-  photoCanvas.addEventListener('touchend',   fillTouchHandler, { passive: false });
+  // Registrar
+  photoCanvas.addEventListener('mousedown',  onStart);
+  photoCanvas.addEventListener('mousemove',  onMove);
+  photoCanvas.addEventListener('mouseup',    onEnd);
+  photoCanvas.addEventListener('mouseleave', onEnd);
+  photoCanvas.addEventListener('touchstart', onStart,    { passive: false });
+  photoCanvas.addEventListener('touchmove',  onMove,     { passive: false });
+  photoCanvas.addEventListener('touchend',   onEnd,      { passive: false });
+  photoCanvas.addEventListener('click',      onClickFill);
+  photoCanvas.addEventListener('touchend',   fillTouchH, { passive: false });
 }
+
+
+// ── ACCIONS FOTO ACTUAL ────────────────────────────────────────────────────
+async function deleteCurrentPhoto() {
+  if (!window.currentClientPhotos) return;
+  const photo = window.currentClientPhotos[currentLightboxIndex];
+  if (!photo) return;
+  closeLightbox();
+  await confirmDeleteFile(photo);
+}
+window.deleteCurrentPhoto = deleteCurrentPhoto;
+
+function downloadCurrentPhoto() {
+  if (!photoCanvas) return;
+  const a = document.createElement('a');
+  a.href = photoCanvas.toDataURL('image/jpeg', 0.95);
+  a.download = 'foto_' + Date.now() + '.jpg';
+  a.click();
+}
+window.downloadCurrentPhoto = downloadCurrentPhoto;
+
+function shareCurrentPhoto() {
+  if (!photoCanvas) return;
+  photoCanvas.toBlob(async (blob) => {
+    const file = new File([blob], 'foto.jpg', { type: 'image/jpeg' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'Foto FocusWork' }); }
+      catch(e) { if (e.name !== 'AbortError') console.error(e); }
+    } else {
+      // Fallback: descarregar
+      downloadCurrentPhoto();
+    }
+  }, 'image/jpeg', 0.95);
+}
+window.shareCurrentPhoto = shareCurrentPhoto;
+// ──────────────────────────────────────────────────────────────────────────
 
 // Exportar funcions
 window.toggleDrawing = toggleDrawing;

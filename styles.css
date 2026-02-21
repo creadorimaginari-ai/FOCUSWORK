@@ -1477,3 +1477,150 @@ textarea:focus-visible {
 .color-picker-mini {
   flex-shrink: 0 !important;
 }
+
+
+/* ═══════════════════════════════════════════
+   EDITOR TOOLBAR — GRID FIX 4 COLUMNES
+   ═══════════════════════════════════════════ */
+
+.editor-toolbar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 10px;
+  background: rgba(0,0,0,0.88);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 10004;
+  position: relative;
+}
+
+/* Colors rodons */
+.etb-color {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  min-height: 34px;
+}
+.etb-color:hover,
+.etb-color:active  { transform: scale(1.15); }
+.etb-color.active  { border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.4); }
+
+/* Slider de mida */
+.etb-slider-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.etb-slider {
+  width: 100%;
+  accent-color: #f97316;
+  cursor: pointer;
+}
+
+/* Botons acció */
+.etb-btn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #f1f5f9;
+  border-radius: 8px;
+  padding: 8px 4px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: background 0.15s, transform 0.1s;
+  min-height: 38px;
+  white-space: nowrap;
+}
+.etb-btn:hover  { background: rgba(255,255,255,0.14); }
+.etb-btn:active { transform: scale(0.96); }
+
+/* Botó actiu (llapis / omplir) */
+.etb-btn.active {
+  background: rgba(249, 115, 22, 0.35);
+  border-color: rgba(249, 115, 22, 0.6);
+  color: #fed7aa;
+}
+
+/* Guardar — verd */
+.etb-save {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  color: #6ee7b7 !important;
+  font-weight: 600;
+}
+.etb-save:hover { background: rgba(16, 185, 129, 0.32) !important; }
+
+/* Esborrar foto — vermell */
+.etb-danger {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #fca5a5 !important;
+}
+.etb-danger:hover { background: rgba(239, 68, 68, 0.28) !important; }
+
+
+/* ═══════════════════════════════════════
+   SELECTOR COLOR RGB + EINES NOVES
+   ═══════════════════════════════════════ */
+
+/* Cel·la del picker RGB */
+.etb-colorpicker-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  min-height: 34px;
+}
+.etb-colorpicker-wrap span {
+  font-size: 9px;
+  color: rgba(255,255,255,0.55);
+  pointer-events: none;
+  letter-spacing: 0.5px;
+  position: absolute;
+  bottom: 3px;
+}
+/* L'input color ocupa tota la cel·la */
+.etb-colorpicker-wrap input[type="color"] {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  opacity: 0.92;
+  border-radius: 8px;
+}
+/* Patch: alguns navegadors mostren borde blanc */
+.etb-colorpicker-wrap input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.etb-colorpicker-wrap input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
+.etb-colorpicker-wrap input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
+
+/* Label mida */
+.etb-label {
+  font-size: 9px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.4px;
+}
