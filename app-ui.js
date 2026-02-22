@@ -2587,6 +2587,8 @@ function initZoomSystem() {
       e.preventDefault();
       const t1 = e.touches[0], t2 = e.touches[1];
       lastTouchDistance = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+      // ✅ FIX: guardar la distància INICIAL del gest (referència fixa, sense drift)
+      window._initialTouchDistance = lastTouchDistance;
       lastTouchAngle    = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
       // Guardar angle i zoom d'INICI d'aquest gest (no resetar el total!)
       window._gestureBaseRot  = totalRotationDeg;
@@ -2605,10 +2607,12 @@ function initZoomSystem() {
       e.preventDefault();
       const t1 = e.touches[0], t2 = e.touches[1];
       const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-      // Zoom relatiu a la distància inicial del gest (sense drift acumulatiu)
-      if (lastTouchDistance > 0) {
+      // ✅ FIX: usar _initialTouchDistance (distància inicial FIXA del gest)
+      // en lloc de lastTouchDistance (que canvia cada frame i acumula errors)
+      const initDist = window._initialTouchDistance || lastTouchDistance;
+      if (initDist > 0) {
         currentZoom = Math.max(1, Math.min(5,
-          (window._gestureBaseZoom || currentZoom) * (dist / lastTouchDistance)
+          (window._gestureBaseZoom || currentZoom) * (dist / initDist)
         ));
         if (currentZoom === 1) { panX = 0; panY = 0; }
       }
@@ -2635,6 +2639,7 @@ function initZoomSystem() {
     lastTouchDistance   = 0;
     lastTouchAngle      = null;
     accumulatedRotation = 0;
+    window._initialTouchDistance = 0; // ✅ FIX: netejar distància inicial del gest
     // Consolidar: el proper gest partirà d'aquí
     window._gestureBaseRot  = totalRotationDeg;
     window._gestureBaseZoom = currentZoom;
@@ -3111,15 +3116,21 @@ function setupCanvasDrawing() {
     const ux  = dx * Math.cos(rad) - dy * Math.sin(rad);
     const uy  = dx * Math.sin(rad) + dy * Math.cos(rad);
 
-    // Mida de display del canvas-stack (sense rotació, però amb zoom)
+    // Mida de display del canvas-stack (sense rotació, sense zoom).
+    // getBoundingClientRect() ja retorna la mida visual escalada pel zoom CSS,
+    // per tant NO cal tornar a multiplicar per currentZoom (evita doble escala).
     const stack  = document.getElementById('canvasStack');
-    const dispW  = (parseFloat(stack && stack.style.width)  || photoCanvas.width)  * currentZoom;
-    const dispH  = (parseFloat(stack && stack.style.height) || photoCanvas.height) * currentZoom;
+    const dispW  = (parseFloat(stack && stack.style.width)  || photoCanvas.width);
+    const dispH  = (parseFloat(stack && stack.style.height) || photoCanvas.height);
+
+    // ux/uy estan en coordenades de pantalla des-rotades, però s'han de des-escalar pel zoom
+    const uxUnzoomed = ux / currentZoom;
+    const uyUnzoomed = uy / currentZoom;
 
     // Convertir de coordenades de display a píxels interns del canvas
     return {
-      x: (ux / dispW  + 0.5) * photoCanvas.width,
-      y: (uy / dispH  + 0.5) * photoCanvas.height
+      x: (uxUnzoomed / dispW  + 0.5) * photoCanvas.width,
+      y: (uyUnzoomed / dispH  + 0.5) * photoCanvas.height
     };
   }
 
