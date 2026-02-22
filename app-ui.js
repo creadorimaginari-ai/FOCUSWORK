@@ -2487,8 +2487,9 @@ let isRotating = false;
 // Aplicar rotació CSS temporal (suau, sense tocar el canvas)
 function applyCSSSmoothRotation(angle) {
   if (!photoCanvas) return;
-  const existingTransform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
-  photoCanvas.style.transform = existingTransform + ` rotate(${angle}deg)`;
+  const stack = document.getElementById('canvasStack') || photoCanvas;
+  stack.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom}) rotate(${angle}deg)`;
+  stack.style.transformOrigin = 'center center';
 }
 
 // Cremar la rotació CSS al canvas (quan l'usuari deixa anar els dits)
@@ -2563,8 +2564,13 @@ function resetZoom() {
 
 function applyZoomTransform() {
   if (!photoCanvas) return;
-  photoCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
-  photoCanvas.style.transformOrigin = 'center center';
+  // ✅ FIX ZOOM: transform al contenidor canvas-stack
+  // Així photoCanvas i drawingCanvas es mouen junts i les coordenades sempre coincideixen
+  const stack = document.getElementById('canvasStack') || photoCanvas;
+  stack.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+  stack.style.transformOrigin = 'center center';
+  // Treure transform individual del photoCanvas si n'hi havia
+  if (stack !== photoCanvas) photoCanvas.style.transform = '';
 }
 
 // Sistema d'inicialització de zoom
@@ -2968,6 +2974,7 @@ const TOOL_IDS = {
   rect:   'rectToggle',
   circle: 'circleToggle',
   line:   'lineToggle',
+  text:   'textToggle',
 };
 
 function setDrawTool(tool) {
@@ -3186,14 +3193,20 @@ function setupCanvasDrawing() {
     saveDrawState();
   }
 
-  // Fill sobre la capa de dibuix (no sobre la foto)
+  // Click: Fill o Text (eines no de traç)
   function onClickFill(e) {
-    if (currentTool !== 'fill') return;
+    const tool = currentTool;
+    if (tool !== 'fill' && tool !== 'text') return;
     e.preventDefault(); e.stopPropagation();
     const { x, y } = getPoint(e);
     const cx = Math.round(x), cy = Math.round(y);
-    if (cx >= 0 && cy >= 0 && cx < dc.width && cy < dc.height) {
-      floodFillLayer(dx, dc, cx, cy, drawColor);
+
+    if (tool === 'fill') {
+      if (cx >= 0 && cy >= 0 && cx < dc.width && cy < dc.height) {
+        floodFillLayer(dx, dc, cx, cy, drawColor);
+      }
+    } else if (tool === 'text') {
+      showTextInput(e.clientX, e.clientY, x, y, dx, dc);
     }
   }
 
@@ -3285,35 +3298,169 @@ window.toggleLayerVisibility = toggleLayerVisibility;
 
 // Flood fill sobre la capa de dibuix
 function floodFillLayer(ctx, canvas, startX, startY, fillColor) {
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imgData.data;
   const w = canvas.width, h = canvas.height;
+
+  // ✅ FIX FILL: composar foto + capa de dibuix en un canvas temporal
+  // Així el fill veu les línies de la foto original com a límits
+  const composite = document.createElement('canvas');
+  composite.width = w; composite.height = h;
+  const cx = composite.getContext('2d');
+  if (photoCanvas) cx.drawImage(photoCanvas, 0, 0);   // foto base (línies límit)
+  cx.drawImage(canvas, 0, 0);                          // capa de dibuix actual
+
+  const imgData = cx.getImageData(0, 0, w, h);
+  const data = imgData.data;
   const idx = (startY * w + startX) * 4;
   const tR = data[idx], tG = data[idx+1], tB = data[idx+2], tA = data[idx+3];
-  const tmp = document.createElement('canvas'); tmp.width = tmp.height = 1;
-  const tc = tmp.getContext('2d'); tc.fillStyle = fillColor; tc.fillRect(0,0,1,1);
+
+  const tmp = document.createElement('canvas');
+  tmp.width = tmp.height = 1;
+  const tc = tmp.getContext('2d');
+  tc.fillStyle = fillColor; tc.fillRect(0,0,1,1);
   const fc = tc.getImageData(0,0,1,1).data;
   const fR = fc[0], fG = fc[1], fB = fc[2];
-  const TOL = 30;
+
+  // Tolerància baixa per respectar línies de la foto
+  const TOL = 15;
   const match = i => Math.abs(data[i]-tR)<=TOL && Math.abs(data[i+1]-tG)<=TOL &&
                      Math.abs(data[i+2]-tB)<=TOL && Math.abs(data[i+3]-tA)<=TOL;
-  const stack = [[startX, startY]];
+
+  // Flood fill sobre el composite (per detectar límits)
+  const filled = new Uint8Array(w * h); // píxels a pintar
+  const stack  = [[startX, startY]];
   const visited = new Uint8Array(w * h);
   visited[startY*w+startX] = 1;
+
   while (stack.length) {
     const [x, y] = stack.pop();
     const i = (y*w+x)*4;
     if (!match(i)) continue;
-    data[i]=fR; data[i+1]=fG; data[i+2]=fB; data[i+3]=255;
+    filled[y*w+x] = 1;
     if (x>0   && !visited[y*w+x-1])   { visited[y*w+x-1]=1;   stack.push([x-1,y]); }
     if (x<w-1 && !visited[y*w+x+1])   { visited[y*w+x+1]=1;   stack.push([x+1,y]); }
     if (y>0   && !visited[(y-1)*w+x]) { visited[(y-1)*w+x]=1; stack.push([x,y-1]); }
     if (y<h-1 && !visited[(y+1)*w+x]) { visited[(y+1)*w+x]=1; stack.push([x,y+1]); }
   }
-  ctx.putImageData(imgData, 0, 0);
+
+  // Aplicar el color NOMÉS a la capa de dibuix (foto intacta)
+  const drawData = ctx.getImageData(0, 0, w, h);
+  const dd = drawData.data;
+  for (let i = 0; i < w*h; i++) {
+    if (!filled[i]) continue;
+    dd[i*4]   = fR;
+    dd[i*4+1] = fG;
+    dd[i*4+2] = fB;
+    dd[i*4+3] = 255;
+  }
+  ctx.putImageData(drawData, 0, 0);
   saveDrawState();
 }
 window.floodFillLayer = floodFillLayer;
+
+// ── EINA TEXT ───────────────────────────────────────────────────────────────
+function showTextInput(screenX, screenY, canvasX, canvasY, ctx, canvas) {
+  // Eliminar input anterior si existia
+  const old = document.getElementById('floatingTextInput');
+  if (old) old.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'floatingTextInput';
+  wrap.style.cssText = `
+    position: fixed;
+    left: ${screenX}px;
+    top:  ${screenY}px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(15,23,42,0.95);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    min-width: 220px;
+  `;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Escriu aquí...';
+  input.style.cssText = `
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    color: #f1f5f9;
+    padding: 6px 10px;
+    font-size: 14px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+  `;
+
+  // Slider mida text
+  const sizeRow = document.createElement('div');
+  sizeRow.style.cssText = 'display:flex; align-items:center; gap:6px;';
+  const sizeLabel = document.createElement('span');
+  sizeLabel.textContent = 'Mida';
+  sizeLabel.style.cssText = 'font-size:11px; color:rgba(255,255,255,0.5); white-space:nowrap;';
+  const sizeSlider = document.createElement('input');
+  sizeSlider.type = 'range'; sizeSlider.min = 10; sizeSlider.max = 120; sizeSlider.value = 28;
+  sizeSlider.style.cssText = 'flex:1; accent-color:#f97316;';
+  sizeRow.appendChild(sizeLabel); sizeRow.appendChild(sizeSlider);
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex; gap:6px;';
+
+  const okBtn = document.createElement('button');
+  okBtn.textContent = '✓ Afegir';
+  okBtn.style.cssText = `
+    flex:1; padding:6px; border-radius:6px; border:none; cursor:pointer;
+    background:#f97316; color:#fff; font-size:13px; font-weight:600;
+  `;
+  okBtn.onclick = () => {
+    const text = input.value.trim();
+    if (text) {
+      ctx.globalCompositeOperation = 'source-over';
+      const fontSize = parseInt(sizeSlider.value);
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.fillStyle  = drawColor;
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.lineWidth  = fontSize / 12;
+      // Ombra lleugera per llegibilitat
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur  = 4;
+      ctx.strokeText(text, canvasX, canvasY);
+      ctx.fillText(text, canvasX, canvasY);
+      ctx.shadowBlur = 0;
+      saveDrawState();
+    }
+    wrap.remove();
+  };
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = '✕';
+  cancelBtn.style.cssText = `
+    padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.07); color:#f1f5f9; cursor:pointer; font-size:13px;
+  `;
+  cancelBtn.onclick = () => wrap.remove();
+
+  btnRow.appendChild(okBtn); btnRow.appendChild(cancelBtn);
+  wrap.appendChild(input); wrap.appendChild(sizeRow); wrap.appendChild(btnRow);
+  document.body.appendChild(wrap);
+
+  // Ajustar posició perquè no surti de pantalla
+  requestAnimationFrame(() => {
+    const r = wrap.getBoundingClientRect();
+    if (r.right  > window.innerWidth)  wrap.style.left = (window.innerWidth  - r.width  - 10) + 'px';
+    if (r.bottom > window.innerHeight) wrap.style.top  = (window.innerHeight - r.height - 10) + 'px';
+    input.focus();
+  });
+
+  // Enter per confirmar
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') okBtn.click(); if (e.key === 'Escape') wrap.remove(); });
+}
+window.showTextInput = showTextInput;
+// ────────────────────────────────────────────────────────────────────────────
 
 window.clearDrawing = clearDrawing;
 window.saveEditedPhoto = saveEditedPhoto;

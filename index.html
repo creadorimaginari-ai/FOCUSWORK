@@ -1206,12 +1206,12 @@ function setupProgressListeners() {
   <button class="etb-btn" onclick="setDrawTool('eraser')" id="eraserToggle">🧹</button>
   <button class="etb-btn" onclick="undoDraw()">↶</button>
 
-  <!-- FILA 2: Formes + Capes + Accions -->
-  <button class="etb-btn" onclick="setDrawTool('fill')" id="fillToggle">🪣</button>
-  <button class="etb-btn" onclick="setDrawTool('rect')" id="rectToggle">⬜</button>
-  <button class="etb-btn" onclick="setDrawTool('circle')" id="circleToggle">⭕</button>
-  <button class="etb-btn" onclick="setDrawTool('line')" id="lineToggle">╱</button>
-  <button class="etb-btn etb-layer" onclick="clearDrawingLayer()" title="Netejar capa de dibuix">⬜✕</button>
+  <!-- FILA 2: Formes + Text + Capes -->
+  <button class="etb-btn" onclick="setDrawTool('fill')" id="fillToggle" title="Omplir">🪣</button>
+  <button class="etb-btn" onclick="setDrawTool('rect')" id="rectToggle" title="Rectangle">⬜</button>
+  <button class="etb-btn" onclick="setDrawTool('circle')" id="circleToggle" title="Cercle">⭕</button>
+  <button class="etb-btn" onclick="setDrawTool('line')" id="lineToggle" title="Línia">╱</button>
+  <button class="etb-btn" onclick="setDrawTool('text')" id="textToggle" title="Text">𝐓</button>
   <button class="etb-btn" onclick="toggleLayerVisibility()" id="layerVisBtn" title="Mostrar/ocultar dibuixos">👁</button>
 
   <!-- FILA 3: Guardar + Esborrar + Baixar -->
