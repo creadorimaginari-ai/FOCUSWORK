@@ -2075,6 +2075,7 @@ function openLightbox(photos, index) {
     setTimeout(() => {
       if (typeof initZoomSystem === 'function') initZoomSystem();
       if (typeof initRotateKnob === 'function') initRotateKnob();
+      if (typeof startPhotoSync === 'function') startPhotoSync();
     }, 300);
     
     document.body.style.overflow = 'hidden';
@@ -2099,6 +2100,7 @@ function openLightboxById(photoId) {
 }
 
 function closeLightbox() {
+  if (typeof stopPhotoSync === 'function') stopPhotoSync();
   const lightbox = $('lightbox');
   if (lightbox) {
     lightbox.classList.remove('active');
@@ -2153,6 +2155,8 @@ if (photoCanvas && photoCtx) {
 
     // Reset rotació i historial per la nova foto
     totalRotationDeg = 0;
+    window._gestureBaseRot  = 0;
+    window._gestureBaseZoom = 1;
     drawHistory = [];
     saveDrawState();
     
@@ -2578,63 +2582,46 @@ function initZoomSystem() {
 
   // Touch pinch zoom + rotació amb dos dits
   const touchStartHandler = (e) => {
-    // Amb 2 dits: sempre zoom/rotació (fins i tot en mode dibuix)
     if (e.touches.length === 1 && drawingEnabled) return;
     if (e.touches.length === 2) {
       e.preventDefault();
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      lastTouchDistance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-      );
-      // Guardar angle inicial per detectar rotació
-      lastTouchAngle = Math.atan2(
-        touch2.clientY - touch1.clientY,
-        touch2.clientX - touch1.clientX
-      );
-      accumulatedRotation = 0;
+      const t1 = e.touches[0], t2 = e.touches[1];
+      lastTouchDistance = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+      lastTouchAngle    = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
+      // Guardar angle i zoom d'INICI d'aquest gest (no resetar el total!)
+      window._gestureBaseRot  = totalRotationDeg;
+      window._gestureBaseZoom = currentZoom;
+      accumulatedRotation     = 0;
     } else if (e.touches.length === 1 && currentZoom > 1) {
       isPanning = true;
       startPanX = e.touches[0].clientX - panX;
       startPanY = e.touches[0].clientY - panY;
     }
   };
-  
+
   const touchMoveHandler = (e) => {
-    // ✅ FIX: 2 dits = sempre zoom/rotació, independentment de si s'està dibuixant
-    // Només el pan d'1 dit es bloqueja quan drawingEnabled
     if (e.touches.length === 1 && drawingEnabled) return;
     if (e.touches.length === 2) {
       e.preventDefault();
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const newDistance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-      );
-      
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+      // Zoom relatiu a la distància inicial del gest (sense drift acumulatiu)
       if (lastTouchDistance > 0) {
-        const zoomDelta = newDistance / lastTouchDistance;
-        currentZoom = Math.max(1, Math.min(5, currentZoom * zoomDelta));
+        currentZoom = Math.max(1, Math.min(5,
+          (window._gestureBaseZoom || currentZoom) * (dist / lastTouchDistance)
+        ));
         if (currentZoom === 1) { panX = 0; panY = 0; }
-        applyZoomTransform();
       }
-      lastTouchDistance = newDistance;
-
-      // ✅ Rotació CSS fluida amb dos dits (sense snap)
+      lastTouchDistance = dist;
+      // Rotació: sumar delta sobre l'angle base d'inici del gest
       if (lastTouchAngle !== null) {
-        const newAngle = Math.atan2(
-          touch2.clientY - touch1.clientY,
-          touch2.clientX - touch1.clientX
-        );
-        const angleDelta = (newAngle - lastTouchAngle) * (180 / Math.PI);
-        accumulatedRotation += angleDelta;
-        lastTouchAngle = newAngle;
-        totalRotationDeg = accumulatedRotation;
-        isRotating = true;
-        applyRotationTransform();
+        const ang   = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
+        const delta = (ang - lastTouchAngle) * (180 / Math.PI);
+        accumulatedRotation += delta;
+        lastTouchAngle       = ang;
+        totalRotationDeg     = (window._gestureBaseRot || 0) + accumulatedRotation;
       }
+      applyZoomTransform();
     } else if (isPanning && e.touches.length === 1) {
       e.preventDefault();
       panX = e.touches[0].clientX - startPanX;
@@ -2642,15 +2629,15 @@ function initZoomSystem() {
       applyZoomTransform();
     }
   };
-  
-  const touchEndHandler = (e) => {
-    // ✅ FIX: NO retornar si drawingEnabled — la rotació/zoom de 2 dits sempre s'ha de cremar
-    isPanning = false;
-    lastTouchDistance = 0;
-    // Rotació acumulada ja aplicada com a CSS — res a "cremar"
+
+  const touchEndHandler = () => {
+    isPanning           = false;
+    lastTouchDistance   = 0;
     lastTouchAngle      = null;
     accumulatedRotation = 0;
-    isRotating          = false;
+    // Consolidar: el proper gest partirà d'aquí
+    window._gestureBaseRot  = totalRotationDeg;
+    window._gestureBaseZoom = currentZoom;
     applyZoomTransform();
   };
   
@@ -3103,18 +3090,36 @@ function setupCanvasDrawing() {
   let snapShot   = null; // snapshot de la CAPA DE DIBUIX per formes
 
   function getPoint(e) {
-    // drawingCanvas és qui rep els events.
-    // getBoundingClientRect() inclou tot: zoom, pan, rotació CSS del canvas-stack.
-    const dc    = window.drawingCanvas || photoCanvas;
-    const rect  = dc.getBoundingClientRect();
-    const src   = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : null);
+    const src = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : null);
     const clientX = src ? src.clientX : e.clientX;
     const clientY = src ? src.clientY : e.clientY;
-    // dc.width = photoCanvas.width (pixels interns)
-    // rect.width = mida visual a pantalla (inclou zoom)
+
+    // canvas-stack té: translate + scale + rotate
+    // getBoundingClientRect() del drawingCanvas retorna el bounding box ROTAT.
+    // El centre del bounding box = centre del canvas a pantalla (sempre, independentment de la rotació).
+    const dc   = window.drawingCanvas || photoCanvas;
+    const rect = dc.getBoundingClientRect();
+    const cx   = rect.left + rect.width  / 2;   // centre pantalla
+    const cy   = rect.top  + rect.height / 2;
+
+    // Punt relatiu al centre
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+
+    // Des-rotar: aplicar -totalRotationDeg per obtenir coordenades en l'espai del canvas
+    const rad = -(totalRotationDeg || 0) * Math.PI / 180;
+    const ux  = dx * Math.cos(rad) - dy * Math.sin(rad);
+    const uy  = dx * Math.sin(rad) + dy * Math.cos(rad);
+
+    // Mida de display del canvas-stack (sense rotació, però amb zoom)
+    const stack  = document.getElementById('canvasStack');
+    const dispW  = (parseFloat(stack && stack.style.width)  || photoCanvas.width)  * currentZoom;
+    const dispH  = (parseFloat(stack && stack.style.height) || photoCanvas.height) * currentZoom;
+
+    // Convertir de coordenades de display a píxels interns del canvas
     return {
-      x: (clientX - rect.left) * (photoCanvas.width  / rect.width),
-      y: (clientY - rect.top)  * (photoCanvas.height / rect.height)
+      x: (ux / dispW  + 0.5) * photoCanvas.width,
+      y: (uy / dispH  + 0.5) * photoCanvas.height
     };
   }
 
@@ -3544,6 +3549,56 @@ window.initRotateKnob = initRotateKnob;
 
 window.clearDrawing = clearDrawing;
 window.saveEditedPhoto = saveEditedPhoto;
+
+// ── SYNC ENTRE DISPOSITIUS ──────────────────────────────────────────────────
+// Quan el lightbox és obert, comprova cada 15s si la foto ha canviat a Supabase.
+// Si la URL ha canviat (un altre dispositiu ha guardat), recarrega silenciosament.
+let _syncInterval = null;
+
+function startPhotoSync() {
+  stopPhotoSync();
+  _syncInterval = setInterval(async () => {
+    if (!state.currentClientId || currentLightboxIndex < 0) return;
+    const photo = (window.currentClientPhotos || [])[currentLightboxIndex];
+    if (!photo) return;
+    try {
+      const fresh = await loadClient(state.currentClientId);
+      if (!fresh) return;
+      const allFresh = [
+        ...(fresh.photos || []).map(p => ({ ...p, type: 'image' })),
+        ...(fresh.files  || [])
+      ].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const freshPhoto = allFresh.find(f => f.id === photo.id);
+      if (!freshPhoto) return;
+      const freshUrl = freshPhoto.url || freshPhoto.data;
+      const currUrl  = photo.url      || photo.data;
+      if (freshUrl && freshUrl !== currUrl) {
+        // La foto ha canviat en un altre dispositiu — recarregar
+        photo.url  = freshPhoto.url;
+        photo.data = freshPhoto.data;
+        const img  = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          if (!photoCanvas || !photoCtx) return;
+          photoCanvas.width  = img.width;
+          photoCanvas.height = img.height;
+          photoCtx.drawImage(img, 0, 0);
+          syncDrawingCanvasSize();
+          fitPhotoInContainer();
+          applyZoomTransform();
+        };
+        img.src = freshUrl;
+      }
+    } catch (e) { /* silenciós */ }
+  }, 15000);
+}
+
+function stopPhotoSync() {
+  if (_syncInterval) { clearInterval(_syncInterval); _syncInterval = null; }
+}
+window.startPhotoSync = startPhotoSync;
+window.stopPhotoSync  = stopPhotoSync;
+// ────────────────────────────────────────────────────────────────────────────
 window.savePhotoComment = savePhotoComment;
   
 // Exportar funcions globals
