@@ -2505,25 +2505,37 @@ function commitRotationToCanvas() {
   const rad = (deg * Math.PI) / 180;
   const oldW = photoCanvas.width;
   const oldH = photoCanvas.height;
-
-  // Mida del nou canvas per contenir la imatge rotada
   const newW = Math.round(Math.abs(oldW * Math.cos(rad)) + Math.abs(oldH * Math.sin(rad)));
   const newH = Math.round(Math.abs(oldW * Math.sin(rad)) + Math.abs(oldH * Math.cos(rad)));
 
-  const tmp = document.createElement('canvas');
-  tmp.width  = oldW;
-  tmp.height = oldH;
-  tmp.getContext('2d').drawImage(photoCanvas, 0, 0);
-
-  photoCanvas.width  = newW;
-  photoCanvas.height = newH;
+  // ── Rotar photoCanvas ──────────────────────────────────────────────────
+  const tmpPhoto = document.createElement('canvas');
+  tmpPhoto.width = oldW; tmpPhoto.height = oldH;
+  tmpPhoto.getContext('2d').drawImage(photoCanvas, 0, 0);
+  photoCanvas.width = newW; photoCanvas.height = newH;
   photoCtx.save();
   photoCtx.translate(newW / 2, newH / 2);
   photoCtx.rotate(rad);
-  photoCtx.drawImage(tmp, -oldW / 2, -oldH / 2);
+  photoCtx.drawImage(tmpPhoto, -oldW / 2, -oldH / 2);
   photoCtx.restore();
 
-  // Treure CSS rotation (ja cremada)
+  // ── Rotar drawingCanvas (capa de dibuix) ──────────────────────────────
+  const dc = window.drawingCanvas;
+  const dx = window.drawingCtx;
+  if (dc && dx) {
+    const tmpDraw = document.createElement('canvas');
+    tmpDraw.width = oldW; tmpDraw.height = oldH;
+    tmpDraw.getContext('2d').drawImage(dc, 0, 0);
+    dc.width = newW; dc.height = newH;
+    dx.save();
+    dx.translate(newW / 2, newH / 2);
+    dx.rotate(rad);
+    dx.drawImage(tmpDraw, -oldW / 2, -oldH / 2);
+    dx.restore();
+    // Resincronitzar mides CSS del drawingCanvas
+    syncDrawingCanvasSize();
+  }
+
   applyZoomTransform();
   saveDrawState();
 }
@@ -2760,15 +2772,21 @@ function initPhotoCanvas() {
 // Sincronitzar mida del canvas de dibuix amb el de la foto
 function syncDrawingCanvasSize() {
   if (!window.drawingCanvas || !photoCanvas) return;
-  // ✅ FIX: copiar mides internes exactes (píxels reals, no CSS)
+  // Mides internes (píxels reals del canvas)
   window.drawingCanvas.width  = photoCanvas.width;
   window.drawingCanvas.height = photoCanvas.height;
-  // Forçar que el drawingCanvas ocupi exactament el mateix espai visual
-  // usant style width/height en píxels (no %) per evitar escala CSS
-  window.drawingCanvas.style.width  = photoCanvas.offsetWidth  + 'px';
-  window.drawingCanvas.style.height = photoCanvas.offsetHeight + 'px';
-  window.drawingCanvas.style.left   = photoCanvas.offsetLeft   + 'px';
-  window.drawingCanvas.style.top    = photoCanvas.offsetTop    + 'px';
+  // ✅ Mides CSS = mides naturals del photoCanvas sense transform
+  // NO usem offsetWidth perquè inclou l'efecte del transform CSS (zoom/rotació)
+  // El drawingCanvas ha d'ocupar exactament el mateix espai que photoCanvas
+  // dins del canvas-stack ABANS del transform — el transform el fa el contenidor.
+  window.drawingCanvas.style.width  = photoCanvas.naturalWidth  ? photoCanvas.naturalWidth  + 'px'
+                                     : photoCanvas.width  + 'px';
+  window.drawingCanvas.style.height = photoCanvas.naturalHeight ? photoCanvas.naturalHeight + 'px'
+                                     : photoCanvas.height + 'px';
+  window.drawingCanvas.style.left   = '0px';
+  window.drawingCanvas.style.top    = '0px';
+  window.drawingCanvas.style.width  = photoCanvas.width  + 'px';
+  window.drawingCanvas.style.height = photoCanvas.height + 'px';
 }
 
 function toggleDrawing() {
@@ -3211,7 +3229,9 @@ function setupCanvasDrawing() {
   }
 
   const fillTouchH = (e) => {
-    if (currentTool !== 'fill' || e.changedTouches?.length !== 1) return;
+    if (currentTool !== 'fill' && currentTool !== 'text') return;
+    if (e.changedTouches?.length !== 1) return;
+    // Evitar que dispari si ha estat un gest llarg (rotació/zoom)
     e.preventDefault();
     const t = e.changedTouches[0];
     onClickFill({ clientX: t.clientX, clientY: t.clientY, preventDefault:()=>{}, stopPropagation:()=>{} });
