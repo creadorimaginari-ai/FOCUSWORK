@@ -2553,6 +2553,9 @@ function rotatePhoto(degrees) {
   cssRotationAngle = degrees;
   commitRotationToCanvas();
   resetZoom();
+  // Recalcular mida DESPRÉS del resetZoom (el zoom reset fa applyZoomTransform
+  // però les noves dimensions ja estan al canvas)
+  fitPhotoInContainer();
 }
 window.rotatePhoto = rotatePhoto;
 
@@ -2788,7 +2791,7 @@ function fitPhotoInContainer() {
   const nH   = photoCanvas.height;
   if (!nW || !nH) return;
 
-  const scale = Math.min(maxW / nW, maxH / nH, 1);  // mai més gran que natiu
+  const scale = Math.min(maxW / nW, maxH / nH);  // sempre omple l'espai disponible
   const dispW = Math.round(nW * scale);
   const dispH = Math.round(nH * scale);
 
@@ -4042,12 +4045,13 @@ async function renderFileGallery(preloadedClient = null) {
     });
   }
   
-  // Afegir arxius nous
+  // Afegir arxius nous (evitar duplicats per ID)
   if (client && client.files && client.files.length > 0) {
-    allFiles.push(...client.files);
+    const existingIds = new Set(allFiles.map(f => f.id));
+    client.files.forEach(f => { if (!existingIds.has(f.id)) allFiles.push(f); });
   }
-  
-  // ✅ Ordenar y guardar el array ordenado globalmente
+
+  // Ordenar i guardar globalment
   const sortedFiles = allFiles.sort((a, b) => new Date(b.date) - new Date(a.date));
   window.currentClientFiles = sortedFiles;
   

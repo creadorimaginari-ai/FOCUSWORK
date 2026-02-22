@@ -1241,8 +1241,10 @@ textarea:focus-visible {
   border-top: 1px solid rgba(255,255,255,0.08) !important;
   flex: 0 0 auto !important;
   width: 100% !important;
+  max-width: 600px !important;      /* no full-width al PC */
+  margin: 0 auto !important;        /* centrat */
   box-sizing: border-box !important;
-  max-height: 160px !important; /* 3 files × 38 + gaps + padding */
+  max-height: 160px !important;
   overflow: hidden !important;
   z-index: 10004 !important;
 }
@@ -1256,7 +1258,18 @@ textarea:focus-visible {
 }
 
 .etb-btn {
-  font-size: 15px !important; /* icones grans, text eliminat */
+  font-size: 15px !important;
+  display: flex !important;
+  align-items: center !important;     /* centrat vertical */
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+/* Mòbil: toolbar ocupa tot l'ample */
+@media (max-width: 640px) {
+  .editor-toolbar-grid {
+    max-width: 100% !important;
+  }
 }
 
 /* Botó capa actiu (layer visible/ocult) */
