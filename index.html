@@ -1180,54 +1180,45 @@ function setupProgressListeners() {
   
  <div class="lightbox-canvas-container">
   <button class="lightbox-nav lightbox-nav-prev" onclick="prevPhoto()">‹</button>
-  <canvas id="photoCanvas"></canvas>
+  <div class="canvas-stack" id="canvasStack">
+    <!-- Capa base: la foto original (mai es toca excepte al guardar) -->
+    <canvas id="photoCanvas"></canvas>
+    <!-- Capa de dibuix: tot el que dibuixes va aquí -->
+    <canvas id="drawingCanvas"></canvas>
+  </div>
   <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
 </div>
 
-<!-- Toolbar d'edició — grid fix 4 columnes -->
+<!-- Toolbar compacte — 2 files, 6 columnes -->
 <div class="editor-toolbar-grid">
 
-  <!-- FILA 1: Colors ràpids + selector RGB -->
-  <button class="etb-color active" style="background:#ef4444;" onclick="setDrawColor('#ef4444')" data-color="#ef4444"></button>
-  <button class="etb-color" style="background:#f59e0b;" onclick="setDrawColor('#f59e0b')" data-color="#f59e0b"></button>
-  <button class="etb-color" style="background:#10b981;" onclick="setDrawColor('#10b981')" data-color="#10b981"></button>
-  <button class="etb-color" style="background:#3b82f6;" onclick="setDrawColor('#3b82f6')" data-color="#3b82f6"></button>
-
-  <button class="etb-color" style="background:#ffffff;" onclick="setDrawColor('#ffffff')" data-color="#ffffff"></button>
-  <button class="etb-color" style="background:#000000;" onclick="setDrawColor('#000000')" data-color="#000000"></button>
-  <button class="etb-color" style="background:#f97316;" onclick="setDrawColor('#f97316')" data-color="#f97316"></button>
-
-  <!-- Selector RGB complet — ocupa 1 cel·la -->
-  <div class="etb-colorpicker-wrap">
+  <!-- FILA 1: Color + Mida + Eines dibuix -->
+  <div class="etb-colorpicker-wrap" title="Color">
     <input type="color" id="rgbColorPicker" value="#ef4444"
-           oninput="setDrawColorFromPicker(this.value)"
-           title="Selector de color RGB complet">
-    <span>RGB</span>
+           oninput="setDrawColorFromPicker(this.value)">
+    <span>Color</span>
   </div>
-
-  <!-- FILA 3: Slider mida + Desfer + Netejar -->
   <div class="etb-slider-wrap" style="grid-column: span 2;">
     <span class="etb-label">Mida</span>
     <input type="range" class="etb-slider" min="2" max="60" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
   </div>
-  <button class="etb-btn" onclick="undoDraw()">↶ Desfer</button>
-  <button class="etb-btn" onclick="clearDrawing()">✕ Canvas</button>
+  <button class="etb-btn" onclick="setDrawTool('pencil')" id="drawToggle">✏️</button>
+  <button class="etb-btn" onclick="setDrawTool('eraser')" id="eraserToggle">🧹</button>
+  <button class="etb-btn" onclick="undoDraw()">↶</button>
 
-  <!-- FILA 4: Eines de dibuix -->
-  <button class="etb-btn" onclick="setDrawTool('pencil')" id="drawToggle">✏️ Llapis</button>
-  <button class="etb-btn" onclick="setDrawTool('eraser')" id="eraserToggle">🧹 Goma</button>
-  <button class="etb-btn" onclick="setDrawTool('fill')" id="fillToggle">🪣 Omplir</button>
-  <button class="etb-btn" onclick="setDrawTool('rect')" id="rectToggle">⬜ Rect.</button>
+  <!-- FILA 2: Formes + Capes + Accions -->
+  <button class="etb-btn" onclick="setDrawTool('fill')" id="fillToggle">🪣</button>
+  <button class="etb-btn" onclick="setDrawTool('rect')" id="rectToggle">⬜</button>
+  <button class="etb-btn" onclick="setDrawTool('circle')" id="circleToggle">⭕</button>
+  <button class="etb-btn" onclick="setDrawTool('line')" id="lineToggle">╱</button>
+  <button class="etb-btn etb-layer" onclick="clearDrawingLayer()" title="Netejar capa de dibuix">⬜✕</button>
+  <button class="etb-btn" onclick="toggleLayerVisibility()" id="layerVisBtn" title="Mostrar/ocultar dibuixos">👁</button>
 
-  <!-- FILA 5: Formes i guardar -->
-  <button class="etb-btn" onclick="setDrawTool('circle')" id="circleToggle">⭕ Cercle</button>
-  <button class="etb-btn" onclick="setDrawTool('line')" id="lineToggle">╱ Línia</button>
+  <!-- FILA 3: Guardar + Esborrar + Baixar -->
   <button class="etb-btn etb-save" onclick="saveEditedPhoto()" style="grid-column: span 2;">💾 Guardar</button>
-
-  <!-- FILA 6: Gestió foto -->
-  <button class="etb-btn etb-danger" onclick="deleteCurrentPhoto()" style="grid-column: span 2;">🗑️ Esborrar foto</button>
-  <button class="etb-btn" onclick="downloadCurrentPhoto()">⬇️ Baixar</button>
-  <button class="etb-btn" onclick="shareCurrentPhoto()">📤 Comp.</button>
+  <button class="etb-btn etb-danger" onclick="deleteCurrentPhoto()" style="grid-column: span 2;">🗑️ Foto</button>
+  <button class="etb-btn" onclick="downloadCurrentPhoto()">⬇️</button>
+  <button class="etb-btn" onclick="shareCurrentPhoto()">📤</button>
 
 </div>
   

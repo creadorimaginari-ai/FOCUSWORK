@@ -2141,11 +2141,17 @@ if (photoCanvas && photoCtx) {
     photoCanvas.width = img.width;
     photoCanvas.height = img.height;
     photoCtx.drawImage(img, 0, 0);
-    
+
+    // ✅ CAPA: sincronitzar mida del canvas de dibuix i netejar-lo
+    syncDrawingCanvasSize();
+    if (window.drawingCtx) {
+      window.drawingCtx.clearRect(0, 0, window.drawingCanvas.width, window.drawingCanvas.height);
+    }
+
     // Guardar foto original
-    originalPhotoData = getPhotoSrc(photo);   // ✅ suporta URL Supabase i base64 local
-    
-    // Iniciar historial
+    originalPhotoData = getPhotoSrc(photo);
+
+    // Iniciar historial (de la capa de dibuix)
     currentRotation = 0;
     drawHistory = [];
     saveDrawState();
@@ -2732,25 +2738,24 @@ window.resetZoom = resetZoom;
 
 function initPhotoCanvas() {
   photoCanvas = document.getElementById('photoCanvas');
-  
-  if (!photoCanvas) {
-    console.error('❌ photoCanvas not found!');
-    return;
-  }
-  
-  // Assegurar visibilitat
+  if (!photoCanvas) { console.error('❌ photoCanvas not found!'); return; }
   photoCanvas.style.display = 'block';
-  photoCanvas.style.visibility = 'visible';
-  photoCanvas.style.opacity = '1';
-  
   photoCtx = photoCanvas.getContext('2d');
-  
-  if (!photoCtx) {
-    console.error('❌ No canvas context!');
-    return;
+  if (!photoCtx) { console.error('❌ No canvas context!'); return; }
+
+  // ✅ CAPA DE DIBUIX — canvas separat sobre la foto
+  window.drawingCanvas = document.getElementById('drawingCanvas');
+  if (window.drawingCanvas) {
+    window.drawingCtx = window.drawingCanvas.getContext('2d');
   }
-  
-  console.log('✅ Canvas OK');
+  console.log('✅ Canvas + DrawingLayer OK');
+}
+
+// Sincronitzar mida del canvas de dibuix amb el de la foto
+function syncDrawingCanvasSize() {
+  if (!window.drawingCanvas || !photoCanvas) return;
+  window.drawingCanvas.width  = photoCanvas.width;
+  window.drawingCanvas.height = photoCanvas.height;
 }
 
 function toggleDrawing() {
@@ -2789,11 +2794,11 @@ function updateDrawSize(size) {
 }
 
 function saveDrawState() {
-  if (!photoCanvas) return;
-  drawHistory.push(photoCanvas.toDataURL());
-  if (drawHistory.length > 20) {
-    drawHistory.shift();
-  }
+  // ✅ CAPA: guardar estat del drawingCanvas (no de la foto)
+  const dc = window.drawingCanvas || photoCanvas;
+  if (!dc) return;
+  drawHistory.push(dc.toDataURL());
+  if (drawHistory.length > 20) drawHistory.shift();
 }
 
 function undoDraw() {
@@ -2802,8 +2807,10 @@ function undoDraw() {
     const previousState = drawHistory[drawHistory.length - 1];
     const img = new Image();
     img.onload = () => {
-      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
-      photoCtx.drawImage(img, 0, 0);
+      const dc = window.drawingCanvas || photoCanvas;
+      const dx = window.drawingCtx    || photoCtx;
+      dx.clearRect(0, 0, dc.width, dc.height);
+      dx.drawImage(img, 0, 0);
     };
     img.src = previousState;
   }
@@ -2842,7 +2849,14 @@ async function saveEditedPhoto() {
   if (!confirmed) return;
   
   try {
-    const editedData = photoCanvas.toDataURL('image/jpeg', 0.85);
+    // ✅ CAPA: fusionar foto base + capa de dibuix
+    const mergedCanvas = document.createElement('canvas');
+    mergedCanvas.width  = photoCanvas.width;
+    mergedCanvas.height = photoCanvas.height;
+    const mergedCtx = mergedCanvas.getContext('2d');
+    mergedCtx.drawImage(photoCanvas, 0, 0);
+    if (window.drawingCanvas) mergedCtx.drawImage(window.drawingCanvas, 0, 0);
+    const editedData = mergedCanvas.toDataURL('image/jpeg', 0.85);
     const photo = window.currentClientPhotos[currentLightboxIndex];
     const clientId = state.currentClientId;
 
@@ -2950,27 +2964,24 @@ const TOOL_IDS = {
 };
 
 function setDrawTool(tool) {
-  // Toggle: si ja estava activa, desactivar
   if (currentTool === tool) tool = 'none';
   currentTool = tool;
   drawingEnabled  = (tool === 'pencil' || tool === 'eraser');
   fillModeEnabled = (tool === 'fill');
 
-  // Actualitzar cursor i pointerEvents
-  if (photoCanvas) {
-    photoCanvas.style.pointerEvents = (tool !== 'none') ? 'auto' : 'auto';
-    photoCanvas.style.cursor = (tool === 'none') ? 'default' : 'crosshair';
-    photoCanvas.classList.toggle('drawing-mode', tool === 'pencil' || tool === 'eraser');
+  // ✅ CAPA: activar/desactivar drawingCanvas per als events
+  const dc = window.drawingCanvas;
+  if (dc) {
+    const active = tool !== 'none';
+    dc.classList.toggle('tool-active', active);
+    dc.style.pointerEvents = active ? 'auto' : 'none';
+    dc.style.cursor = active ? 'crosshair' : 'default';
   }
 
-  // Highlight botó actiu
+  // Highlight botons
   Object.entries(TOOL_IDS).forEach(([t, id]) => {
-    const btn = document.getElementById(id);
-    btn?.classList.toggle('active', t === tool);
+    document.getElementById(id)?.classList.toggle('active', t === tool);
   });
-  // Compat: mantenir drawToggle sense id duplicat
-  const dt = document.getElementById('drawToggle');
-  if (dt) dt.classList.toggle('active', tool === 'pencil');
 }
 window.setDrawTool = setDrawTool;
 
@@ -3070,130 +3081,107 @@ function handleFillClick(e) {
 function setupCanvasDrawing() {
   if (!photoCanvas || !photoCtx) return;
 
+  // ✅ CAPA: els events van al drawingCanvas, no al photoCanvas
+  const dc = window.drawingCanvas || photoCanvas;
+  const dx = window.drawingCtx    || photoCtx;
+
   // Netejar listeners anteriors
-  if (photoCanvas._drawHandlers) {
-    const h = photoCanvas._drawHandlers;
-    ['mousedown','mousemove','mouseup','mouseleave'].forEach(ev =>
-      photoCanvas.removeEventListener(ev, h[ev])
-    );
-    photoCanvas.removeEventListener('touchstart', h.touchstart);
-    photoCanvas.removeEventListener('touchmove',  h.touchmove);
-    photoCanvas.removeEventListener('touchend',   h.touchend);
-    photoCanvas.removeEventListener('click',      h.click);
-    photoCanvas.removeEventListener('touchend',   h.fillTouch);
+  if (dc._drawHandlers) {
+    const h = dc._drawHandlers;
+    ['mousedown','mousemove','mouseup','mouseleave'].forEach(ev => dc.removeEventListener(ev, h[ev]));
+    dc.removeEventListener('touchstart', h.touchstart);
+    dc.removeEventListener('touchmove',  h.touchmove);
+    dc.removeEventListener('touchend',   h.touchend);
+    dc.removeEventListener('click',      h.click);
+    dc.removeEventListener('touchend',   h.fillTouch);
   }
 
   let isDrawing  = false;
-  let shapeStart = null;   // punt inicial per formes
-  let snapShot   = null;   // còpia canvas per dibuixar formes en temps real
+  let shapeStart = null;
+  let snapShot   = null; // snapshot de la CAPA DE DIBUIX per formes
 
-  // ── Inici de traç / forma ─────────────────────────────────────────────
+  function getPoint(e) {
+    // Coordenades relatives al photoCanvas (que té les mides reals de la imatge)
+    const rect = photoCanvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const scaleX = photoCanvas.width  / rect.width;
+    const scaleY = photoCanvas.height / rect.height;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  }
+
   function onStart(e) {
     const tool = currentTool;
-    if (tool === 'none') return;
-    if (tool === 'fill') return; // fill gestiona per click
+    if (tool === 'none' || tool === 'fill') return;
     e.preventDefault(); e.stopPropagation();
-
     isDrawing = true;
-    const { x, y } = getCanvasPoint(e);
+    const { x, y } = getPoint(e);
     shapeStart = { x, y };
 
-    if (tool === 'pencil') {
-      photoCtx.globalCompositeOperation = 'source-over';
-      photoCtx.strokeStyle = drawColor;
-      photoCtx.lineWidth   = drawSize;
-      photoCtx.lineCap     = 'round';
-      photoCtx.lineJoin    = 'round';
-      photoCtx.beginPath();
-      photoCtx.moveTo(x, y);
-    } else if (tool === 'eraser') {
-      photoCtx.globalCompositeOperation = 'destination-out';
-      photoCtx.lineWidth = drawSize * 3; // goma més gran
-      photoCtx.lineCap   = 'round';
-      photoCtx.lineJoin  = 'round';
-      photoCtx.beginPath();
-      photoCtx.moveTo(x, y);
-    } else if (tool === 'rect' || tool === 'circle' || tool === 'line') {
-      // Guardar snapshot per redibuixar en cada moviment
-      snapShot = photoCtx.getImageData(0, 0, photoCanvas.width, photoCanvas.height);
+    dx.globalCompositeOperation = (tool === 'eraser') ? 'destination-out' : 'source-over';
+    if (tool === 'pencil' || tool === 'eraser') {
+      dx.strokeStyle = drawColor;
+      dx.lineWidth   = (tool === 'eraser') ? drawSize * 3 : drawSize;
+      dx.lineCap     = 'round';
+      dx.lineJoin    = 'round';
+      dx.beginPath();
+      dx.moveTo(x, y);
+    } else {
+      // Formes: guardar snapshot de la capa de dibuix
+      snapShot = dx.getImageData(0, 0, dc.width, dc.height);
     }
   }
 
-  // ── Moviment ──────────────────────────────────────────────────────────
   function onMove(e) {
     if (!isDrawing) return;
     const tool = currentTool;
     if (tool === 'none' || tool === 'fill') return;
     e.preventDefault(); e.stopPropagation();
+    const { x, y } = getPoint(e);
 
-    const { x, y } = getCanvasPoint(e);
-
-    if (tool === 'pencil') {
-      photoCtx.globalCompositeOperation = 'source-over';
-      photoCtx.strokeStyle = drawColor;
-      photoCtx.lineTo(x, y);
-      photoCtx.stroke();
-    } else if (tool === 'eraser') {
-      photoCtx.globalCompositeOperation = 'destination-out';
-      photoCtx.lineTo(x, y);
-      photoCtx.stroke();
-    } else if (tool === 'rect' && shapeStart && snapShot) {
-      // Restaurar snapshot i dibuixar rectangle actual
-      photoCtx.putImageData(snapShot, 0, 0);
-      photoCtx.globalCompositeOperation = 'source-over';
-      photoCtx.strokeStyle = drawColor;
-      photoCtx.lineWidth   = drawSize;
-      photoCtx.lineCap     = 'square';
-      photoCtx.strokeRect(
-        shapeStart.x, shapeStart.y,
-        x - shapeStart.x, y - shapeStart.y
-      );
-    } else if (tool === 'circle' && shapeStart && snapShot) {
-      photoCtx.putImageData(snapShot, 0, 0);
-      photoCtx.globalCompositeOperation = 'source-over';
-      photoCtx.strokeStyle = drawColor;
-      photoCtx.lineWidth   = drawSize;
-      const rx = (x - shapeStart.x) / 2;
-      const ry = (y - shapeStart.y) / 2;
-      const cx = shapeStart.x + rx;
-      const cy = shapeStart.y + ry;
-      photoCtx.beginPath();
-      photoCtx.ellipse(cx, cy, Math.abs(rx), Math.abs(ry), 0, 0, Math.PI * 2);
-      photoCtx.stroke();
-    } else if (tool === 'line' && shapeStart && snapShot) {
-      photoCtx.putImageData(snapShot, 0, 0);
-      photoCtx.globalCompositeOperation = 'source-over';
-      photoCtx.strokeStyle = drawColor;
-      photoCtx.lineWidth   = drawSize;
-      photoCtx.lineCap     = 'round';
-      photoCtx.beginPath();
-      photoCtx.moveTo(shapeStart.x, shapeStart.y);
-      photoCtx.lineTo(x, y);
-      photoCtx.stroke();
+    if (tool === 'pencil' || tool === 'eraser') {
+      dx.lineTo(x, y);
+      dx.stroke();
+    } else if (shapeStart && snapShot) {
+      dx.putImageData(snapShot, 0, 0);
+      dx.globalCompositeOperation = 'source-over';
+      dx.strokeStyle = drawColor;
+      dx.lineWidth   = drawSize;
+      if (tool === 'rect') {
+        dx.lineCap = 'square';
+        dx.strokeRect(shapeStart.x, shapeStart.y, x - shapeStart.x, y - shapeStart.y);
+      } else if (tool === 'circle') {
+        const rx = (x - shapeStart.x) / 2, ry = (y - shapeStart.y) / 2;
+        dx.beginPath();
+        dx.ellipse(shapeStart.x + rx, shapeStart.y + ry, Math.abs(rx), Math.abs(ry), 0, 0, Math.PI*2);
+        dx.stroke();
+      } else if (tool === 'line') {
+        dx.lineCap = 'round';
+        dx.beginPath();
+        dx.moveTo(shapeStart.x, shapeStart.y);
+        dx.lineTo(x, y);
+        dx.stroke();
+      }
     }
   }
 
-  // ── Fi de traç ────────────────────────────────────────────────────────
   function onEnd(e) {
     if (!isDrawing) return;
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    isDrawing  = false;
-    shapeStart = null;
-    snapShot   = null;
-    // Restaurar mode normal
-    photoCtx.globalCompositeOperation = 'source-over';
-    photoCtx.closePath();
+    isDrawing = false; shapeStart = null; snapShot = null;
+    dx.globalCompositeOperation = 'source-over';
+    dx.closePath();
     saveDrawState();
   }
 
-  // ── Fill per click ────────────────────────────────────────────────────
+  // Fill sobre la capa de dibuix (no sobre la foto)
   function onClickFill(e) {
     if (currentTool !== 'fill') return;
     e.preventDefault(); e.stopPropagation();
-    const { x, y } = getCanvasPoint(e);
+    const { x, y } = getPoint(e);
     const cx = Math.round(x), cy = Math.round(y);
-    if (cx >= 0 && cy >= 0 && cx < photoCanvas.width && cy < photoCanvas.height) {
-      floodFill(cx, cy, drawColor);
+    if (cx >= 0 && cy >= 0 && cx < dc.width && cy < dc.height) {
+      floodFillLayer(dx, dc, cx, cy, drawColor);
     }
   }
 
@@ -3201,27 +3189,22 @@ function setupCanvasDrawing() {
     if (currentTool !== 'fill' || e.changedTouches?.length !== 1) return;
     e.preventDefault();
     const t = e.changedTouches[0];
-    onClickFill({ clientX: t.clientX, clientY: t.clientY,
-      preventDefault: ()=>{}, stopPropagation: ()=>{} });
+    onClickFill({ clientX: t.clientX, clientY: t.clientY, preventDefault:()=>{}, stopPropagation:()=>{} });
   };
 
-  // Guardar refs per cleanup
-  photoCanvas._drawHandlers = {
+  dc._drawHandlers = {
     mousedown: onStart, mousemove: onMove, mouseup: onEnd, mouseleave: onEnd,
-    touchstart: onStart, touchmove: onMove, touchend: onEnd,
-    click: onClickFill, fillTouch: fillTouchH
+    touchstart: onStart, touchmove: onMove, touchend: onEnd, click: onClickFill, fillTouch: fillTouchH
   };
-
-  // Registrar
-  photoCanvas.addEventListener('mousedown',  onStart);
-  photoCanvas.addEventListener('mousemove',  onMove);
-  photoCanvas.addEventListener('mouseup',    onEnd);
-  photoCanvas.addEventListener('mouseleave', onEnd);
-  photoCanvas.addEventListener('touchstart', onStart,    { passive: false });
-  photoCanvas.addEventListener('touchmove',  onMove,     { passive: false });
-  photoCanvas.addEventListener('touchend',   onEnd,      { passive: false });
-  photoCanvas.addEventListener('click',      onClickFill);
-  photoCanvas.addEventListener('touchend',   fillTouchH, { passive: false });
+  dc.addEventListener('mousedown',  onStart);
+  dc.addEventListener('mousemove',  onMove);
+  dc.addEventListener('mouseup',    onEnd);
+  dc.addEventListener('mouseleave', onEnd);
+  dc.addEventListener('touchstart', onStart,    { passive: false });
+  dc.addEventListener('touchmove',  onMove,     { passive: false });
+  dc.addEventListener('touchend',   onEnd,      { passive: false });
+  dc.addEventListener('click',      onClickFill);
+  dc.addEventListener('touchend',   fillTouchH, { passive: false });
 }
 
 
@@ -3265,6 +3248,61 @@ window.toggleDrawing = toggleDrawing;
 window.setDrawColor = setDrawColor;
 window.updateDrawSize = updateDrawSize;
 window.undoDraw = undoDraw;
+
+// Netejar NOMÉS la capa de dibuix (la foto queda intacta)
+function clearDrawingLayer() {
+  const dc = window.drawingCanvas;
+  const dx = window.drawingCtx;
+  if (!dc || !dx) return;
+  if (!confirm('Netejar tots els dibuixos d\'aquesta capa?\n\nLa foto original no es veurà afectada.')) return;
+  dx.clearRect(0, 0, dc.width, dc.height);
+  drawHistory = [];
+  saveDrawState();
+}
+window.clearDrawingLayer = clearDrawingLayer;
+
+// Mostrar/ocultar capa de dibuix
+function toggleLayerVisibility() {
+  const dc = window.drawingCanvas;
+  if (!dc) return;
+  const hidden = dc.style.opacity === '0';
+  dc.style.opacity = hidden ? '1' : '0';
+  document.getElementById('layerVisBtn')?.classList.toggle('layer-hidden', !hidden);
+}
+window.toggleLayerVisibility = toggleLayerVisibility;
+
+// Flood fill sobre la capa de dibuix
+function floodFillLayer(ctx, canvas, startX, startY, fillColor) {
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+  const w = canvas.width, h = canvas.height;
+  const idx = (startY * w + startX) * 4;
+  const tR = data[idx], tG = data[idx+1], tB = data[idx+2], tA = data[idx+3];
+  const tmp = document.createElement('canvas'); tmp.width = tmp.height = 1;
+  const tc = tmp.getContext('2d'); tc.fillStyle = fillColor; tc.fillRect(0,0,1,1);
+  const fc = tc.getImageData(0,0,1,1).data;
+  const fR = fc[0], fG = fc[1], fB = fc[2];
+  const TOL = 30;
+  const match = i => Math.abs(data[i]-tR)<=TOL && Math.abs(data[i+1]-tG)<=TOL &&
+                     Math.abs(data[i+2]-tB)<=TOL && Math.abs(data[i+3]-tA)<=TOL;
+  const stack = [[startX, startY]];
+  const visited = new Uint8Array(w * h);
+  visited[startY*w+startX] = 1;
+  while (stack.length) {
+    const [x, y] = stack.pop();
+    const i = (y*w+x)*4;
+    if (!match(i)) continue;
+    data[i]=fR; data[i+1]=fG; data[i+2]=fB; data[i+3]=255;
+    if (x>0   && !visited[y*w+x-1])   { visited[y*w+x-1]=1;   stack.push([x-1,y]); }
+    if (x<w-1 && !visited[y*w+x+1])   { visited[y*w+x+1]=1;   stack.push([x+1,y]); }
+    if (y>0   && !visited[(y-1)*w+x]) { visited[(y-1)*w+x]=1; stack.push([x,y-1]); }
+    if (y<h-1 && !visited[(y+1)*w+x]) { visited[(y+1)*w+x]=1; stack.push([x,y+1]); }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  saveDrawState();
+}
+window.floodFillLayer = floodFillLayer;
+
 window.clearDrawing = clearDrawing;
 window.saveEditedPhoto = saveEditedPhoto;
 window.savePhotoComment = savePhotoComment;
