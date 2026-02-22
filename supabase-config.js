@@ -84,10 +84,23 @@
         if (typeof window.initApp === 'function') {
           window.initApp();
         }
+
+        // ✅ REALTIME: iniciar sincronització en temps real
+        setTimeout(() => {
+          if (typeof window.initRealtimeSync === 'function') {
+            window.initRealtimeSync();
+          }
+        }, 1500); // petit delay per assegurar que initApp hagi acabat
+
       } else if (event === 'SIGNED_OUT') {
         currentUser = null;
         console.log('🚪 Logout exitós');
         
+        // ✅ REALTIME: aturar sincronització
+        if (typeof window.stopRealtimeSync === 'function') {
+          window.stopRealtimeSync();
+        }
+
         if (typeof window.showLoginScreen === 'function') {
           window.showLoginScreen();
         }

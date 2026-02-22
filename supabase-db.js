@@ -159,6 +159,11 @@ async function saveClientSupabase(client) {
   };
 
   try {
+    // ✅ REALTIME: marcar que som nosaltres qui guardem (evita processar el nostre propi canvi)
+    if (typeof window.markRealtimeSelfSave === 'function') {
+      window.markRealtimeSelfSave();
+    }
+
     const { error } = await window.supabase
       .from('clients')
       .upsert(clientData, { onConflict: 'id' });
