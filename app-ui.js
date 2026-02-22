@@ -2140,7 +2140,9 @@ if (photoCanvas && photoCtx) {
     photoCanvas.height = img.height;
     photoCtx.drawImage(img, 0, 0);
 
-    // ✅ CAPA: sincronitzar mida del canvas de dibuix i netejar-lo
+    // ✅ Ajustar mida del canvas-stack al contenidor (trenca dependència CSS circular)
+    fitPhotoInContainer();
+    // Sincronitzar i netejar capa de dibuix
     syncDrawingCanvasSize();
     if (window.drawingCtx) {
       window.drawingCtx.clearRect(0, 0, window.drawingCanvas.width, window.drawingCanvas.height);
@@ -2521,26 +2523,28 @@ function commitRotationToCanvas() {
   const dc = window.drawingCanvas;
   const dx = window.drawingCtx;
   if (dc && dx) {
+    // ✅ Assegurar que dc té les mides correctes ABANS de copiar
+    // Si syncDrawingCanvasSize no s'havia cridat, dc.width podria ser 0
+    if (dc.width !== oldW || dc.height !== oldH) {
+      dc.width = oldW; dc.height = oldH;
+    }
     const tmpDraw = document.createElement('canvas');
     tmpDraw.width = oldW; tmpDraw.height = oldH;
     tmpDraw.getContext('2d').drawImage(dc, 0, 0);
+
+    // Redibuixar rotat a la nova mida
     dc.width = newW; dc.height = newH;
     dx.save();
     dx.translate(newW / 2, newH / 2);
     dx.rotate(rad);
     dx.drawImage(tmpDraw, -oldW / 2, -oldH / 2);
     dx.restore();
-    // Resincronitzar mides CSS del drawingCanvas
-    syncDrawingCanvasSize();
   }
 
+  // Ajustar mida visual i sincronitzar
+  fitPhotoInContainer();
   applyZoomTransform();
   saveDrawState();
-
-  // ✅ FIX MOBILE: Reconfigar els event listeners de dibuix amb les noves mides
-  // Després de rotar, dc.width/height han canviat i els closures antics
-  // poden tenir snapShots de la mida antiga. Reiniciem per sincronitzar.
-  if (typeof setupCanvasDrawing === 'function') setupCanvasDrawing();
 }
 
 // Botó manual (↺ ↻): gira 90° i crema directament
@@ -2761,26 +2765,42 @@ window.resetZoom = resetZoom;
 function initPhotoCanvas() {
   photoCanvas = document.getElementById('photoCanvas');
   if (!photoCanvas) { console.error('❌ photoCanvas not found!'); return; }
-  photoCanvas.style.display = 'block';
   photoCtx = photoCanvas.getContext('2d');
   if (!photoCtx) { console.error('❌ No canvas context!'); return; }
-
-  // ✅ CAPA DE DIBUIX — canvas separat sobre la foto
   window.drawingCanvas = document.getElementById('drawingCanvas');
-  if (window.drawingCanvas) {
-    window.drawingCtx = window.drawingCanvas.getContext('2d');
-  }
+  if (window.drawingCanvas) window.drawingCtx = window.drawingCanvas.getContext('2d');
   console.log('✅ Canvas + DrawingLayer OK');
 }
 
-// Sincronitzar mida del canvas de dibuix amb el de la foto
+// ── MIDES I LAYOUT ──────────────────────────────────────────────────────────
+
+// Fa que la foto càpiga en el contenidor i assigna mides explícites al canvas-stack.
+// Trenca la dependència circular de CSS (canvas-stack inline-block vs max-height:100%).
+function fitPhotoInContainer() {
+  if (!photoCanvas) return;
+  const container = document.querySelector('.lightbox-canvas-container');
+  const stack     = document.getElementById('canvasStack');
+  if (!container || !stack) return;
+
+  const maxW = container.clientWidth  - 16;
+  const maxH = container.clientHeight - 16;
+  const nW   = photoCanvas.width;
+  const nH   = photoCanvas.height;
+  if (!nW || !nH) return;
+
+  const scale = Math.min(maxW / nW, maxH / nH, 1);  // mai més gran que natiu
+  const dispW = Math.round(nW * scale);
+  const dispH = Math.round(nH * scale);
+
+  stack.style.width  = dispW + 'px';
+  stack.style.height = dispH + 'px';
+}
+window.fitPhotoInContainer = fitPhotoInContainer;
+
+// Sincronitza els PÍXELS interns del drawingCanvas amb photoCanvas.
+// El CSS (width:100%;height:100%) fa que ocupi visualment el canvas-stack.
 function syncDrawingCanvasSize() {
   if (!window.drawingCanvas || !photoCanvas) return;
-  // ✅ NOMÉS sincronitzar píxels interns — NO tocar CSS width/height
-  // El CSS del drawingCanvas és "position:absolute; top:0; left:0" sense mides fixes.
-  // Com que ambdós canvas estan dins de canvas-stack amb el mateix transform,
-  // les mides CSS les gestiona automàticament el navegador.
-  // Si posem width:3000px en CSS distorsionem l'escalat i les coordenades fallen.
   window.drawingCanvas.width  = photoCanvas.width;
   window.drawingCanvas.height = photoCanvas.height;
 }
@@ -3129,17 +3149,19 @@ function setupCanvasDrawing() {
   let snapShot   = null; // snapshot de la CAPA DE DIBUIX per formes
 
   function getPoint(e) {
-    // ✅ Coordenades correctes independentment de zoom/rotació/capes:
-    // 1. getBoundingClientRect de photoCanvas dóna la posició i mida VISUAL actual
-    //    (ja inclou l'efecte del transform CSS del canvas-stack)
-    // 2. Escalem de coordenades de pantalla a coordenades internes del canvas
-    const rect  = photoCanvas.getBoundingClientRect();
-    const touch = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
-    const clientX = touch.clientX !== undefined ? touch.clientX : e.clientX;
-    const clientY = touch.clientY !== undefined ? touch.clientY : e.clientY;
-    const scaleX  = photoCanvas.width  / rect.width;
-    const scaleY  = photoCanvas.height / rect.height;
-    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    // drawingCanvas és qui rep els events.
+    // getBoundingClientRect() inclou tot: zoom, pan, rotació CSS del canvas-stack.
+    const dc    = window.drawingCanvas || photoCanvas;
+    const rect  = dc.getBoundingClientRect();
+    const src   = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : null);
+    const clientX = src ? src.clientX : e.clientX;
+    const clientY = src ? src.clientY : e.clientY;
+    // dc.width = photoCanvas.width (pixels interns)
+    // rect.width = mida visual a pantalla (inclou zoom)
+    return {
+      x: (clientX - rect.left) * (photoCanvas.width  / rect.width),
+      y: (clientY - rect.top)  * (photoCanvas.height / rect.height)
+    };
   }
 
   function onStart(e) {

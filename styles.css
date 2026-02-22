@@ -461,235 +461,140 @@ button.primary:hover {
 /* ===============================
    LIGHTBOX
    =============================== */
+
+/* ══════════════════════════════════════════════════════════════════
+   LIGHTBOX — LAYOUT DEFINITIU (única definició, sense conflictes)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Contenidor principal: flex column que omple la pantalla */
 .lightbox-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.95);
+  inset: 0;
   z-index: 10000;
+  background: rgba(0,0,0,0.96);
   display: none;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  align-items: stretch;
+  overflow: hidden;
 }
+.lightbox-overlay.active { display: flex; }
 
-.lightbox-overlay.active {
-  display: flex;
-  opacity: 1;
-}
-
+/* Header */
 .lightbox-header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 20px;
+  flex: 0 0 auto;
+  position: relative;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.6);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-  z-index: 10002;
+  justify-content: space-between;
+  z-index: 10003;
+  min-height: 44px;
 }
-
-.lightbox-info {
-  color: white;
-  font-size: 14px;
-}
-
-.lightbox-counter {
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.lightbox-date {
-  opacity: 0.8;
-  margin-top: 4px;
-  font-size: 13px;
-}
-
+.lightbox-info { color: rgba(255,255,255,0.7); font-size: 13px; }
+.lightbox-counter { font-weight: 600; color: #fff; }
+.lightbox-date { font-size: 11px; opacity: 0.6; }
 .lightbox-close {
   background: rgba(255,255,255,0.1);
   border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  width: 40px;
-  height: 40px;
+  color: #fff;
+  width: 36px; height: 36px;
   border-radius: 50%;
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
 }
+.lightbox-close:hover { background: rgba(255,255,255,0.25); }
 
-.lightbox-close:hover {
-  background: rgba(255,255,255,0.2);
-  transform: scale(1.1);
-}
-
+/* Canvas container: pren TOT l'espai restant */
 .lightbox-canvas-container {
+  flex: 1 1 0;
+  min-height: 0;
   position: relative;
-  max-width: 90vw;
-  max-height: calc(100vh - 300px);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #111;
 }
 
-#photoCanvas {
-  max-width: 100%;
-  max-height: 100%;
-  cursor: default;
-  border-radius: var(--radius-md);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+/* canvas-stack: conté photo + drawing canvas,
+   rep el CSS transform de zoom/rotació.
+   Mida = calculada per JS (fitPhotoInContainer) */
+.canvas-stack {
+  position: relative;
   display: block;
+  flex-shrink: 0;
+  line-height: 0;
 }
 
-#photoCanvas.drawing-mode {
-  cursor: crosshair !important;
+/* photoCanvas: ocupa tota la mida del canvas-stack (posada per JS) */
+#photoCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
+/* drawingCanvas: sobreposa exactament photoCanvas */
+#drawingCanvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+#drawingCanvas.tool-active {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+/* Navegació foto anterior/següent */
 .lightbox-nav {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  font-size: 24px;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  font-size: 28px;
+  width: 44px; height: 60px;
+  border-radius: 6px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
   z-index: 10001;
+  display: flex; align-items: center; justify-content: center;
 }
+.lightbox-nav:hover { background: rgba(255,255,255,0.25); }
+.lightbox-nav.disabled { opacity: 0.2; pointer-events: none; }
+.lightbox-nav-prev { left: 8px; }
+.lightbox-nav-next { right: 8px; }
 
-.lightbox-nav:hover {
-  background: rgba(255,255,255,0.2);
-  transform: translateY(-50%) scale(1.1);
-}
-
-.lightbox-nav.disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.lightbox-nav-prev { left: 20px; }
-.lightbox-nav-next { right: 20px; }
-
-.editor-toolbar {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  margin-top: 10px;
-  padding: 10px;
-  background: rgba(0,0,0,0.5);
-  border-radius: var(--radius-md);
-}
-
-.editor-btn-small {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.editor-btn-small:hover {
-  background: rgba(255,255,255,0.2);
-}
-
-.editor-btn-small.active {
-  background: rgba(59, 130, 246, 0.4);
-  border-color: rgba(59, 130, 246, 0.6);
-}
-
-.color-picker-mini {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 3px solid rgba(255,255,255,0.3);
-  transition: all 0.2s;
-}
-
-.color-picker-mini:hover {
-  transform: scale(1.15);
-}
-
-.color-picker-mini.active {
-  border-color: white;
-  border-width: 4px;
-  box-shadow: 0 0 15px currentColor;
-}
-
-.size-slider-mini {
-  width: 80px;
-  accent-color: #3b82f6;
-}
-
+/* Footer comentaris */
 .lightbox-footer {
-  position: relative;
-  width: 100%;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  flex: 0 0 auto;
+  background: rgba(0,0,0,0.8);
+  padding: 10px 12px;
   z-index: 10002;
-  flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
-
-.lightbox-comment-container {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
+.lightbox-comment-container { width: 100%; }
 .lightbox-comment-input {
   width: 100%;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: var(--radius-md);
-  padding: 12px 16px;
-  color: white;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 60px;
-  transition: all 0.2s;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: #f1f5f9;
+  padding: 8px 10px;
+  font-size: 13px;
+  resize: none;
   box-sizing: border-box;
+  font-family: inherit;
 }
-
-.lightbox-comment-input::placeholder {
-  color: rgba(255,255,255,0.5);
-}
-
 .lightbox-comment-input:focus {
   outline: none;
-  background: rgba(255,255,255,0.15);
-  border-color: rgba(255,255,255,0.4);
+  border-color: rgba(249,115,22,0.5);
 }
+.lightbox-buttons { display: none; } /* eliminats — al toolbar */
 
-.lightbox-buttons {
-  display: flex;
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
@@ -1324,351 +1229,6 @@ textarea:focus-visible {
 /* ===============================
    LIGHTBOX FIXES MÒBIL - TOOLBAR SEMPRE VISIBLE
    =============================== */
-
-/* El lightbox és un flex column que NO fa scroll — tot ha de cabre */
-.lightbox-overlay {
-  overflow: hidden !important;
-}
-
-/* Canvas container ocupa l'espai disponible però cedeix espai al toolbar */
-.lightbox-canvas-container {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-  position: relative !important;
-  width: 100% !important;
-  max-height: none !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-/* El canvas no pot sortir del seu contenidor */
-#photoCanvas {
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-}
-
-/* Toolbar sempre al final, mai s'amaga */
-.editor-toolbar {
-  flex: 0 0 auto !important;
-  z-index: 10003 !important;
-  position: relative !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  overflow-x: auto !important;
-  flex-wrap: nowrap !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-/* Footer del lightbox (comentaris) */
-.lightbox-footer {
-  flex: 0 0 auto !important;
-  z-index: 10002 !important;
-  position: relative !important;
-}
-
-/* Slider de mida — visible sempre */
-.size-slider-mini {
-  width: 70px !important;
-  flex-shrink: 0 !important;
-}
-
-/* Botó pot de pintura */
-.editor-btn-small.paint-bucket-active {
-  background: rgba(249, 115, 22, 0.4) !important;
-  border-color: rgba(249, 115, 22, 0.7) !important;
-}
-
-
-/* ===============================
-   LIGHTBOX LAYOUT COMPLET - SENSE GAP NEGRE
-   =============================== */
-
-/* El lightbox és un flex column que omple tota la pantalla */
-.lightbox-overlay {
-  display: none;
-  flex-direction: column !important;
-  justify-content: flex-start !important;
-  align-items: stretch !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-}
-
-.lightbox-overlay.active {
-  display: flex !important;
-}
-
-/* Header fixat a dalt */
-.lightbox-header {
-  position: relative !important;
-  flex: 0 0 auto !important;
-  background: rgba(0,0,0,0.7) !important;
-  z-index: 10003 !important;
-}
-
-/* Canvas container: ocupa TOT l'espai disponible entre header i toolbar */
-.lightbox-canvas-container {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  max-height: none !important;
-  overflow: hidden !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: relative !important;
-  background: #000 !important;
-}
-
-/* Canvas s'adapta sense sortir */
-#photoCanvas {
-  max-width: 100% !important;
-  max-height: 100% !important;
-  width: auto !important;
-  height: auto !important;
-  display: block !important;
-}
-
-/* Toolbar: sempre al fons, no s'amaga mai */
-.editor-toolbar {
-  flex: 0 0 auto !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  white-space: nowrap !important;
-  flex-wrap: nowrap !important;
-  justify-content: flex-start !important;
-  padding: 8px 10px !important;
-  background: rgba(0,0,0,0.85) !important;
-  border-top: 1px solid rgba(255,255,255,0.1) !important;
-  z-index: 10003 !important;
-  position: relative !important;
-  display: flex !important;
-  gap: 6px !important;
-  align-items: center !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-/* Footer comentaris */
-.lightbox-footer {
-  flex: 0 0 auto !important;
-  position: relative !important;
-  background: rgba(0,0,0,0.85) !important;
-  padding: 12px !important;
-  z-index: 10002 !important;
-}
-
-/* Slider sempre visible */
-.size-slider-mini {
-  min-width: 60px !important;
-  max-width: 80px !important;
-  flex-shrink: 0 !important;
-}
-
-.editor-btn-small {
-  flex-shrink: 0 !important;
-  white-space: nowrap !important;
-}
-
-.color-picker-mini {
-  flex-shrink: 0 !important;
-}
-
-
-/* ═══════════════════════════════════════════
-   EDITOR TOOLBAR — GRID FIX 4 COLUMNES
-   ═══════════════════════════════════════════ */
-
-.editor-toolbar-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  /* ✅ Mida fixa per files — evita que el grid creixi i tapi la imatge */
-  grid-auto-rows: 34px;
-  gap: 5px;
-  padding: 8px;
-  background: rgba(0,0,0,0.92);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  flex: 0 0 auto !important;
-  width: 100%;
-  box-sizing: border-box;
-  z-index: 10004;
-  position: relative;
-  /* Màxim per no superar mai ~230px d'alçada */
-  max-height: 240px;
-  overflow-y: auto;
-}
-
-/* Colors rodons — mida fixa, NO aspect-ratio */
-.etb-color {
-  width: 100%;
-  height: 34px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.15);
-  cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s;
-}
-.etb-color:hover,
-.etb-color:active  { transform: scale(1.15); }
-.etb-color.active  { border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.4); }
-
-/* Slider de mida */
-.etb-slider-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 8px;
-  padding: 2px 8px;
-  border: 1px solid rgba(255,255,255,0.1);
-  height: 34px;
-  box-sizing: border-box;
-}
-.etb-slider {
-  width: 100%;
-  accent-color: #f97316;
-  cursor: pointer;
-}
-
-/* Botons acció */
-.etb-btn {
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #f1f5f9;
-  border-radius: 8px;
-  padding: 0 4px;
-  font-size: 11px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  transition: background 0.15s, transform 0.1s;
-  height: 34px;
-  white-space: nowrap;
-  overflow: hidden;
-}
-.etb-btn:hover  { background: rgba(255,255,255,0.14); }
-.etb-btn:active { transform: scale(0.96); }
-
-/* Botó actiu (llapis / omplir) */
-.etb-btn.active {
-  background: rgba(249, 115, 22, 0.35);
-  border-color: rgba(249, 115, 22, 0.6);
-  color: #fed7aa;
-}
-
-/* Guardar — verd */
-.etb-save {
-  background: rgba(16, 185, 129, 0.2) !important;
-  border-color: rgba(16, 185, 129, 0.45) !important;
-  color: #6ee7b7 !important;
-  font-weight: 600;
-}
-.etb-save:hover { background: rgba(16, 185, 129, 0.32) !important; }
-
-/* Esborrar foto — vermell */
-.etb-danger {
-  background: rgba(239, 68, 68, 0.15) !important;
-  border-color: rgba(239, 68, 68, 0.4) !important;
-  color: #fca5a5 !important;
-}
-.etb-danger:hover { background: rgba(239, 68, 68, 0.28) !important; }
-
-
-/* ═══════════════════════════════════════
-   SELECTOR COLOR RGB + EINES NOVES
-   ═══════════════════════════════════════ */
-
-/* Cel·la del picker RGB */
-.etb-colorpicker-wrap {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
-  height: 34px;
-  box-sizing: border-box;
-}
-.etb-colorpicker-wrap span {
-  font-size: 9px;
-  color: rgba(255,255,255,0.55);
-  pointer-events: none;
-  letter-spacing: 0.5px;
-  position: absolute;
-  bottom: 3px;
-}
-/* L'input color ocupa tota la cel·la */
-.etb-colorpicker-wrap input[type="color"] {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-  padding: 0;
-  background: none;
-  cursor: pointer;
-  opacity: 0.92;
-  border-radius: 8px;
-}
-/* Patch: alguns navegadors mostren borde blanc */
-.etb-colorpicker-wrap input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-.etb-colorpicker-wrap input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
-.etb-colorpicker-wrap input[type="color"]::-moz-color-swatch { border: none; border-radius: 6px; }
-
-/* Label mida */
-.etb-label {
-  font-size: 9px;
-  color: rgba(255,255,255,0.5);
-  letter-spacing: 0.4px;
-}
-
-
-/* ═══════════════════════════════════════════
-   CANVAS STACK — SISTEMA DE CAPES
-   ═══════════════════════════════════════════ */
-.canvas-stack {
-  position: relative;
-  display: inline-block;
-  line-height: 0;
-  max-width: 100%;
-  max-height: 100%;
-}
-
-/* Canvas foto base — mai es toca directament */
-#photoCanvas {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-}
-
-/* Canvas de dibuix — superposa sobre photoCanvas dins canvas-stack.
-   max-width/max-height:100% fa que segueixi les mides de photoCanvas automàticament.
-   La sincronització de píxels interns la fa syncDrawingCanvasSize() via JS. */
-#drawingCanvas {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  cursor: default;
-  pointer-events: none;
-}
-
-#drawingCanvas.tool-active {
-  pointer-events: auto;
-  cursor: crosshair;
-}
 
 /* ── TOOLBAR COMPACTE 6 COLUMNES ─────────────────── */
 .editor-toolbar-grid {
