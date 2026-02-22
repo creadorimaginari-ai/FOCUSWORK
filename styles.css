@@ -1653,15 +1653,16 @@ textarea:focus-visible {
   max-height: 100%;
 }
 
-/* Canvas de dibuix — sobre la foto, transparent.
-   NO fem width/height 100% CSS perquè sinó les coordenades internes
-   no coincidiran amb les visuals. Les mides les posa syncDrawingCanvasSize(). */
+/* Canvas de dibuix — superposa sobre photoCanvas dins canvas-stack.
+   max-width/max-height:100% fa que segueixi les mides de photoCanvas automàticament.
+   La sincronització de píxels interns la fa syncDrawingCanvasSize() via JS. */
 #drawingCanvas {
   position: absolute;
   top: 0; left: 0;
+  width: 100%;
+  height: 100%;
   cursor: default;
   pointer-events: none;
-  /* Sense width/height CSS — es controla per JS */
 }
 
 #drawingCanvas.tool-active {
@@ -1700,3 +1701,48 @@ textarea:focus-visible {
 
 /* Botó capa actiu (layer visible/ocult) */
 .etb-btn.layer-hidden { opacity: 0.4; }
+
+
+/* ── ROTATION KNOB PC ─────────────────────────────────────────────────────── */
+.etb-rotate-knob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 8px;
+  cursor: ew-resize;      /* cursor esquerra-dreta → indica arrossegar */
+  user-select: none;
+  height: 38px;
+  box-sizing: border-box;
+  transition: background 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.etb-rotate-knob:hover {
+  background: rgba(99, 102, 241, 0.3);
+}
+.etb-rotate-knob.rotating {
+  background: rgba(99, 102, 241, 0.5);
+  border-color: #818cf8;
+}
+.etb-rotate-icon {
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.1s;
+}
+.etb-rotate-label {
+  font-size: 9px;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.4px;
+}
+/* Indicador d'angle mentre rota */
+.etb-rotate-knob .rotate-angle-badge {
+  position: absolute;
+  top: 2px; right: 4px;
+  font-size: 9px;
+  color: #a5b4fc;
+  pointer-events: none;
+}

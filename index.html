@@ -1214,11 +1214,15 @@ function setupProgressListeners() {
   <button class="etb-btn" onclick="setDrawTool('text')" id="textToggle" title="Text">𝐓</button>
   <button class="etb-btn" onclick="toggleLayerVisibility()" id="layerVisBtn" title="Mostrar/ocultar dibuixos">👁</button>
 
-  <!-- FILA 3: Guardar + Esborrar + Baixar -->
+  <!-- FILA 3: Rotació PC + Guardar + Gestió -->
+  <div class="etb-rotate-knob" id="rotateKnob" title="Arrossega esquerra/dreta per rotar">
+    <span class="etb-rotate-icon">↻</span>
+    <span class="etb-rotate-label">Rotar</span>
+  </div>
+  <button class="etb-btn" onclick="rotatePhoto(-90)" title="Rotar 90° esquerra">↺ 90°</button>
   <button class="etb-btn etb-save" onclick="saveEditedPhoto()" style="grid-column: span 2;">💾 Guardar</button>
-  <button class="etb-btn etb-danger" onclick="deleteCurrentPhoto()" style="grid-column: span 2;">🗑️ Foto</button>
+  <button class="etb-btn etb-danger" onclick="deleteCurrentPhoto()">🗑️</button>
   <button class="etb-btn" onclick="downloadCurrentPhoto()">⬇️</button>
-  <button class="etb-btn" onclick="shareCurrentPhoto()">📤</button>
 
 </div>
   

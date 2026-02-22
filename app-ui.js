@@ -2072,11 +2072,9 @@ function openLightbox(photos, index) {
     // Després mostrar foto
     updateLightboxDisplay();
     
-    // Zoom al final amb més temps
     setTimeout(() => {
-      if (typeof initZoomSystem === 'function') {
-        initZoomSystem();
-      }
+      if (typeof initZoomSystem === 'function') initZoomSystem();
+      if (typeof initRotateKnob === 'function') initRotateKnob();
     }, 300);
     
     document.body.style.overflow = 'hidden';
@@ -2772,21 +2770,13 @@ function initPhotoCanvas() {
 // Sincronitzar mida del canvas de dibuix amb el de la foto
 function syncDrawingCanvasSize() {
   if (!window.drawingCanvas || !photoCanvas) return;
-  // Mides internes (píxels reals del canvas)
+  // ✅ NOMÉS sincronitzar píxels interns — NO tocar CSS width/height
+  // El CSS del drawingCanvas és "position:absolute; top:0; left:0" sense mides fixes.
+  // Com que ambdós canvas estan dins de canvas-stack amb el mateix transform,
+  // les mides CSS les gestiona automàticament el navegador.
+  // Si posem width:3000px en CSS distorsionem l'escalat i les coordenades fallen.
   window.drawingCanvas.width  = photoCanvas.width;
   window.drawingCanvas.height = photoCanvas.height;
-  // ✅ Mides CSS = mides naturals del photoCanvas sense transform
-  // NO usem offsetWidth perquè inclou l'efecte del transform CSS (zoom/rotació)
-  // El drawingCanvas ha d'ocupar exactament el mateix espai que photoCanvas
-  // dins del canvas-stack ABANS del transform — el transform el fa el contenidor.
-  window.drawingCanvas.style.width  = photoCanvas.naturalWidth  ? photoCanvas.naturalWidth  + 'px'
-                                     : photoCanvas.width  + 'px';
-  window.drawingCanvas.style.height = photoCanvas.naturalHeight ? photoCanvas.naturalHeight + 'px'
-                                     : photoCanvas.height + 'px';
-  window.drawingCanvas.style.left   = '0px';
-  window.drawingCanvas.style.top    = '0px';
-  window.drawingCanvas.style.width  = photoCanvas.width  + 'px';
-  window.drawingCanvas.style.height = photoCanvas.height + 'px';
 }
 
 function toggleDrawing() {
@@ -3133,17 +3123,16 @@ function setupCanvasDrawing() {
   let snapShot   = null; // snapshot de la CAPA DE DIBUIX per formes
 
   function getPoint(e) {
-    // ✅ FIX COORDENADES: usar drawingCanvas per getBoundingClientRect
-    // El drawingCanvas és el que rep els events i és visible a pantalla.
-    // photoCanvas pot tenir transform CSS (zoom/pan) que desplaça les coords.
-    // Usem el drawingCanvas que sempre coincideix amb el que l'usuari veu.
-    const dc = window.drawingCanvas || photoCanvas;
-    const rect = dc.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    // Escalar de coords pantalla a coords internes del canvas
-    const scaleX = (window.drawingCanvas ? dc.width  : photoCanvas.width)  / rect.width;
-    const scaleY = (window.drawingCanvas ? dc.height : photoCanvas.height) / rect.height;
+    // ✅ Coordenades correctes independentment de zoom/rotació/capes:
+    // 1. getBoundingClientRect de photoCanvas dóna la posició i mida VISUAL actual
+    //    (ja inclou l'efecte del transform CSS del canvas-stack)
+    // 2. Escalem de coordenades de pantalla a coordenades internes del canvas
+    const rect  = photoCanvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
+    const clientX = touch.clientX !== undefined ? touch.clientX : e.clientX;
+    const clientY = touch.clientY !== undefined ? touch.clientY : e.clientY;
+    const scaleX  = photoCanvas.width  / rect.width;
+    const scaleY  = photoCanvas.height / rect.height;
     return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
   }
 
@@ -3480,6 +3469,88 @@ function showTextInput(screenX, screenY, canvasX, canvasY, ctx, canvas) {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') okBtn.click(); if (e.key === 'Escape') wrap.remove(); });
 }
 window.showTextInput = showTextInput;
+// ────────────────────────────────────────────────────────────────────────────
+
+// ── ROTATE KNOB (PC) ────────────────────────────────────────────────────────
+// Arrossegar esquerra = girar CCW, dreta = CW
+// 1 px de moviment = 0.5 graus (2 px/deg — sensació natural)
+function initRotateKnob() {
+  const knob = document.getElementById('rotateKnob');
+  if (!knob) return;
+
+  let isDragging = false;
+  let startX     = 0;
+  let totalDeg   = 0;
+  let badge      = null;
+
+  const getBadge = () => {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'rotate-angle-badge';
+      knob.appendChild(badge);
+    }
+    return badge;
+  };
+
+  const showAngle = (deg) => {
+    getBadge().textContent = Math.round(deg) + '°';
+    // Fer girar la icona visualment
+    const icon = knob.querySelector('.etb-rotate-icon');
+    if (icon) icon.style.transform = `rotate(${deg}deg)`;
+  };
+
+  const onDown = (e) => {
+    e.preventDefault();
+    isDragging = true;
+    totalDeg   = 0;
+    startX     = (e.touches ? e.touches[0].clientX : e.clientX);
+    knob.classList.add('rotating');
+    // Iniciar rotació CSS en temps real
+    cssRotationAngle = 0;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend',  onUp);
+  };
+
+  const onMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const dx = clientX - startX;
+    totalDeg = dx * 0.5;   // 2px = 1 grau
+    showAngle(totalDeg);
+    cssRotationAngle = totalDeg;
+    applyCSSSmoothRotation(totalDeg);
+  };
+
+  const onUp = (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    knob.classList.remove('rotating');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup',   onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend',  onUp);
+
+    if (Math.abs(totalDeg) > 1) {
+      commitRotationToCanvas();
+    } else {
+      cssRotationAngle = 0;
+      applyZoomTransform();
+    }
+
+    // Reset icona i badge
+    const icon = knob.querySelector('.etb-rotate-icon');
+    if (icon) icon.style.transform = '';
+    if (badge) badge.textContent = '';
+    totalDeg = 0;
+  };
+
+  knob.addEventListener('mousedown',  onDown);
+  knob.addEventListener('touchstart', onDown, { passive: false });
+}
+window.initRotateKnob = initRotateKnob;
 // ────────────────────────────────────────────────────────────────────────────
 
 window.clearDrawing = clearDrawing;
