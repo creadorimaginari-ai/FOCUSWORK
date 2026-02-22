@@ -1653,14 +1653,15 @@ textarea:focus-visible {
   max-height: 100%;
 }
 
-/* Canvas de dibuix — sobre la foto, transparent */
+/* Canvas de dibuix — sobre la foto, transparent.
+   NO fem width/height 100% CSS perquè sinó les coordenades internes
+   no coincidiran amb les visuals. Les mides les posa syncDrawingCanvasSize(). */
 #drawingCanvas {
   position: absolute;
   top: 0; left: 0;
-  width: 100%;
-  height: 100%;
   cursor: default;
-  pointer-events: none; /* inactiu fins que s'activa una eina */
+  pointer-events: none;
+  /* Sense width/height CSS — es controla per JS */
 }
 
 #drawingCanvas.tool-active {

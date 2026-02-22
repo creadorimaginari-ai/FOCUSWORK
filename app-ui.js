@@ -2754,8 +2754,15 @@ function initPhotoCanvas() {
 // Sincronitzar mida del canvas de dibuix amb el de la foto
 function syncDrawingCanvasSize() {
   if (!window.drawingCanvas || !photoCanvas) return;
+  // ✅ FIX: copiar mides internes exactes (píxels reals, no CSS)
   window.drawingCanvas.width  = photoCanvas.width;
   window.drawingCanvas.height = photoCanvas.height;
+  // Forçar que el drawingCanvas ocupi exactament el mateix espai visual
+  // usant style width/height en píxels (no %) per evitar escala CSS
+  window.drawingCanvas.style.width  = photoCanvas.offsetWidth  + 'px';
+  window.drawingCanvas.style.height = photoCanvas.offsetHeight + 'px';
+  window.drawingCanvas.style.left   = photoCanvas.offsetLeft   + 'px';
+  window.drawingCanvas.style.top    = photoCanvas.offsetTop    + 'px';
 }
 
 function toggleDrawing() {
@@ -3101,12 +3108,17 @@ function setupCanvasDrawing() {
   let snapShot   = null; // snapshot de la CAPA DE DIBUIX per formes
 
   function getPoint(e) {
-    // Coordenades relatives al photoCanvas (que té les mides reals de la imatge)
-    const rect = photoCanvas.getBoundingClientRect();
+    // ✅ FIX COORDENADES: usar drawingCanvas per getBoundingClientRect
+    // El drawingCanvas és el que rep els events i és visible a pantalla.
+    // photoCanvas pot tenir transform CSS (zoom/pan) que desplaça les coords.
+    // Usem el drawingCanvas que sempre coincideix amb el que l'usuari veu.
+    const dc = window.drawingCanvas || photoCanvas;
+    const rect = dc.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const scaleX = photoCanvas.width  / rect.width;
-    const scaleY = photoCanvas.height / rect.height;
+    // Escalar de coords pantalla a coords internes del canvas
+    const scaleX = (window.drawingCanvas ? dc.width  : photoCanvas.width)  / rect.width;
+    const scaleY = (window.drawingCanvas ? dc.height : photoCanvas.height) / rect.height;
     return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
   }
 
