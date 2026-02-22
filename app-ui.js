@@ -2536,6 +2536,11 @@ function commitRotationToCanvas() {
 
   applyZoomTransform();
   saveDrawState();
+
+  // ✅ FIX MOBILE: Reconfigar els event listeners de dibuix amb les noves mides
+  // Després de rotar, dc.width/height han canviat i els closures antics
+  // poden tenir snapShots de la mida antiga. Reiniciem per sincronitzar.
+  if (typeof setupCanvasDrawing === 'function') setupCanvasDrawing();
 }
 
 // Botó manual (↺ ↻): gira 90° i crema directament
@@ -2644,7 +2649,9 @@ function initZoomSystem() {
   };
   
   const touchMoveHandler = (e) => {
-    if (drawingEnabled) return;
+    // ✅ FIX: 2 dits = sempre zoom/rotació, independentment de si s'està dibuixant
+    // Només el pan d'1 dit es bloqueja quan drawingEnabled
+    if (e.touches.length === 1 && drawingEnabled) return;
     if (e.touches.length === 2) {
       e.preventDefault();
       const touch1 = e.touches[0];
@@ -2684,20 +2691,19 @@ function initZoomSystem() {
     }
   };
   
-  const touchEndHandler = () => {
-    if (drawingEnabled) return;
+  const touchEndHandler = (e) => {
+    // ✅ FIX: NO retornar si drawingEnabled — la rotació/zoom de 2 dits sempre s'ha de cremar
     isPanning = false;
     lastTouchDistance = 0;
-    // ✅ Cremar rotació CSS al canvas quan l'usuari deixa anar
     if (isRotating && Math.abs(accumulatedRotation) > 2) {
       commitRotationToCanvas();
     } else {
       cssRotationAngle = 0;
-      applyZoomTransform(); // restaurar transform net
+      applyZoomTransform();
     }
-    lastTouchAngle = null;
+    lastTouchAngle    = null;
     accumulatedRotation = 0;
-    isRotating = false;
+    isRotating        = false;
   };
   
   // ✅ FIX: listeners al contenidor, no al canvas
@@ -3478,34 +3484,41 @@ function initRotateKnob() {
   const knob = document.getElementById('rotateKnob');
   if (!knob) return;
 
+  // ✅ FIX: Netejar handlers anteriors per evitar acumulació en reobrir fotos
+  if (knob._knobHandlers) {
+    knob.removeEventListener('mousedown',  knob._knobHandlers.down);
+    knob.removeEventListener('touchstart', knob._knobHandlers.down);
+    // Assegurar que no quedin listeners al document de sessions anteriors
+    if (knob._knobHandlers.move) document.removeEventListener('mousemove', knob._knobHandlers.move);
+    if (knob._knobHandlers.move) document.removeEventListener('touchmove',  knob._knobHandlers.move);
+    if (knob._knobHandlers.up)   document.removeEventListener('mouseup',    knob._knobHandlers.up);
+    if (knob._knobHandlers.up)   document.removeEventListener('touchend',   knob._knobHandlers.up);
+  }
+
   let isDragging = false;
   let startX     = 0;
   let totalDeg   = 0;
-  let badge      = null;
 
-  const getBadge = () => {
+  const showAngle = (deg) => {
+    let badge = knob.querySelector('.rotate-angle-badge');
     if (!badge) {
       badge = document.createElement('span');
       badge.className = 'rotate-angle-badge';
       knob.appendChild(badge);
     }
-    return badge;
-  };
-
-  const showAngle = (deg) => {
-    getBadge().textContent = Math.round(deg) + '°';
-    // Fer girar la icona visualment
+    badge.textContent = Math.round(deg) + '°';
     const icon = knob.querySelector('.etb-rotate-icon');
     if (icon) icon.style.transform = `rotate(${deg}deg)`;
   };
 
   const onDown = (e) => {
+    // ✅ stopPropagation: evita que el mousedown arribi al drawingCanvas
     e.preventDefault();
+    e.stopPropagation();
     isDragging = true;
     totalDeg   = 0;
     startX     = (e.touches ? e.touches[0].clientX : e.clientX);
     knob.classList.add('rotating');
-    // Iniciar rotació CSS en temps real
     cssRotationAngle = 0;
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup',   onUp);
@@ -3518,16 +3531,17 @@ function initRotateKnob() {
     e.preventDefault();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const dx = clientX - startX;
-    totalDeg = dx * 0.5;   // 2px = 1 grau
+    totalDeg = dx * 0.5;
     showAngle(totalDeg);
     cssRotationAngle = totalDeg;
     applyCSSSmoothRotation(totalDeg);
   };
 
-  const onUp = (e) => {
+  const onUp = () => {
     if (!isDragging) return;
     isDragging = false;
     knob.classList.remove('rotating');
+    // ✅ Sempre treure del document en acabar
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup',   onUp);
     document.removeEventListener('touchmove', onMove);
@@ -3539,14 +3553,15 @@ function initRotateKnob() {
       cssRotationAngle = 0;
       applyZoomTransform();
     }
-
-    // Reset icona i badge
     const icon = knob.querySelector('.etb-rotate-icon');
     if (icon) icon.style.transform = '';
+    const badge = knob.querySelector('.rotate-angle-badge');
     if (badge) badge.textContent = '';
     totalDeg = 0;
   };
 
+  // Guardar refs per cleanup futur
+  knob._knobHandlers = { down: onDown, move: onMove, up: onUp };
   knob.addEventListener('mousedown',  onDown);
   knob.addEventListener('touchstart', onDown, { passive: false });
 }
