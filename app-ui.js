@@ -2151,8 +2151,8 @@ if (photoCanvas && photoCtx) {
     // Guardar foto original
     originalPhotoData = getPhotoSrc(photo);
 
-    // Iniciar historial (de la capa de dibuix)
-    currentRotation = 0;
+    // Reset rotació i historial per la nova foto
+    totalRotationDeg = 0;
     drawHistory = [];
     saveDrawState();
     
@@ -2476,88 +2476,37 @@ let isPanning = false;
 let startPanX = 0;
 let startPanY = 0;
 let lastTouchDistance = 0;
-let lastTouchAngle = null;       // ✅ Rotació amb dos dits
-let accumulatedRotation = 0;     // Graus acumulats (per disparar cada 45°)
+let lastTouchAngle    = null;
+let accumulatedRotation = 0;
 
-// ✅ Rotació de la imatge
-let currentRotation = 0;         // rotació total acumulada (canvas)
-let cssRotationAngle = 0;        // rotació CSS suau durant el gest
-let isRotating = false;
+// ══════════════════════════════════════════════════════════════════════
+//  ROTACIÓ — sistema senzill basat ÚNICAMENT en CSS transform
+//  Mai es toquen els píxels del canvas durant la rotació.
+//  L'angle s'acumula a `totalRotationDeg` i s'aplica com a CSS.
+//  Quan es guarda la foto, es fusionen foto+dibuix+rotació en un canvas.
+// ══════════════════════════════════════════════════════════════════════
+let totalRotationDeg = 0;   // angle total acumulat (graus)
+let isRotating       = false;
 
-// Aplicar rotació CSS temporal (suau, sense tocar el canvas)
-function applyCSSSmoothRotation(angle) {
-  if (!photoCanvas) return;
-  const stack = document.getElementById('canvasStack') || photoCanvas;
-  stack.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom}) rotate(${angle}deg)`;
+function applyRotationTransform() {
+  const stack = document.getElementById('canvasStack');
+  if (!stack) return;
+  stack.style.transform = `translate(${panX}px,${panY}px) scale(${currentZoom}) rotate(${totalRotationDeg}deg)`;
   stack.style.transformOrigin = 'center center';
 }
 
-// Cremar la rotació CSS al canvas (quan l'usuari deixa anar els dits)
-function commitRotationToCanvas() {
-  if (!photoCanvas || !photoCtx || cssRotationAngle === 0) {
-    cssRotationAngle = 0;
-    return;
-  }
-
-  const deg = cssRotationAngle;
-  cssRotationAngle = 0;
-
-  const rad = (deg * Math.PI) / 180;
-  const oldW = photoCanvas.width;
-  const oldH = photoCanvas.height;
-  const newW = Math.round(Math.abs(oldW * Math.cos(rad)) + Math.abs(oldH * Math.sin(rad)));
-  const newH = Math.round(Math.abs(oldW * Math.sin(rad)) + Math.abs(oldH * Math.cos(rad)));
-
-  // ── Rotar photoCanvas ──────────────────────────────────────────────────
-  const tmpPhoto = document.createElement('canvas');
-  tmpPhoto.width = oldW; tmpPhoto.height = oldH;
-  tmpPhoto.getContext('2d').drawImage(photoCanvas, 0, 0);
-  photoCanvas.width = newW; photoCanvas.height = newH;
-  photoCtx.save();
-  photoCtx.translate(newW / 2, newH / 2);
-  photoCtx.rotate(rad);
-  photoCtx.drawImage(tmpPhoto, -oldW / 2, -oldH / 2);
-  photoCtx.restore();
-
-  // ── Rotar drawingCanvas (capa de dibuix) ──────────────────────────────
-  const dc = window.drawingCanvas;
-  const dx = window.drawingCtx;
-  if (dc && dx) {
-    // ✅ Assegurar que dc té les mides correctes ABANS de copiar
-    // Si syncDrawingCanvasSize no s'havia cridat, dc.width podria ser 0
-    if (dc.width !== oldW || dc.height !== oldH) {
-      dc.width = oldW; dc.height = oldH;
-    }
-    const tmpDraw = document.createElement('canvas');
-    tmpDraw.width = oldW; tmpDraw.height = oldH;
-    tmpDraw.getContext('2d').drawImage(dc, 0, 0);
-
-    // Redibuixar rotat a la nova mida
-    dc.width = newW; dc.height = newH;
-    dx.save();
-    dx.translate(newW / 2, newH / 2);
-    dx.rotate(rad);
-    dx.drawImage(tmpDraw, -oldW / 2, -oldH / 2);
-    dx.restore();
-  }
-
-  // Ajustar mida visual i sincronitzar
-  fitPhotoInContainer();
-  applyZoomTransform();
-  saveDrawState();
-}
-
-// Botó manual (↺ ↻): gira 90° i crema directament
+// Girar 90° (botó) o angle lliure (knob/pinça)
 function rotatePhoto(degrees) {
-  if (!photoCanvas || !photoCtx) return;
-  cssRotationAngle = degrees;
-  commitRotationToCanvas();
-  resetZoom();
-  // Recalcular mida DESPRÉS del resetZoom (el zoom reset fa applyZoomTransform
-  // però les noves dimensions ja estan al canvas)
-  fitPhotoInContainer();
+  totalRotationDeg = (totalRotationDeg + degrees) % 360;
+  applyRotationTransform();
 }
 window.rotatePhoto = rotatePhoto;
+
+// Compat: funcions que s'usaven per rotar CSS temporalment
+function applyCSSSmoothRotation(angle) {
+  totalRotationDeg = angle;
+  applyRotationTransform();
+}
 
 // Funcions de zoom
 function zoomIn() {
@@ -2586,12 +2535,9 @@ function resetZoom() {
 
 function applyZoomTransform() {
   if (!photoCanvas) return;
-  // ✅ FIX ZOOM: transform al contenidor canvas-stack
-  // Així photoCanvas i drawingCanvas es mouen junts i les coordenades sempre coincideixen
   const stack = document.getElementById('canvasStack') || photoCanvas;
-  stack.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+  stack.style.transform = `translate(${panX}px,${panY}px) scale(${currentZoom}) rotate(${totalRotationDeg}deg)`;
   stack.style.transformOrigin = 'center center';
-  // Treure transform individual del photoCanvas si n'hi havia
   if (stack !== photoCanvas) photoCanvas.style.transform = '';
 }
 
@@ -2685,10 +2631,9 @@ function initZoomSystem() {
         const angleDelta = (newAngle - lastTouchAngle) * (180 / Math.PI);
         accumulatedRotation += angleDelta;
         lastTouchAngle = newAngle;
-        cssRotationAngle = accumulatedRotation;
+        totalRotationDeg = accumulatedRotation;
         isRotating = true;
-        // Mostrar rotació CSS en temps real (suau)
-        applyCSSSmoothRotation(accumulatedRotation);
+        applyRotationTransform();
       }
     } else if (isPanning && e.touches.length === 1) {
       e.preventDefault();
@@ -2702,15 +2647,11 @@ function initZoomSystem() {
     // ✅ FIX: NO retornar si drawingEnabled — la rotació/zoom de 2 dits sempre s'ha de cremar
     isPanning = false;
     lastTouchDistance = 0;
-    if (isRotating && Math.abs(accumulatedRotation) > 2) {
-      commitRotationToCanvas();
-    } else {
-      cssRotationAngle = 0;
-      applyZoomTransform();
-    }
-    lastTouchAngle    = null;
+    // Rotació acumulada ja aplicada com a CSS — res a "cremar"
+    lastTouchAngle      = null;
     accumulatedRotation = 0;
-    isRotating        = false;
+    isRotating          = false;
+    applyZoomTransform();
   };
   
   // ✅ FIX: listeners al contenidor, no al canvas
@@ -2899,13 +2840,23 @@ async function saveEditedPhoto() {
   if (!confirmed) return;
   
   try {
-    // ✅ CAPA: fusionar foto base + capa de dibuix
+    // Fusionar foto + dibuix + rotació CSS en un sol canvas
+    const rad  = totalRotationDeg * Math.PI / 180;
+    const sw   = photoCanvas.width;
+    const sh   = photoCanvas.height;
+    // Mida del canvas final tenint en compte la rotació
+    const mw   = Math.round(Math.abs(sw * Math.cos(rad)) + Math.abs(sh * Math.sin(rad)));
+    const mh   = Math.round(Math.abs(sw * Math.sin(rad)) + Math.abs(sh * Math.cos(rad)));
     const mergedCanvas = document.createElement('canvas');
-    mergedCanvas.width  = photoCanvas.width;
-    mergedCanvas.height = photoCanvas.height;
+    mergedCanvas.width  = mw;
+    mergedCanvas.height = mh;
     const mergedCtx = mergedCanvas.getContext('2d');
-    mergedCtx.drawImage(photoCanvas, 0, 0);
-    if (window.drawingCanvas) mergedCtx.drawImage(window.drawingCanvas, 0, 0);
+    mergedCtx.save();
+    mergedCtx.translate(mw / 2, mh / 2);
+    mergedCtx.rotate(rad);
+    mergedCtx.drawImage(photoCanvas, -sw / 2, -sh / 2);
+    if (window.drawingCanvas) mergedCtx.drawImage(window.drawingCanvas, -sw / 2, -sh / 2);
+    mergedCtx.restore();
     const editedData = mergedCanvas.toDataURL('image/jpeg', 0.85);
     const photo = window.currentClientPhotos[currentLightboxIndex];
     const clientId = state.currentClientId;
@@ -3536,15 +3487,14 @@ function initRotateKnob() {
     if (icon) icon.style.transform = `rotate(${deg}deg)`;
   };
 
+  const startRotation = totalRotationDeg; // angle abans de començar el drag
+
   const onDown = (e) => {
-    // ✅ stopPropagation: evita que el mousedown arribi al drawingCanvas
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     isDragging = true;
     totalDeg   = 0;
     startX     = (e.touches ? e.touches[0].clientX : e.clientX);
     knob.classList.add('rotating');
-    cssRotationAngle = 0;
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup',   onUp);
     document.addEventListener('touchmove', onMove, { passive: false });
@@ -3555,29 +3505,28 @@ function initRotateKnob() {
     if (!isDragging) return;
     e.preventDefault();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const dx = clientX - startX;
-    totalDeg = dx * 0.5;
-    showAngle(totalDeg);
-    cssRotationAngle = totalDeg;
-    applyCSSSmoothRotation(totalDeg);
+    totalDeg = (clientX - startX) * 0.5; // 2px = 1 grau
+    showAngle(totalRotationDeg + totalDeg);
+    // Aplicar rotació acumulada + drag actual
+    const stack = document.getElementById('canvasStack');
+    if (stack) {
+      stack.style.transform = `translate(${panX}px,${panY}px) scale(${currentZoom}) rotate(${totalRotationDeg + totalDeg}deg)`;
+    }
   };
 
   const onUp = () => {
     if (!isDragging) return;
     isDragging = false;
     knob.classList.remove('rotating');
-    // ✅ Sempre treure del document en acabar
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup',   onUp);
     document.removeEventListener('touchmove', onMove);
     document.removeEventListener('touchend',  onUp);
 
-    if (Math.abs(totalDeg) > 1) {
-      commitRotationToCanvas();
-    } else {
-      cssRotationAngle = 0;
-      applyZoomTransform();
-    }
+    // Consolidar l'angle al total
+    totalRotationDeg = (totalRotationDeg + totalDeg) % 360;
+    applyRotationTransform();
+
     const icon = knob.querySelector('.etb-rotate-icon');
     if (icon) icon.style.transform = '';
     const badge = knob.querySelector('.rotate-angle-badge');
