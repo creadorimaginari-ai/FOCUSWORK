@@ -40,6 +40,8 @@ function _mapClient(client) {
   client.progressLabel  = client.progress_label  || null;
   client.progressPercent= client.progress_percent|| null;
   client.progressColor  = client.progress_color  || null;
+  // ✅ FIX URGENTS: recuperar deliveryDate de Supabase
+  client.deliveryDate   = client.delivery_date   ? new Date(client.delivery_date).toISOString().split('T')[0] : (client.deliveryDate || null);
   return client;
 }
 
@@ -154,6 +156,8 @@ async function saveClientSupabase(client) {
     progress_label:     client.progressLabel      || null,
     progress_percent:   client.progressPercent    || null,
     progress_color:     client.progressColor      || null,
+    // ✅ FIX URGENTS: deliveryDate ha d'estar a Supabase per sincronitzar entre dispositius
+    delivery_date:      client.deliveryDate       ? new Date(client.deliveryDate).toISOString() : null,
     created_at:         client.created_at         || new Date().toISOString(),
     updated_at:         new Date().toISOString()
   };

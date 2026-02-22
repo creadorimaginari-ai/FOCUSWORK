@@ -5,13 +5,6 @@
 
 // Estats disponibles del projecte
 const PROJECT_STATES = {
-  WAITING_MATERIAL: {
-    id: 'waiting_material',
-    label: 'Esperant material',
-    icon: '🟡',
-    color: '#fbbf24',
-    description: 'Esperant que el client enviï material necessari'
-  },
   IN_PROGRESS: {
     id: 'in_progress',
     label: 'En progrés',
@@ -25,6 +18,27 @@ const PROJECT_STATES = {
     icon: '✉️',
     color: '#a855f7',
     description: 'Esperant aprovació o feedback del client'
+  },
+  WAITING_CALL: {
+    id: 'waiting_call',
+    label: 'Esperant trucada',
+    icon: '📞',
+    color: '#f59e0b',
+    description: 'Pendent de parlar amb el client'
+  },
+  WAITING_BUDGET: {
+    id: 'waiting_budget',
+    label: 'Esperant pressupost',
+    icon: '💶',
+    color: '#06b6d4',
+    description: 'Pressupost enviat, pendent d\'aprovació'
+  },
+  WAITING_MATERIAL: {
+    id: 'waiting_material',
+    label: 'Esperant material',
+    icon: '🟡',
+    color: '#fbbf24',
+    description: 'Esperant que el client enviï material necessari'
   },
   PAUSED: {
     id: 'paused',

@@ -85,11 +85,17 @@
     <button class="filter-btn" data-filter="waiting_feedback">
       ✉️ Prova enviada <span class="filter-badge" id="filterFeedbackCount">0</span>
     </button>
+    <button class="filter-btn" data-filter="waiting_call">
+      📞 Esp. trucada <span class="filter-badge" id="filterCallCount">0</span>
+    </button>
+    <button class="filter-btn" data-filter="waiting_budget">
+      💶 Esp. pressupost <span class="filter-badge" id="filterBudgetCount">0</span>
+    </button>
     <button class="filter-btn" data-filter="waiting_material">
-      🟡 Esperant <span class="filter-badge" id="filterWaitingCount">0</span>
+      🟡 Esp. material <span class="filter-badge" id="filterWaitingCount">0</span>
     </button>
     <button class="filter-btn" data-filter="paused">
-      ⸚️ Pausats <span class="filter-badge" id="filterPausedCount">0</span>
+      ⏸️ Pausats <span class="filter-badge" id="filterPausedCount">0</span>
     </button>
     <button class="filter-btn" data-filter="urgent">
       🔴 Urgents <span class="filter-badge" id="filterUrgentCount">0</span>
@@ -902,6 +908,8 @@ function updateFilterCounts(clients) {
     all: clients.length,
     in_progress: 0,
     waiting_feedback: 0,
+    waiting_call: 0,
+    waiting_budget: 0,
     waiting_material: 0,
     paused: 0,
     urgent: 0
@@ -914,7 +922,9 @@ function updateFilterCounts(clients) {
     // Comptar urgents (entrega en <=3 dies)
     if (client.deliveryDate) {
       const today = new Date();
+      today.setHours(0,0,0,0);
       const delivery = new Date(client.deliveryDate);
+      delivery.setHours(0,0,0,0);
       const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
       if (diffDays <= 3 && diffDays >= 0) counts.urgent++;
     }
@@ -924,6 +934,8 @@ function updateFilterCounts(clients) {
   document.getElementById('filterAllCount').textContent = counts.all;
   document.getElementById('filterProgressCount').textContent = counts.in_progress;
   document.getElementById('filterFeedbackCount').textContent = counts.waiting_feedback;
+  document.getElementById('filterCallCount').textContent = counts.waiting_call;
+  document.getElementById('filterBudgetCount').textContent = counts.waiting_budget;
   document.getElementById('filterWaitingCount').textContent = counts.waiting_material;
   document.getElementById('filterPausedCount').textContent = counts.paused;
   document.getElementById('filterUrgentCount').textContent = counts.urgent;
@@ -969,7 +981,7 @@ function sortClients(clients, sortBy) {
       return sorted.sort((a, b) => a.name.localeCompare(b.name));
       
     case 'state':
-      const stateOrder = ['blocked', 'waiting_material', 'waiting_feedback', 'paused', 'in_progress', 'ready_to_deliver'];
+      const stateOrder = ['blocked', 'waiting_call', 'waiting_budget', 'waiting_material', 'waiting_feedback', 'paused', 'in_progress', 'ready_to_deliver'];
       return sorted.sort((a, b) => {
         const stateA = stateOrder.indexOf(a.state || 'in_progress');
         const stateB = stateOrder.indexOf(b.state || 'in_progress');
