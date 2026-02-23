@@ -401,7 +401,7 @@
         <div id="bulkDeleteList"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalBulkDelete')">Cancel·lar</button>
+        <button class="btn-secondary" onclick="closeModal('modalBulkDelete')" data-i18n="cancellar">Cancel·lar</button>
       </div>
     </div>
   </div>
@@ -417,7 +417,7 @@
         <p class="modal-text" id="closeClientText"></p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalCloseClient')">Cancel·lar</button>
+        <button class="btn-secondary" onclick="closeModal('modalCloseClient')" data-i18n="cancellar">Cancel·lar</button>
         <button class="btn-primary" onclick="confirmCloseClient()" data-i18n="modal_tancar_client">Tancar client</button>
       </div>
     </div>
@@ -451,7 +451,7 @@
         <pre id="reportContent" class="report-content"></pre>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalReport')">Tancar</button>
+        <button class="btn-secondary" onclick="closeModal('modalReport')" data-i18n="tancar">Tancar</button>
         <button class="btn-primary" onclick="copyReport()" data-i18n="copiar">📋 Copiar</button>
         <button class="btn-primary" onclick="shareReport()" data-i18n="compartir">📤 Compartir</button>
       </div>
@@ -499,7 +499,7 @@
         <p class="modal-text" style="font-size: 13px; opacity: 0.8;">La pàgina es recarregarà automàticament després de restaurar.</p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalImportBackup')">Cancel·lar</button>
+        <button class="btn-secondary" onclick="closeModal('modalImportBackup')" data-i18n="cancellar">Cancel·lar</button>
         <button class="btn-primary" onclick="confirmImportBackup()" data-i18n="restaurar">Restaurar còpia</button>
       </div>
     </div>
@@ -543,7 +543,7 @@
         <input type="text" id="inputDeleteConfirm" class="modal-input" data-i18n-ph="ph_esborrar" placeholder="ESBORRAR">
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalDeleteClient')">Cancel·lar</button>
+        <button class="btn-secondary" onclick="closeModal('modalDeleteClient')" data-i18n="cancellar">Cancel·lar</button>
         <button class="btn-danger" onclick="confirmDeleteClient()" data-i18n="esborrar">Esborrar</button>
       </div>
     </div>
@@ -568,7 +568,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="saveDeliveryDate()" data-i18n="esborrar_data">Esborrar data</button>
-        <button class="btn-secondary" onclick="closeModal('modalDeliveryDate')">Cancel·lar</button>
+        <button class="btn-secondary" onclick="closeModal('modalDeliveryDate')" data-i18n="cancellar">Cancel·lar</button>
         <button class="btn-primary" onclick="saveDeliveryDate()" data-i18n="guardar">Guardar</button>
       </div>
     </div>
@@ -599,8 +599,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalExtraHours')">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveExtraHours()">Afegir hores</button>
+        <button class="btn-secondary" onclick="closeModal('modalExtraHours')" data-i18n="cancellar">Cancel·lar</button>
+        <button class="btn-primary" onclick="saveExtraHours()" data-i18n="afegir_hores">Afegir hores</button>
       </div>
     </div>
   </div>
@@ -610,18 +610,18 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📊</span>
-        <h2 class="modal-title">Hores Extra Registrades</h2>
+        <h2 class="modal-title" data-i18n="hores_extra">Hores Extra Registrades</h2>
       </div>
       <div class="modal-body">
         <div id="extraHoursList" class="extra-hours-list"></div>
         <div class="total-stats" style="margin-top: 16px;">
           <div class="total-time">
-            Total hores extra: <strong id="extraHoursTotal">00:00:00</strong>
+            <span data-i18n="total_treballat">Total hores extra:</span> <strong id="extraHoursTotal">00:00:00</strong>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalViewExtraHours')">Tancar</button>
+        <button class="btn-primary" onclick="closeModal('modalViewExtraHours')" data-i18n="tancar">Tancar</button>
       </div>
     </div>
   </div>
@@ -631,7 +631,7 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">⏰</span>
-        <h2 class="modal-title">Horari de Focus diari</h2>
+        <h2 class="modal-title" data-i18n="config_horari">Horari de Focus diari</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
@@ -640,23 +640,23 @@
 
         <label class="modal-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
           <input type="checkbox" id="scheduleEnabled" style="width: 20px; height: 20px; cursor: pointer;">
-          <span>Activar Horari de Focus diari</span>
+          <span data-i18n="config_horari">Activar Horari de Focus diari</span>
         </label>
 
         <div id="scheduleConfig" style="display: none;">
           <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
             <div style="flex: 1;">
-              <label class="modal-label">Hora inici</label>
+              <label class="modal-label" data-i18n="horari_inici">Hora inici</label>
               <input type="time" id="scheduleStart" class="modal-input" value="09:00">
             </div>
             <div style="flex: 1;">
-              <label class="modal-label">Hora fi</label>
+              <label class="modal-label" data-i18n="horari_fi">Hora fi</label>
               <input type="time" id="scheduleEnd" class="modal-input" value="17:00">
             </div>
           </div>
 
           <div class="schedule-presets">
-            <p class="modal-label" style="margin-bottom: 10px;">Predefinits ràpids:</p>
+            <p class="modal-label" style="margin-bottom: 10px;" data-i18n="predefinits">Predefinits ràpids:</p>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
               <button class="btn-secondary" onclick="applyPreset('07:00', '14:00')">🌅 Matí<br><small>07:00 - 14:00</small></button>
               <button class="btn-secondary" onclick="applyPreset('15:00', '22:00')">🌆 Tarda<br><small>15:00 - 22:00</small></button>
@@ -676,8 +676,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalSchedule')">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveScheduleConfig()">Guardar</button>
+        <button class="btn-secondary" onclick="closeModal('modalSchedule')" data-i18n="cancellar">Cancel·lar</button>
+        <button class="btn-primary" onclick="saveScheduleConfig()" data-i18n="guardar">Guardar</button>
       </div>
     </div>
   </div>
@@ -878,7 +878,7 @@ async function renderClientsOverview() {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🔭</div>
-        <div class="empty-text">No hi ha clients amb aquest filtre</div>
+        <div class="empty-text" data-i18n="no_clients_filtre">No hi ha clients amb aquest filtre</div>
       </div>
     `;
     return;

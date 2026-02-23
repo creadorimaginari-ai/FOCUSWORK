@@ -3,66 +3,65 @@
  * Gestió visual de l'estat dels projectes
  *************************************************/
 
+// Helper per traduccions d'estats
+function _stateLabel(key) {
+  return (typeof t === 'function') ? t(key) : key;
+}
+
 // Estats disponibles del projecte
+// Usem getters per retornar la label en l'idioma actiu cada vegada
 const PROJECT_STATES = {
   WAITING_MATERIAL: {
     id: 'waiting_material',
-    label: 'Esperant material',
+    get label() { return _stateLabel('state_waiting_material_full'); },
     icon: '🟡',
     color: '#fbbf24',
-    description: 'Esperant que el client enviï material necessari'
   },
   IN_PROGRESS: {
     id: 'in_progress',
-    label: 'En progrés',
+    get label() { return _stateLabel('state_in_progress_full'); },
     icon: '🔵',
     color: '#3b82f6',
-    description: 'Treballant activament en el projecte'
   },
   WAITING_FEEDBACK: {
     id: 'waiting_feedback',
-    label: 'Prova enviada',
+    get label() { return _stateLabel('state_waiting_feedback_full'); },
     icon: '✉️',
     color: '#a855f7',
-    description: 'Esperant aprovació o feedback del client'
   },
   PAUSED: {
     id: 'paused',
-    label: 'Pausat',
+    get label() { return _stateLabel('state_paused_full'); },
     icon: '⏸️',
     color: '#6b7280',
-    description: 'Projecte en espera per decisió del client'
   },
   READY_TO_DELIVER: {
     id: 'ready_to_deliver',
-    label: 'Llest per lliurar',
+    get label() { return _stateLabel('state_ready_full'); },
     icon: '🟢',
     color: '#10b981',
-    description: 'Projecte acabat, pendent de lliurament'
   },
   BLOCKED: {
     id: 'blocked',
-    label: 'Bloquejat',
+    get label() { return _stateLabel('state_blocked_full'); },
     icon: '🔴',
     color: '#ef4444',
-    description: 'Hi ha un problema que impedeix continuar'
   },
   WAITING_BUDGET: {
     id: 'waiting_budget',
-    label: 'Esperant pressupost',
+    get label() { return _stateLabel('state_waiting_budget_full'); },
     icon: '💰',
     color: '#f97316',
-    description: 'Esperant aprovació del pressupost pel client'
   }
 };
 
 // Nivells de progrés (1-5 quadrats amb colors: vermell, vermell, taronja, taronja, verd)
 const PROGRESS_LEVELS = {
-  1: { label: 'Fase inicial', percent: 20, color: '#ef4444' },        // Vermell
-  2: { label: 'En desenvolupament', percent: 40, color: '#ef4444' },  // Vermell
-  3: { label: 'A meitat', percent: 60, color: '#f97316' },           // Taronja
-  4: { label: 'Gairebé acabat', percent: 80, color: '#f97316' },     // Taronja
-  5: { label: 'A punt', percent: 100, color: '#10b981' }             // Verd
+  1: { get label() { return _stateLabel('prog_1'); }, percent: 20, color: '#ef4444' },
+  2: { get label() { return _stateLabel('prog_2'); }, percent: 40, color: '#ef4444' },
+  3: { get label() { return _stateLabel('prog_3'); }, percent: 60, color: '#f97316' },
+  4: { get label() { return _stateLabel('prog_4'); }, percent: 80, color: '#f97316' },
+  5: { get label() { return _stateLabel('prog_5'); }, percent: 100, color: '#10b981' }
 };
 
 /* ================= FUNCIONS D'ESTAT ================= */
@@ -186,7 +185,7 @@ function renderProgressSelector(client) {
   return `
     <div class="project-progress-section">
       <div class="progress-header">
-        <span class="progress-label">Progrés del projecte</span>
+        <span class="progress-label" data-i18n="progres_projecte">${(typeof t==='function')?t('progres_projecte'):'Progrés del projecte'}</span>
         <span class="progress-percent">${PROGRESS_LEVELS[currentProgress].percent}%</span>
       </div>
       

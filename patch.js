@@ -45,11 +45,12 @@ window.renderClientCard = function(client) {
     const del = new Date(client.deliveryDate);
     const now = new Date(); now.setHours(0,0,0,0); del.setHours(0,0,0,0);
     const diff = Math.ceil((del-now)/86400000);
-    const [txt,col] = diff<0  ? [`⚠️ Vençut fa ${Math.abs(diff)}d`,'#ef4444']
-                    : diff===0? ['🔴 AVUI','#ef4444']
-                    : diff===1? ['🟡 DEMÀ','#f59e0b']
-                    : diff<=3 ? [`🟡 ${diff} dies`,'#f59e0b']
-                    :           [`📅 ${del.toLocaleDateString('ca-ES',{day:'2-digit',month:'2-digit'})}`,'#94a3b8'];
+    const _t2 = (typeof t === 'function') ? t : (k => k);
+    const [txt,col] = diff<0  ? [`⚠️ ${_t2('venut')} ${Math.abs(diff)}d`,'#ef4444']
+                    : diff===0? [`🔴 ${_t2('avui')}`,'#ef4444']
+                    : diff===1? [`🟡 ${_t2('dema')}`,'#f59e0b']
+                    : diff<=3 ? [`🟡 ${diff} ${_t2('dies')}`,'#f59e0b']
+                    :           [`📅 ${del.toLocaleDateString(undefined,{day:'2-digit',month:'2-digit'})}`,'#94a3b8'];
     deliveryHtml = `<span style="font-size:11px;color:${col};margin-left:8px;">${txt}</span>`;
   }
 

@@ -61,13 +61,13 @@ async function loadLicenseFile() {
       const text = await file.text();
       const license = JSON.parse(text);
       if (!license.signature || !license.clientId) {
-        showAlert('Arxiu invàlid', 'Aquest no és un arxiu de llicència vàlid', '❌');
+        showAlert(t('alert_error'), t('llicencia_invalid'), '❌');
         return;
       }
       if (license.expiryDate) {
         const expiry = new Date(license.expiryDate);
         if (expiry < new Date()) {
-          showAlert('Llicència caducada', 'Aquesta llicència ha caducat', '⏰');
+          showAlert(t('alert_estat'), t('llicencia_caducada_msg'), '⏰');
           return;
         }
       }
@@ -79,9 +79,9 @@ async function loadLicenseFile() {
       const expiryText = license.expiryDate
         ? `Vàlida fins: ${new Date(license.expiryDate).toLocaleDateString()}`
         : 'Sense límit de temps';
-      showAlert('Llicència activada!', `FocusWork complet activat\n\nClient: ${license.clientName}\n${expiryText}\n\nGaudeix de clients il·limitats!`, '🎉');
+      showAlert(t('alert_estat'), `${t('llicencia_activada_msg')}\n\n${t('label_client')} ${license.clientName}\n${expiryText}`, '🎉');
     } catch (err) {
-      showAlert('Error', 'No s\'ha pogut llegir l\'arxiu de llicència', '❌');
+      showAlert(t('alert_error'), t('error_llegir_llicencia'), '❌');
     }
   };
   input.click();
@@ -108,7 +108,7 @@ function requestLicense() {
 async function exportCurrentWork() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
+    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     return;
   }
   const workData = {
@@ -125,7 +125,7 @@ async function exportCurrentWork() {
   a.download = `treball_${client.name.replace(/[^a-z0-9]/gi, '_')}_${todayKey()}.focowork`;
   a.click();
   URL.revokeObjectURL(url);
-  showAlert('Treball desat', 'L\'arxiu s\'ha descarregat correctament.', '💾');
+  showAlert(t('alert_guardat'), t('arxiu_descarregat'), '💾');
 }
 
 async function importWork() {
@@ -143,7 +143,7 @@ async function importWork() {
         return;
       }
       if (!fileData.client || !fileData.version) {
-        showAlert('Arxiu invàlid', 'Aquest arxiu no és vàlid', '❌');
+        showAlert(t('alert_error'), t('arxiu_invalid'), '❌');
         return;
       }
       $('importClientName').textContent = fileData.client.name;
@@ -153,7 +153,7 @@ async function importWork() {
       window.pendingImport = fileData;
       openModal('modalImportWork');
     } catch (err) {
-      showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
+      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
     }
   };
   input.click();
@@ -184,13 +184,13 @@ async function confirmImport() {
   
   await updateUI();
   closeModal('modalImportWork');
-  showAlert('Treball importat', `Client "${workData.client.name}" importat correctament`, '✅');
+  showAlert(t('alert_importat'), `${workData.client.name} ${t('treball_importat_msg')}`, '✅');
   window.pendingImport = null;
 }
 
 function handleBackupFile(backupData) {
   if (!backupData.state || !backupData.version) {
-    showAlert('Arxiu invàlid', 'Aquest arxiu està corromput', '❌');
+    showAlert(t('alert_error'), t('arxiu_corromput'), '❌');
     return;
   }
   const clientCount = Object.keys(backupData.clients || {}).length;
@@ -228,7 +228,7 @@ async function confirmImportBackup() {
   closeModal('modalImportBackup');
   
   const clientCount = Object.keys(backupData.clients || {}).length;
-  showAlert('Backup restaurat', `✅ ${clientCount} clients recuperats`, '🎉');
+  showAlert(t('alert_restaurat'), `✅ ${clientCount} ${t('backup_restaurat_msg')}`, '🎉');
   window.pendingBackup = null;
   setTimeout(() => location.reload(), 2000);
 }
@@ -258,7 +258,7 @@ async function exportAllData() {
   markBackupDone();
   
   const sizeMB = (blob.size / (1024 * 1024)).toFixed(2);
-  showAlert('Backup complet', `Dades exportades: ${sizeMB}MB`, '💾');
+  showAlert(t('alert_backup'), `Dades exportades: ${sizeMB}MB`, '💾');
 }
 /*************************************************
  * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 2/5
@@ -376,7 +376,7 @@ async function updateUI(preloadedClient = null) {
   }
 
   updates.push(() => {
-    $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Cap encàrrec actiu";
+    $("clientName").textContent = client ? `${t('client_prefix')}${client.name}${client.active ? "" : t('client_tancat_sufix')}` : t('no_client');
     $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
     $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
     const headerTitle = $("clientHeaderTitle");
@@ -385,7 +385,7 @@ async function updateUI(preloadedClient = null) {
 
   if ($("clientTotal")) {
     updates.push(() => {
-      $("clientTotal").textContent = client ? `Total client: ${formatTime(client.total)}` : "";
+      $("clientTotal").textContent = client ? `${t('total_client_prefix')}${formatTime(client.total)}` : "";
     });
   }
   
@@ -394,7 +394,7 @@ async function updateUI(preloadedClient = null) {
     if (billableBox) {
       updates.push(() => {
         const billableTime = client.billableTime || 0;
-        billableBox.textContent = `💰 Facturable: ${formatTime(billableTime)}`;
+        billableBox.textContent = `${t('facturable_prefix')}${formatTime(billableTime)}`;
         billableBox.style.display = "block";
       });
     }
@@ -579,7 +579,7 @@ function updateFocusScheduleStatus() {
   const statusEl = $("focusScheduleStatus");
   if (!statusEl) return;
   if (state.focusSchedule.enabled && !isWithinFocusSchedule()) {
-    statusEl.textContent = "⏳ Fora d'horari d'enfocament";
+    statusEl.textContent = t('fora_horari');
     statusEl.style.display = "block";
   } else {
     statusEl.style.display = "none";
@@ -592,7 +592,7 @@ async function newClient() {
   if (typeof canCreateMoreClients === 'function') {
     const check = await canCreateMoreClients();
     if (!check.ok) {
-      showAlert('Límit de clients', 
+      showAlert(t('alert_limit_clients'), 
         `Has arribat al màxim de ${check.limit} clients actius per al teu compte.\n\nContacta amb nosaltres per ampliar el límit.`, 
         '🔒');
       return;
@@ -656,7 +656,7 @@ async function changeClient() {
     });
     
   if (!actives.length) {
-    showAlert('Sense clients', 'No hi ha clients actius', '⚠️');
+    showAlert(t('alert_error'), t('no_clients_actius'), '⚠️');
     return;
   }
   const list = $('activeClientsList');
@@ -736,7 +736,7 @@ async function closeClient() {
     return;
   }
   
-  $('closeClientText').textContent = `Client: ${client.name}\nTemps total: ${formatTime(client.total)}`;
+  $('closeClientText').textContent = `${t('label_client')} ${client.name}\n${t('label_temps')} ${formatTime(client.total)}`;
   window.clientToClose = client.id;
   openModal('modalCloseClient');
 }
@@ -778,7 +778,7 @@ async function confirmCloseClient() {
   await updateUI();
   closeModal('modalCloseClient');
   closeModal('modalExportBeforeClose');
-  showAlert('Client tancat', `${client.name}\nTemps total: ${formatTime(client.total)}`, '✅');
+  showAlert(t('alert_client_tancat'), `${client.name}\n${t('label_temps')} ${formatTime(client.total)}`, '✅');
   window.clientToClose = null;
 }
 
@@ -813,7 +813,7 @@ async function showHistory() {
   const allClients = await loadAllClients();
   const closed = Object.values(allClients).filter(c => !c.active);
   if (!closed.length) {
-    showAlert('Sense històric', 'No hi ha clients tancats', 'ℹ️');
+    showAlert(t('alert_error'), t('sense_clients_esborrar'), 'ℹ️');
     return;
   }
   renderHistoryList(closed);
@@ -824,7 +824,7 @@ function renderHistoryList(clients) {
   const list = $('historyClientsList');
   list.innerHTML = '';
   if (!clients.length) {
-    list.innerHTML = '<p class="modal-text" style="opacity: 0.6;">Sense resultats</p>';
+    list.innerHTML = `<p class="modal-text" style="opacity: 0.6;">${t('sense_resultats')}</p>`;
     return;
   }
   
@@ -919,7 +919,7 @@ async function confirmDeleteClient() {
   await save();
   await updateUI();
   closeModal('modalDeleteClient');
-  showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
+  showAlert(t('alert_client_eliminat'), t('client_eliminat_msg'), '🗑️');
 }
 
 /* ================= FOTOS OPTIMIZADO Y CORREGIDO - VERSIÓ FINAL ================= */
@@ -927,13 +927,13 @@ let photoToDelete = null;
 
 async function addPhotoToClient() {
   if (!state.currentClientId) {
-    showAlert('Error', 'Selecciona un client primer', '⚠️');
+    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     return;
   }
   
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert('Error', 'Client no trobat', '⚠️');
+    showAlert(t('alert_error'), t('error_no_client'), '⚠️');
     return;
   }
   
@@ -958,7 +958,7 @@ async function addPhotoToClient() {
     if (!file) return;
     
     if (!file.type.startsWith('image/')) {
-      showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
+      showAlert(t('alert_error'), t('error_selecciona_imatge'), '⚠️');
       return;
     }
     
@@ -996,7 +996,7 @@ async function addPhotoToClient() {
         
         const currentClient = await loadClient(state.currentClientId);
         if (!currentClient) {
-          showAlert('Error', 'S\'ha perdut la referència al client', '⚠️');
+          showAlert(t('alert_error'), t('error_no_client'), '⚠️');
           return;
         }
         
@@ -1005,21 +1005,21 @@ async function addPhotoToClient() {
         try {
           await saveClient(currentClient);
           renderPhotoGallery(currentClient);
-          showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
+          showAlert(t('alert_foto_afegida'), t('foto_afegida_msg'), '✅');
         } catch (e) {
-          showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
+          showAlert(t('alert_error'), `${t('error_llegir_arxiu')}: ${e.message}`, '❌');
         }
       };
       
       img.onerror = () => {
-        showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
+        showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
       };
       
       img.src = reader.result;
     };
     
     reader.onerror = () => {
-      showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
+      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
     };
     
     reader.readAsDataURL(file);
@@ -1047,7 +1047,7 @@ async function confirmDeletePhoto() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
     closeModal('modalDeletePhoto');
-    showAlert('Error', 'Client no trobat', '⚠️');
+    showAlert(t('alert_error'), t('error_no_client'), '⚠️');
     return;
   }
   
@@ -1066,10 +1066,10 @@ async function confirmDeletePhoto() {
     
     await renderFileGallery(client);
     
-    showAlert('Foto eliminada', 'La foto s\'ha eliminat correctament', '✅');
+    showAlert(t('alert_foto_eliminada'), t('foto_eliminada_msg'), '✅');
   } catch (e) {
     console.error('Error esborrant foto:', e);
-    showAlert('Error', 'No s\'ha pogut esborrar la foto: ' + e.message, '❌');
+    showAlert(t('alert_error'), t('error_esborrar_foto'), '❌');
     closeModal('modalDeletePhoto');
   }
 }
@@ -1087,13 +1087,13 @@ async function handlePhotoInputiPad(input) {
   console.log('✅ Fitxer rebut:', file.name, file.type);
   
   if (!state.currentClientId) {
-    showAlert('Error', 'Selecciona un client primer', '⚠️');
+    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     input.value = '';
     return;
   }
   
   if (!file.type.startsWith('image/')) {
-    showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
+    showAlert(t('alert_error'), t('error_selecciona_imatge'), '⚠️');
     input.value = '';
     return;
   }
@@ -1102,7 +1102,7 @@ async function handlePhotoInputiPad(input) {
   if (typeof window.processImageFile === 'function') {
     const client = await loadClient(state.currentClientId);
     if (!client) {
-      showAlert('Error', 'Client no trobat', '⚠️');
+      showAlert(t('alert_error'), t('error_no_client'), '⚠️');
       input.value = '';
       return;
     }
@@ -1154,7 +1154,7 @@ async function handlePhotoInputiPad(input) {
         
         const client = await loadClient(state.currentClientId);
         if (!client) {
-          showAlert('Error', 'Client no trobat', '⚠️');
+          showAlert(t('alert_error'), t('error_no_client'), '⚠️');
           input.value = '';
           return;
         }
@@ -1167,11 +1167,11 @@ async function handlePhotoInputiPad(input) {
         await renderFileGallery(client);
         console.log('✅ Galeria actualitzada');
         
-        showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
+        showAlert(t('alert_foto_afegida'), t('foto_afegida_msg'), '✅');
         
       } catch (error) {
         console.error('❌ Error processant:', error);
-        showAlert('Error', 'No s\'ha pogut processar la imatge: ' + error.message, '❌');
+        showAlert(t('alert_error'), `${t('error_llegir_arxiu')}: ${error.message}`, '❌');
       }
       
       input.value = '';
@@ -1179,7 +1179,7 @@ async function handlePhotoInputiPad(input) {
     
     img.onerror = () => {
       console.error('❌ Error carregant imatge');
-      showAlert('Error', 'No s\'ha pogut carregar la imatge', '❌');
+      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
       input.value = '';
     };
     
@@ -1188,7 +1188,7 @@ async function handlePhotoInputiPad(input) {
   
   reader.onerror = () => {
     console.error('❌ Error llegint fitxer');
-    showAlert('Error', 'No s\'ha pogut llegir el fitxer', '❌');
+    showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
     input.value = '';
   };
   
@@ -1208,14 +1208,14 @@ async function handleFileInputiPad(input) {
   console.log('✅ Fitxer rebut:', file.name, file.type, formatFileSize(file.size));
   
   if (!state.currentClientId) {
-    showAlert('Error', 'Selecciona un client primer', '⚠️');
+    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     input.value = '';
     return;
   }
   
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert('Error', 'Client no trobat', '⚠️');
+    showAlert(t('alert_error'), t('error_no_client'), '⚠️');
     input.value = '';
     return;
   }
@@ -1225,7 +1225,7 @@ async function handleFileInputiPad(input) {
   
   // Validar mida
   if (file.size > maxSize) {
-    showAlert('Arxiu massa gran', `Mida màxima per ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
+    showAlert(t('alert_error'), `${t('arxiu_massa_gran_msg')} ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
     input.value = '';
     return;
   }
@@ -1383,7 +1383,7 @@ async function handleTaskInput(taskType, e) {
 async function setDeliveryDate() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
+    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     return;
   }
   const currentDate = client.deliveryDate ? new Date(client.deliveryDate).toISOString().split('T')[0] : '';
@@ -1398,10 +1398,10 @@ async function saveDeliveryDate() {
   const dateValue = $('inputDeliveryDate').value;
   if (dateValue) {
     client.deliveryDate = dateValue;
-    showAlert('Data desada', `Data de lliurament establerta per al ${new Date(dateValue).toLocaleDateString('ca-ES')}`, '✅');
+    showAlert(t('alert_data_desada'), `${t('data_lliurament_msg')} ${new Date(dateValue).toLocaleDateString()}`, '✅');
   } else {
     client.deliveryDate = null;
-    showAlert('Data eliminada', 'S\'ha eliminat la data de lliurament', 'ℹ️');
+    showAlert(t('alert_data_eliminada'), t('data_eliminada_msg'), 'ℹ️');
   }
   areTasksInitialized = false;
   await saveClient(client);
@@ -1413,7 +1413,7 @@ async function saveDeliveryDate() {
 async function addExtraHours() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
+    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     return;
   }
   $('inputExtraHours').value = '';
@@ -1428,7 +1428,7 @@ async function saveExtraHours() {
   const hours = parseFloat($('inputExtraHours').value);
   const description = $('inputExtraDescription').value.trim();
   if (!hours || hours <= 0) {
-    showAlert('Error', 'Introdueix un nombre d\'hores vàlid', '⚠️');
+    showAlert(t('alert_error'), t('error_hores_valides'), '⚠️');
     return;
   }
   if (!client.extraHours) client.extraHours = [];
@@ -1444,17 +1444,17 @@ async function saveExtraHours() {
   client.billableTime = (client.billableTime || 0) + extraEntry.seconds;
   await saveClient(client);
   closeModal('modalExtraHours');
-  showAlert('Hores afegides', `${hours}h afegides correctament\n\n"${extraEntry.description}"`, '✅');
+  showAlert(t('alert_hores_afegides'), `${hours}h ${t('hores_afegides_msg')}\n\n"${extraEntry.description}"`, '✅');
 }
 
 async function showExtraHours() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
+    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     return;
   }
   if (!client.extraHours || !client.extraHours.length) {
-    showAlert('Sense hores extres', 'Aquest client no té hores extres registrades', 'ℹ️');
+    showAlert(t('alert_error'), t('sense_hores_extres'), 'ℹ️');
     return;
   }
   const list = $('extraHoursList');
@@ -1488,14 +1488,14 @@ async function deleteExtraHour(entryId) {
   client.billableTime = (client.billableTime || 0) - entry.seconds;
   await saveClient(client);
   closeModal('modalViewExtraHours');
-  showAlert('Hora eliminada', 'L\'entrada d\'hores extres ha estat eliminada', '🗑️');
+  showAlert(t('alert_guardat'), t('hora_eliminada_msg'), '🗑️');
 }
 
 /* ================= INFORME ================= */
 async function generateReport() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
+    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     return;
   }
   const billableTime = client.billableTime || 0;
@@ -1593,7 +1593,7 @@ function copyReport() {
   const reportText = $('reportContent').textContent;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(reportText).then(() => {
-      showAlert('Copiat', 'Informe copiat al porta-retalls', '✅');
+      showAlert(t('alert_guardat'), t('copiat_msg'), '✅');
     }).catch(() => fallbackCopy(reportText));
   } else {
     fallbackCopy(reportText);
@@ -1609,9 +1609,9 @@ function fallbackCopy(text) {
   textarea.select();
   try {
     document.execCommand('copy');
-    showAlert('Copiat', 'Informe copiat al porta-retalls', '✅');
+    showAlert(t('alert_guardat'), t('copiat_msg'), '✅');
   } catch (err) {
-    showAlert('Error', 'No s\'ha pogut copiar', '⚠️');
+    showAlert(t('alert_error'), t('error_copiar'), '⚠️');
   }
   document.body.removeChild(textarea);
 }
@@ -1651,7 +1651,7 @@ async function shareReport() {
 function showFocus() {
   const total = Object.values(state.focus).reduce((a, b) => a + b, 0);
   if (!total) {
-    showAlert('Sense dades', 'Encara no hi ha dades d\'enfocament avui', 'ℹ️');
+    showAlert(t('alert_error'), t('sense_dades_focus'), 'ℹ️');
     return;
   }
   const trabajo = state.focus[ACTIVITIES.WORK] || 0;
@@ -1677,13 +1677,13 @@ function showFocus() {
   const focusState = $('modalFocusState');
   if (pct >= 64) {
     focusState.className = 'focus-state enfocado';
-    focusState.innerHTML = '🟢 Enfocat';
+    focusState.innerHTML = t('enfocat');
   } else if (pct >= 40) {
     focusState.className = 'focus-state atencion';
-    focusState.innerHTML = '🟡 Atenció';
+    focusState.innerHTML = t('atencio_focus');
   } else {
     focusState.className = 'focus-state disperso';
-    focusState.innerHTML = '🔴 Dispers';
+    focusState.innerHTML = t('dispers');
   }
   openModal('modalEnfoque');
 }
@@ -1701,7 +1701,7 @@ async function exportTodayCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = `focowork_${todayKey()}.csv`;
   a.click();
-  showAlert('CSV exportat', 'L\'arxiu s\'ha descarregat correctament', '📄');
+  showAlert(t('alert_guardat'), t('csv_exportat_msg'), '📄');
 }
 
 /* ================= CONFIGURACIÓ D'HORARI ================= */
@@ -1750,7 +1750,7 @@ function saveScheduleConfig() {
   const [sh, sm] = start.split(':').map(Number);
   const [eh, em] = end.split(':').map(Number);
   if ((eh * 60 + em) <= (sh * 60 + sm)) {
-    showAlert('Error', 'L\'hora de fi ha de ser posterior a l\'hora d\'inici', '⚠️');
+    showAlert(t('alert_error'), t('error_hora_fi'), '⚠️');
     return;
   }
   state.focusSchedule.enabled = enabled;
@@ -1759,7 +1759,7 @@ function saveScheduleConfig() {
   save();
   closeModal('modalSchedule');
   const message = enabled ? `Horari activat: ${start} - ${end}\n\nL'enfocament només comptabilitzarà temps dins d'aquest horari.` : 'Horari desactivat\n\nL\'enfocament comptabilitzarà tot el temps treballat.';
-  showAlert('Configuració desada', message, '✅');
+  showAlert(t('alert_estat'), message, '✅');
 }
 
 /* ================= ESBORRAT MASSIU ================= */
@@ -1768,7 +1768,7 @@ async function showBulkDeleteModal() {
   const closedClients = Object.values(allClients).filter(c => !c.active);
   
   if (!closedClients.length) {
-    showAlert('Sense clients tancats', 'No hi ha clients tancats per esborrar', 'ℹ️');
+    showAlert(t('alert_error'), t('sense_clients_esborrar'), 'ℹ️');
     return;
   }
   
@@ -1874,7 +1874,7 @@ async function confirmBulkDelete(period) {
   }
   
   if (!toDelete.length) {
-    showAlert('Sense clients', 'No hi ha clients per esborrar en aquest període', 'ℹ️');
+    showAlert(t('alert_error'), t('sense_clients_periode'), 'ℹ️');
     return;
   }
   
@@ -1901,12 +1901,12 @@ async function confirmBulkDelete(period) {
   );
   
   if (finalConfirm !== 'ESBORRAR') {
-    showAlert('Cancel·lat', 'Operació cancel·lada', 'ℹ️');
+    showAlert(t('cancellar'), t('cancelat_msg'), 'ℹ️');
     return;
   }
   
   closeModal('modalBulkDelete');
-  showAlert('Esborrant...', `Esborrant ${toDelete.length} clients...`, '⏳');
+  showAlert(t('esborrant'), `${t('esborrant_prefix')}${toDelete.length} ${t('esborrant_clients_msg')}`, '⏳');
   
   let deleted = 0;
   for (const client of toDelete) {
@@ -2026,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.isFull = false;
       state.license = null;
       save();
-      showAlert('Llicència caducada', 'La teva llicència ha caducat.', '⏰');
+      showAlert(t('alert_estat'), t('llicencia_caducada_msg'), '⏰');
     }
   }
   
@@ -2172,7 +2172,7 @@ if (photoCanvas && photoCtx) {
     const btn = $('drawToggle');
     const text = $('drawToggleText');
     if (btn) btn.classList.remove('active');
-    if (text) text.textContent = 'Dibuixar';
+    if (text) text.textContent = t('dibuixar');
     photoCanvas.classList.remove('drawing-mode');
   };
   const src = getPhotoSrc(photo);
@@ -2323,7 +2323,7 @@ async function downloadCurrentPhoto() {
   a.download = fileName;
   a.click();
   
-  showAlert('Foto descarregada', 'La foto s\'ha descarregat correctament', '📥');
+  showAlert(t('alert_guardat'), t('foto_descarregada_msg'), '📥');
 }
 
 async function shareCurrentPhoto() {
@@ -2344,11 +2344,11 @@ async function shareCurrentPhoto() {
       });
     } catch (e) {
       if (e.name !== 'AbortError') {
-        showAlert('Error', 'No s\'ha pogut compartir la foto', '❌');
+        showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
       }
     }
   } else {
-    showAlert('No disponible', 'La compartició no està disponible en aquest navegador', 'ℹ️');
+    showAlert(t('alert_error'), t('no_disponible_compartir'), 'ℹ️');
   }
 }
 
@@ -2374,7 +2374,7 @@ async function deleteCurrentPhoto() {
     if (window.currentClientPhotos.length === 0) {
       closeLightbox();
       await renderPhotoGallery();
-      showAlert('Foto esborrada', 'No queden més fotos', '🗑️');
+      showAlert(t('alert_foto_eliminada'), t('foto_esborrada_nofotos'), '🗑️');
       return;
     }
     
@@ -2385,7 +2385,7 @@ async function deleteCurrentPhoto() {
     updateLightboxDisplay();
     renderPhotoGallery();
     
-    showAlert('Foto esborrada', 'La foto s\'ha eliminat correctament', '✅');
+    showAlert(t('alert_foto_eliminada'), t('foto_eliminada_msg'), '✅');
   } catch (e) {
     console.error('Error esborrant foto:', e);
     showAlert('Error', 'No s\'ha pogut esborrar la foto', '❌');
@@ -2747,14 +2747,14 @@ function toggleDrawing() {
   
   if (drawingEnabled) {
     btn?.classList.add('active');
-    if (text) text.textContent = 'Activat';
+    if (text) text.textContent = t('activat');
     canvas.classList.add('drawing-mode');
     canvas.style.pointerEvents = 'auto';
     canvas.style.cursor = 'crosshair';
     if (fillModeEnabled) toggleFillMode();
   } else {
     btn?.classList.remove('active');
-    if (text) text.textContent = 'Llapis';
+    if (text) text.textContent = t('llapis');
     canvas.classList.remove('drawing-mode');
     canvas.style.pointerEvents = 'auto';
     canvas.style.cursor = 'default';
@@ -2821,7 +2821,7 @@ async function saveEditedPhoto() {
     const btn = $('drawToggle');
     const text = $('drawToggleText');
     if (btn) btn.classList.remove('active');
-    if (text) text.textContent = 'Dibuixar';
+    if (text) text.textContent = t('dibuixar');
     photoCanvas.classList.remove('drawing-mode');
   }
   
@@ -2851,7 +2851,7 @@ async function saveEditedPhoto() {
     const clientId = state.currentClientId;
 
     // Mostrar progrés
-    showAlert('Guardant...', 'Pujant foto editada al núvol...', '⏳');
+    showAlert(t('guardant'), t('pujant_foto'), '⏳');
 
     // ✅ FIX SYNC: usar un ID únic amb timestamp per la versió editada
     // Supabase Storage retorna sempre la mateixa URL per al mateix path
@@ -2910,10 +2910,10 @@ async function saveEditedPhoto() {
     };
     refreshImg.src = editedData;
 
-    showAlert('Foto guardada', 'Els canvis s\'han guardat al núvol ✅', '✅');
+    showAlert(t('alert_foto_guardada'), t('foto_guardada_msg'), '✅');
   } catch (e) {
     console.error('Error guardant foto editada:', e);
-    showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
+    showAlert(t('alert_error'), `${t('error_llegir_arxiu')}: ${e.message}`, '❌');
   }
 }
 
@@ -3398,7 +3398,7 @@ function showTextInput(screenX, screenY, canvasX, canvasY, ctx, canvas) {
   const sizeRow = document.createElement('div');
   sizeRow.style.cssText = 'display:flex; align-items:center; gap:6px;';
   const sizeLabel = document.createElement('span');
-  sizeLabel.textContent = 'Mida';
+  sizeLabel.textContent = t('mida_label');
   sizeLabel.style.cssText = 'font-size:11px; color:rgba(255,255,255,0.5); white-space:nowrap;';
   const sizeSlider = document.createElement('input');
   sizeSlider.type = 'range'; sizeSlider.min = 10; sizeSlider.max = 120; sizeSlider.value = 28;
@@ -3409,7 +3409,7 @@ function showTextInput(screenX, screenY, canvasX, canvasY, ctx, canvas) {
   btnRow.style.cssText = 'display:flex; gap:6px;';
 
   const okBtn = document.createElement('button');
-  okBtn.textContent = '✓ Afegir';
+  okBtn.textContent = t('afegir_btn');
   okBtn.style.cssText = `
     flex:1; padding:6px; border-radius:6px; border:none; cursor:pointer;
     background:#f97316; color:#fff; font-size:13px; font-weight:600;
@@ -3603,7 +3603,7 @@ window.stopPhotoSync  = stopPhotoSync;
 
 // ── MULTIIDIOMA — refrescar contingut dinàmic quan canvia la llengua ─────────
 window.addEventListener('langchange', () => {
-  // Refrescar clientName si mostra el text per defecte
+  // Refrescar clientName
   const clientNameEl = document.getElementById('clientName');
   if (clientNameEl && typeof t === 'function') {
     const defaults = ['Cap encàrrec actiu', 'Sin encargo activo', 'No active project'];
@@ -3618,6 +3618,20 @@ window.addEventListener('langchange', () => {
   }
   // Refrescar filtre actiu
   if (typeof renderFilteredClients === 'function') renderFilteredClients();
+  // Refrescar panel estat del projecte (re-renderitza labels traduïts)
+  const stateContainer = document.getElementById('projectStateContainer');
+  const progressContainer = document.getElementById('projectProgressContainer');
+  if (stateContainer && stateContainer.innerHTML && typeof renderStateSelector === 'function') {
+    const clientId = window.state && window.state.currentClientId;
+    if (clientId && typeof loadClient === 'function') {
+      loadClient(clientId).then(client => {
+        if (client) {
+          stateContainer.innerHTML = renderStateSelector(client);
+          progressContainer.innerHTML = renderProgressSelector(client);
+        }
+      });
+    }
+  }
 });
 // ─────────────────────────────────────────────────────────────────────────────
 // ────────────────────────────────────────────────────────────────────────────
@@ -3716,7 +3730,7 @@ function setupStateListeners() {
       
       // Mostrar confirmació
       const stateName = option.querySelector('.state-option-label').textContent;
-      showAlert('Estat actualitzat', `Projecte marcat com: ${stateName}`, '✅');
+      showAlert(t('alert_estat'), `${t('estat_actualitzat_msg')}${stateName}`, '✅');
     });
   });
 }
@@ -3740,7 +3754,7 @@ function setupProgressListeners() {
       // Mostrar confirmació
       if (typeof PROGRESS_LEVELS !== 'undefined' && PROGRESS_LEVELS[level]) {
         const progressLabel = PROGRESS_LEVELS[level].label;
-        showAlert('Progrés actualitzat', `${progressLabel} (${level}/5)`, '⭐');
+        showAlert(t('alert_progres'), `${progressLabel} (${level}/5)`, '⭐');
       }
     });
   });
@@ -3826,13 +3840,13 @@ async function addFileToClient() {
   console.log('📎 addFileToClient iniciada');
   
   if (!state.currentClientId) {
-    showAlert('Error', 'Selecciona un client primer', '⚠️');
+    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     return;
   }
   
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert('Error', 'Client no trobat', '⚠️');
+    showAlert(t('alert_error'), t('error_no_client'), '⚠️');
     return;
   }
   
@@ -3863,7 +3877,7 @@ async function addFileToClient() {
     
     // Validar mida
     if (file.size > maxSize) {
-      showAlert('Arxiu massa gran', `Mida màxima per ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
+      showAlert(t('alert_error'), `${t('arxiu_massa_gran_msg')} ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
       return;
     }
     
@@ -3933,22 +3947,22 @@ async function processImageFile(file, client) {
         await saveClient(client);
         await renderFileGallery(client);
         
-        showAlert('Imatge afegida', `${file.name} afegit correctament`, '✅');
+        showAlert(t('imatge_afegida'), `${file.name} ${t('arxiu_afegit_msg')}`, '✅');
       } catch (error) {
         console.error('Error processant imatge:', error);
-        showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
+        showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
       }
     };
     
     img.onerror = () => {
-      showAlert('Error', 'No s\'ha pogut carregar la imatge', '❌');
+      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
     };
     
     img.src = reader.result;
   };
   
   reader.onerror = () => {
-    showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
+    showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
   };
   
   reader.readAsDataURL(file);
@@ -3996,13 +4010,13 @@ async function processVideoFile(file, client) {
         await saveClient(client);
         await renderFileGallery(client);
         
-        showAlert('Vídeo afegit', `${file.name} afegit correctament`, '✅');
+        showAlert(t('video_afegit'), `${file.name} ${t('arxiu_afegit_msg')}`, '✅');
       };
       
       video.src = reader.result;
     } catch (error) {
       console.error('Error processant vídeo:', error);
-      showAlert('Error', 'No s\'ha pogut processar el vídeo', '❌');
+      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
     }
   };
   
@@ -4034,11 +4048,11 @@ async function processGenericFile(file, client) {
     await renderFileGallery(client);
     
     const icon = getFileIcon(fileType);
-    showAlert('Arxiu afegit', `${icon} ${file.name} afegit correctament`, '✅');
+    showAlert(t('alert_arxiu_afegit'), `${icon} ${file.name} ${t('arxiu_afegit_msg')}`, '✅');
   };
   
   reader.onerror = () => {
-    showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
+    showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
   };
   
   reader.readAsDataURL(file);
@@ -4283,7 +4297,7 @@ async function confirmDeleteFile(file) {
   try {
     const client = await loadClient(state.currentClientId);
     if (!client) {
-      showAlert('Error', 'Client no trobat', '⚠️');
+      showAlert(t('alert_error'), t('error_no_client'), '⚠️');
       return;
     }
     
@@ -4306,7 +4320,7 @@ async function confirmDeleteFile(file) {
     // Actualitzar galeria - ara sempre usem renderFileGallery
     await renderFileGallery(client);
     
-    showAlert('Arxiu eliminat', `La ${fileTypeLabel} s'ha eliminat correctament`, '✅');
+    showAlert(t('alert_arxiu_eliminat'), `${fileTypeLabel} ${t('arxiu_eliminat_msg')}`, '✅');
   } catch (e) {
     console.error('Error esborrant arxiu:', e);
     showAlert('Error', `No s'ha pogut esborrar l'arxiu: ${e.message}`, '❌');
@@ -4356,7 +4370,7 @@ function showVideoModal(file) {
   btnRow.style.cssText = 'display:flex; gap:12px;';
 
   const closeBtn = document.createElement('button');
-  closeBtn.textContent = '✕ Tancar';
+  closeBtn.textContent = t('tancar_btn');
   closeBtn.style.cssText = `
     padding: 10px 24px; border-radius: 8px; font-size:14px; cursor:pointer;
     border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color:#fff;
@@ -4364,7 +4378,7 @@ function showVideoModal(file) {
   closeBtn.onclick = () => { video.pause(); document.body.removeChild(overlay); };
 
   const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = '🗑️ Esborrar';
+  deleteBtn.textContent = t('esborrar_btn');
   deleteBtn.style.cssText = `
     padding: 10px 24px; border-radius: 8px; font-size:14px; cursor:pointer;
     border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.15); color:#fca5a5;
@@ -4421,7 +4435,7 @@ function showAudioModal(file) {
   btnRow.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;';
 
   const closeBtn = document.createElement('button');
-  closeBtn.textContent = '✕ Tancar';
+  closeBtn.textContent = t('tancar_btn');
   closeBtn.style.cssText = `
     padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
     background: rgba(255,255,255,0.07); color: #f1f5f9; cursor: pointer; font-size:14px;
@@ -4429,7 +4443,7 @@ function showAudioModal(file) {
   closeBtn.onclick = () => { audio.pause(); document.body.removeChild(overlay); };
 
   const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = '🗑️ Esborrar';
+  deleteBtn.textContent = t('esborrar_btn');
   deleteBtn.style.cssText = `
     padding: 10px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.4);
     background: rgba(239,68,68,0.15); color: #fca5a5; cursor: pointer; font-size:14px;
