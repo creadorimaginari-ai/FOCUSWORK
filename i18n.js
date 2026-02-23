@@ -1,19 +1,17 @@
 /*
  * i18n.js — FocusWork
- * Sistema multiidioma: CA (català) · ES (español) · EN (English)
- * Ús: t('clau') → text en l'idioma actiu
- *     applyLang(lang) → canvia tot l'HTML
+ * Multiidioma: CA · ES · EN
  */
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  TRADUCCIONS
-// ─────────────────────────────────────────────────────────────────────────────
 const TRANSLATIONS = {
   ca: {
-    // Header
     no_client: 'Cap encàrrec actiu',
-
-    // Vista de projectes
+    client_prefix: 'Client: ',
+    client_tancat_sufix: ' (tancat)',
+    feina: 'Feina',
+    total_client_prefix: 'Total client: ',
+    facturable_prefix: '💰 Facturable: ',
+    fora_horari: "⏳ Fora d'horari d'enfocament",
     els_meus_projectes: '📊 Els meus projectes',
     tots: 'Tots',
     en_progres_filter: '🔵 En progrés',
@@ -28,19 +26,17 @@ const TRANSLATIONS = {
     nom_az: 'Nom (A-Z)',
     estat: 'Estat',
     no_clients_filtre: 'No hi ha clients amb aquest filtre',
-
-    // Client info panel
+    sense_resultats: 'Sense resultats',
     notes_client: 'Notes del client',
     clients_tancats: '📂 Clients tancats',
     tancar_client: '✅ Tancar client',
-    data_entrega: '📅 Data d\'entrega',
+    data_entrega: "📅 Data d'entrega",
     afegir_hores: '⏱️ Afegir hores',
-    veure_resum: '📊 Veure resum d\'hores',
+    veure_resum: "📊 Veure resum d'hores",
     generar_informe: '📋 Generar informe',
     afegir_foto: '📷 Afegir foto',
     afegir_arxiu: '📎 Afegir arxiu',
-
-    // Footer
+    revisar_encarrecs: '👁️ Revisar encàrrecs',
     guardar_sessio: '💾 Guardar sessió',
     carregar_treball: '📂 Carregar treball',
     copia_seguretat: '📦 Còpia de seguretat',
@@ -49,24 +45,15 @@ const TRANSLATIONS = {
     sortir: '🚪 Sortir',
     carregar_llicencia: '📄 Carregar llicència',
     solicitar_whatsapp: '💬 Sol·licitar per WhatsApp',
-
-    // Botó de projectes
-    revisar_encarrecs: '👁️ Revisar encàrrecs',
-
-    // Placeholders
     ph_nou_client: 'Ex: Joan - Targetes presentació',
     ph_notes: 'Apunts, tasques pendents, detalls del projecte…',
     ph_urgent: '🔴 Urgent (avui, bloquejant...)',
-    ph_important: '🟠 Important (següent pas)',
-    ph_despres: '🟢 Quan es pugui (no oblidar)',
     ph_buscar: '🔍 Buscar client o feina...',
     ph_hores: 'Ex: 2.5',
     ph_desc: 'Ex: Reunió amb client, correccions per correu...',
     ph_esborrar: 'ESBORRAR',
-
-    // Modals — títols
     modal_nou_client: 'Nou client',
-    modal_canviar: 'Canviar d\'encàrrec',
+    modal_canviar: "Canviar d'encàrrec",
     modal_clients_tancats: 'Clients tancats',
     modal_esborrar_antics: 'Esborrar clients antics',
     modal_tancar_client: 'Tancar client',
@@ -76,11 +63,9 @@ const TRANSLATIONS = {
     modal_restaurar: 'Restaurar còpia completa',
     modal_focus: 'Focus diari',
     modal_esborrar_client: 'Esborrar client',
-    modal_data_entrega: 'Data d\'entrega',
+    modal_data_entrega: "Data d'entrega",
     modal_afegir_hores: 'Afegir hores manuals',
     modal_configuracio: 'Configuració',
-
-    // Modals — botons
     cancellar: 'Cancel·lar',
     crear: 'Crear',
     tancar: 'Tancar',
@@ -95,9 +80,10 @@ const TRANSLATIONS = {
     esborrar_antics: '🗑️ Esborrar antics',
     no_tancar: 'No, tancar sense guardar',
     si_guardar: 'Sí, guardar i tancar',
-
-    // Modals — textos
-    tria_encarrecs: 'Tria un dels teus encàrrecs actius:',
+    tancar_btn: '✕ Tancar',
+    esborrar_btn: '🗑️ Esborrar',
+    afegir_btn: '✓ Afegir',
+    tria_encarrecs: "Tria un dels teus encàrrecs actius:",
     vols_importar: 'Vols importar aquest treball?',
     atencio_restaurar: '⚠️ ATENCIÓ: això restaurarà TOTES les teves dades des de la còpia de seguretat.',
     recarregara: 'La pàgina es recarregarà automàticament després de restaurar.',
@@ -110,15 +96,45 @@ const TRANSLATIONS = {
     label_data_copia: 'Data de la còpia:',
     label_llicencia: 'Llicència inclosa:',
     escriu_esborrar: 'Escriu ESBORRAR per confirmar',
-    tria_data: 'Tria la data límit d\'entrega:',
+    tria_data: "Tria la data límit d'entrega:",
     info_entrega: 'ℹ️ Podràs veure quants dies falten a la pantalla principal',
     hores_label: 'Hores:',
     desc_label: 'Descripció (opcional):',
-    hores_externes: 'Per a feines fetes fora de l\'app (treball extern, reunions, correus...)',
-    hores_nota: '💡 Aquestes hores s\'afegiran al temps total del client',
+    hores_externes: "Per a feines fetes fora de l'app (treball extern, reunions, correus...)",
+    hores_nota: "💡 Aquestes hores s'afegiran al temps total del client",
     label_client_desc: 'Client + descripció de la feina',
-
-    // Alertes
+    hores_extra: 'Hores Extra Registrades',
+    total_treballat: 'Total hores extra:',
+    config_drive: 'Activar còpies automàtiques a Drive',
+    config_horari: 'Activar Horari de Focus diari',
+    horari_inici: 'Hora inici',
+    horari_fi: 'Hora fi',
+    predefinits: 'Predefinits ràpids:',
+    color_label: 'Color',
+    mida_label: 'Mida',
+    state_in_progress: '🔵 En progrés',
+    state_waiting_feedback: '✉️ Prova enviada',
+    state_waiting_material: '🟡 Esperant material',
+    state_waiting_budget: '💰 Esperant pressupost',
+    state_paused: '⏸ Pausat',
+    state_blocked: '🔴 Bloquejat',
+    state_ready: '✅ Llest',
+    state_in_progress_full: 'En progrés',
+    state_waiting_feedback_full: 'Prova enviada',
+    state_waiting_material_full: 'Esperant material',
+    state_waiting_budget_full: 'Esperant pressupost',
+    state_paused_full: 'Pausat',
+    state_blocked_full: 'Bloquejat',
+    state_ready_full: 'Llest per lliurar',
+    prog_1: 'Fase inicial',
+    prog_2: 'En desenvolupament',
+    prog_3: 'A meitat',
+    prog_4: 'Gairebé acabat',
+    prog_5: 'A punt',
+    progres_projecte: 'Progrés del projecte',
+    alert_error: 'Error',
+    alert_guardat: 'Desat',
+    alert_importat: 'Importat',
     alert_foto_afegida: 'Foto afegida',
     alert_foto_eliminada: 'Foto eliminada',
     alert_foto_guardada: 'Foto guardada',
@@ -126,9 +142,6 @@ const TRANSLATIONS = {
     alert_arxiu_eliminat: 'Arxiu eliminat',
     alert_client_eliminat: 'Client eliminat',
     alert_client_tancat: 'Client tancat',
-    alert_error: 'Error',
-    alert_guardat: 'Treball desat',
-    alert_importat: 'Treball importat',
     alert_hores_afegides: 'Hores afegides',
     alert_limit_clients: 'Límit de clients',
     alert_data_desada: 'Data desada',
@@ -139,60 +152,8 @@ const TRANSLATIONS = {
     alert_restaurat: 'Backup restaurat',
     guardant: 'Guardant...',
     esborrant: 'Esborrant...',
-
-    // Estats del projecte
-    state_in_progress: '🔵 En progrés',
-    state_waiting_feedback: '✉️ Prova enviada',
-    state_waiting_material: '🟡 Esperant material',
-    state_waiting_budget: '💰 Esperant pressupost',
-    state_paused: '⏸ Pausat',
-    state_blocked: '🔴 Bloquejat',
-    state_ready: '✅ Llest',
-
-    // Configuració
-    config_drive: 'Activar còpies automàtiques a Drive',
-    config_horari: 'Activar Horari de Focus diari',
-    horari_inici: 'Hora inici',
-    horari_fi: 'Hora fi',
-    predefinits: 'Predefinits ràpids:',
-
-    // Hores extra (resum)
-    hores_extra: 'Hores Extra Registrades',
-    total_treballat: 'Total treballat:',
-    color_label: 'Color',
-    mida_label: 'Mida',
-
-    // Misc
-    avui: 'AVUI',
-    dema: 'DEMÀ',
-    venut: 'Vençut fa',
-    dies: 'dies',
-
-    // Estats del projecte — labels complets
-    state_waiting_material_full: 'Esperant material',
-    state_in_progress_full: 'En progrés',
-    state_waiting_feedback_full: 'Prova enviada',
-    state_paused_full: 'Pausat',
-    state_ready_full: 'Llest per lliurar',
-    state_blocked_full: 'Bloquejat',
-    state_waiting_budget_full: 'Esperant pressupost',
-
-    // Progrés labels
-    prog_1: 'Fase inicial',
-    prog_2: 'En desenvolupament',
-    prog_3: 'A meitat',
-    prog_4: 'Gairebé acabat',
-    prog_5: 'A punt',
-    progres_projecte: 'Progrés del projecte',
-
-    // Header dinàmic
-    client_prefix: 'Client: ',
-    client_tancat_sufix: ' (tancat)',
-    feina: 'Feina',
-
-    // Textos dinàmics app-ui
     selecciona_client: 'Selecciona un client primer',
-    arxiu_descarregat: 'L'arxiu s'ha descarregat correctament.',
+    arxiu_descarregat: "L'arxiu s'ha descarregat correctament.",
     arxiu_invalid: 'Aquest arxiu no és vàlid',
     arxiu_corromput: 'Aquest arxiu està corromput',
     treball_importat_msg: 'importat correctament',
@@ -200,24 +161,24 @@ const TRANSLATIONS = {
     client_eliminat_msg: 'El client ha estat eliminat definitivament',
     error_selecciona_imatge: 'Si us plau, selecciona una imatge',
     error_no_client: 'Client no trobat',
-    error_llegir_arxiu: 'No s'ha pogut llegir l'arxiu',
-    foto_afegida_msg: 'La foto s'ha afegit correctament',
-    foto_eliminada_msg: 'La foto s'ha eliminat correctament',
+    error_llegir_arxiu: "No s'ha pogut llegir l'arxiu",
+    foto_afegida_msg: "La foto s'ha afegit correctament",
+    foto_eliminada_msg: "La foto s'ha eliminat correctament",
     foto_esborrada_nofotos: 'No queden més fotos',
-    foto_descarregada_msg: 'La foto s'ha descarregat correctament',
+    foto_descarregada_msg: "La foto s'ha descarregat correctament",
     no_disponible_compartir: 'La compartició no està disponible en aquest navegador',
-    foto_guardada_msg: 'Els canvis s'han guardat al núvol ✅',
+    foto_guardada_msg: "Els canvis s'han guardat al núvol ✅",
     pujant_foto: 'Pujant foto editada al núvol...',
     hores_afegides_msg: 'afegides correctament',
-    error_hores_valides: 'Introdueix un nombre d'hores vàlid',
-    hora_eliminada_msg: 'L'entrada d'hores extres ha estat eliminada',
+    error_hores_valides: "Introdueix un nombre d'hores vàlid",
+    hora_eliminada_msg: "L'entrada d'hores extres ha estat eliminada",
     data_lliurament_msg: 'Data de lliurament establerta per al',
-    data_eliminada_msg: 'S'ha eliminat la data de lliurament',
+    data_eliminada_msg: "S'ha eliminat la data de lliurament",
     copiat_msg: 'Informe copiat al porta-retalls',
-    error_copiar: 'No s'ha pogut copiar',
-    csv_exportat_msg: 'L'arxiu s'ha descarregat correctament',
+    error_copiar: "No s'ha pogut copiar",
+    csv_exportat_msg: "L'arxiu s'ha descarregat correctament",
     config_desada_msg: 'Configuració desada',
-    error_hora_fi: 'L'hora de fi ha de ser posterior a l'hora d'inici',
+    error_hora_fi: "L'hora de fi ha de ser posterior a l'hora d'inici",
     cancelat_msg: 'Operació cancel·lada',
     esborrant_clients_msg: 'clients...',
     esborrant_prefix: 'Esborrant ',
@@ -229,33 +190,35 @@ const TRANSLATIONS = {
     sense_clients_periode: 'No hi ha clients per esborrar en aquest període',
     no_clients_actius: 'No hi ha clients actius',
     sense_hores_extres: 'Aquest client no té hores extres registrades',
-    sense_dades_focus: 'Encara no hi ha dades d'enfocament avui',
+    sense_dades_focus: "Encara no hi ha dades d'enfocament avui",
     enfocat: '🟢 Enfocat',
     atencio_focus: '🟡 Atenció',
     dispers: '🔴 Dispers',
-    total_client_prefix: 'Total client: ',
-    facturable_prefix: '💰 Facturable: ',
-    fora_horari: '⏳ Fora d'horari d'enfocament',
-    sense_resultats: 'Sense resultats',
     llicencia_invalid: 'Aquest no és un arxiu de llicència vàlid',
     llicencia_caducada_msg: 'Aquesta llicència ha caducat',
     llicencia_activada_msg: 'FocusWork complet activat',
-    error_llegir_llicencia: 'No s'ha pogut llegir l'arxiu de llicència',
+    error_llegir_llicencia: "No s'ha pogut llegir l'arxiu de llicència",
     limit_clients_msg: 'Has arribat al límit de clients actius del teu pla',
     arxiu_eliminat_msg: 'eliminada correctament',
-    error_esborrar_foto: 'No s'ha pogut esborrar la foto',
+    error_esborrar_foto: "No s'ha pogut esborrar la foto",
     estat_actualitzat_msg: 'Projecte marcat com: ',
-    tancar_btn: '✕ Tancar',
-    esborrar_btn: '🗑️ Esborrar',
-    afegir_btn: '✓ Afegir',
     dibuixar: 'Dibuixar',
     activat: 'Activat',
     llapis: 'Llapis',
+    avui: 'AVUI',
+    dema: 'DEMÀ',
+    venut: 'Vençut fa',
+    dies: 'dies',
   },
 
-  // ─────────────────────────────────────────────────────────────────────────
   es: {
     no_client: 'Sin encargo activo',
+    client_prefix: 'Cliente: ',
+    client_tancat_sufix: ' (cerrado)',
+    feina: 'Trabajo',
+    total_client_prefix: 'Total cliente: ',
+    facturable_prefix: '💰 Facturable: ',
+    fora_horari: '⏳ Fuera del horario de enfoque',
     els_meus_projectes: '📊 Mis proyectos',
     tots: 'Todos',
     en_progres_filter: '🔵 En progreso',
@@ -270,6 +233,7 @@ const TRANSLATIONS = {
     nom_az: 'Nombre (A-Z)',
     estat: 'Estado',
     no_clients_filtre: 'No hay clientes con este filtro',
+    sense_resultats: 'Sin resultados',
     notes_client: 'Notas del cliente',
     clients_tancats: '📂 Clientes cerrados',
     tancar_client: '✅ Cerrar cliente',
@@ -279,6 +243,7 @@ const TRANSLATIONS = {
     generar_informe: '📋 Generar informe',
     afegir_foto: '📷 Añadir foto',
     afegir_arxiu: '📎 Añadir archivo',
+    revisar_encarrecs: '👁️ Revisar encargos',
     guardar_sessio: '💾 Guardar sesión',
     carregar_treball: '📂 Cargar trabajo',
     copia_seguretat: '📦 Copia de seguridad',
@@ -287,12 +252,9 @@ const TRANSLATIONS = {
     sortir: '🚪 Salir',
     carregar_llicencia: '📄 Cargar licencia',
     solicitar_whatsapp: '💬 Solicitar por WhatsApp',
-    revisar_encarrecs: '👁️ Revisar encargos',
     ph_nou_client: 'Ej: Joan - Tarjetas presentación',
     ph_notes: 'Apuntes, tareas pendientes, detalles del proyecto…',
     ph_urgent: '🔴 Urgente (hoy, bloqueante...)',
-    ph_important: '🟠 Importante (siguiente paso)',
-    ph_despres: '🟢 Cuando se pueda (no olvidar)',
     ph_buscar: '🔍 Buscar cliente o trabajo...',
     ph_hores: 'Ej: 2.5',
     ph_desc: 'Ej: Reunión con cliente, correcciones por correo...',
@@ -325,6 +287,9 @@ const TRANSLATIONS = {
     esborrar_antics: '🗑️ Borrar antiguos',
     no_tancar: 'No, cerrar sin guardar',
     si_guardar: 'Sí, guardar y cerrar',
+    tancar_btn: '✕ Cerrar',
+    esborrar_btn: '🗑️ Borrar',
+    afegir_btn: '✓ Añadir',
     tria_encarrecs: 'Elige uno de tus encargos activos:',
     vols_importar: '¿Quieres importar este trabajo?',
     atencio_restaurar: '⚠️ ATENCIÓN: esto restaurará TODOS tus datos desde la copia de seguridad.',
@@ -345,6 +310,38 @@ const TRANSLATIONS = {
     hores_externes: 'Para trabajos realizados fuera de la app (trabajo externo, reuniones, correos...)',
     hores_nota: '💡 Estas horas se añadirán al tiempo total del cliente',
     label_client_desc: 'Cliente + descripción del trabajo',
+    hores_extra: 'Horas Extra Registradas',
+    total_treballat: 'Total horas extra:',
+    config_drive: 'Activar copias automáticas en Drive',
+    config_horari: 'Activar Horario de Focus diario',
+    horari_inici: 'Hora inicio',
+    horari_fi: 'Hora fin',
+    predefinits: 'Predefinidos rápidos:',
+    color_label: 'Color',
+    mida_label: 'Tamaño',
+    state_in_progress: '🔵 En progreso',
+    state_waiting_feedback: '✉️ Prueba enviada',
+    state_waiting_material: '🟡 Esperando material',
+    state_waiting_budget: '💰 Esperando presupuesto',
+    state_paused: '⏸ Pausado',
+    state_blocked: '🔴 Bloqueado',
+    state_ready: '✅ Listo',
+    state_in_progress_full: 'En progreso',
+    state_waiting_feedback_full: 'Prueba enviada',
+    state_waiting_material_full: 'Esperando material',
+    state_waiting_budget_full: 'Esperando presupuesto',
+    state_paused_full: 'Pausado',
+    state_blocked_full: 'Bloqueado',
+    state_ready_full: 'Listo para entregar',
+    prog_1: 'Fase inicial',
+    prog_2: 'En desarrollo',
+    prog_3: 'A medias',
+    prog_4: 'Casi acabado',
+    prog_5: 'Listo',
+    progres_projecte: 'Progreso del proyecto',
+    alert_error: 'Error',
+    alert_guardat: 'Guardado',
+    alert_importat: 'Importado',
     alert_foto_afegida: 'Foto añadida',
     alert_foto_eliminada: 'Foto eliminada',
     alert_foto_guardada: 'Foto guardada',
@@ -352,9 +349,6 @@ const TRANSLATIONS = {
     alert_arxiu_eliminat: 'Archivo eliminado',
     alert_client_eliminat: 'Cliente eliminado',
     alert_client_tancat: 'Cliente cerrado',
-    alert_error: 'Error',
-    alert_guardat: 'Trabajo guardado',
-    alert_importat: 'Trabajo importado',
     alert_hores_afegides: 'Horas añadidas',
     alert_limit_clients: 'Límite de clientes',
     alert_data_desada: 'Fecha guardada',
@@ -365,43 +359,6 @@ const TRANSLATIONS = {
     alert_restaurat: 'Backup restaurado',
     guardant: 'Guardando...',
     esborrant: 'Borrando...',
-    state_in_progress: '🔵 En progreso',
-    state_waiting_feedback: '✉️ Prueba enviada',
-    state_waiting_material: '🟡 Esperando material',
-    state_waiting_budget: '💰 Esperando presupuesto',
-    state_paused: '⏸ Pausado',
-    state_blocked: '🔴 Bloqueado',
-    state_ready: '✅ Listo',
-    config_drive: 'Activar copias automáticas en Drive',
-    config_horari: 'Activar Horario de Focus diario',
-    horari_inici: 'Hora inicio',
-    horari_fi: 'Hora fin',
-    predefinits: 'Predefinidos rápidos:',
-    hores_extra: 'Horas Extra Registradas',
-    total_treballat: 'Total trabajado:',
-    color_label: 'Color',
-    mida_label: 'Tamaño',
-    avui: 'HOY',
-    dema: 'MAÑANA',
-    venut: 'Vencido hace',
-    dies: 'días',
-
-    state_waiting_material_full: 'Esperando material',
-    state_in_progress_full: 'En progreso',
-    state_waiting_feedback_full: 'Prueba enviada',
-    state_paused_full: 'Pausado',
-    state_ready_full: 'Listo para entregar',
-    state_blocked_full: 'Bloqueado',
-    state_waiting_budget_full: 'Esperando presupuesto',
-    prog_1: 'Fase inicial',
-    prog_2: 'En desarrollo',
-    prog_3: 'A medias',
-    prog_4: 'Casi acabado',
-    prog_5: 'Listo',
-    progres_projecte: 'Progreso del proyecto',
-    client_prefix: 'Cliente: ',
-    client_tancat_sufix: ' (cerrado)',
-    feina: 'Trabajo',
     selecciona_client: 'Selecciona un cliente primero',
     arxiu_descarregat: 'El archivo se ha descargado correctamente.',
     arxiu_invalid: 'Este archivo no es válido',
@@ -444,10 +401,6 @@ const TRANSLATIONS = {
     enfocat: '🟢 Enfocado',
     atencio_focus: '🟡 Atención',
     dispers: '🔴 Disperso',
-    total_client_prefix: 'Total cliente: ',
-    facturable_prefix: '💰 Facturable: ',
-    fora_horari: '⏳ Fuera del horario de enfoque',
-    sense_resultats: 'Sin resultados',
     llicencia_invalid: 'Este no es un archivo de licencia válido',
     llicencia_caducada_msg: 'Esta licencia ha caducado',
     llicencia_activada_msg: 'FocusWork completo activado',
@@ -456,17 +409,23 @@ const TRANSLATIONS = {
     arxiu_eliminat_msg: 'eliminada correctamente',
     error_esborrar_foto: 'No se ha podido borrar la foto',
     estat_actualitzat_msg: 'Proyecto marcado como: ',
-    tancar_btn: '✕ Cerrar',
-    esborrar_btn: '🗑️ Borrar',
-    afegir_btn: '✓ Añadir',
     dibuixar: 'Dibujar',
     activat: 'Activado',
     llapis: 'Lápiz',
+    avui: 'HOY',
+    dema: 'MAÑANA',
+    venut: 'Vencido hace',
+    dies: 'días',
   },
 
-  // ─────────────────────────────────────────────────────────────────────────
   en: {
     no_client: 'No active project',
+    client_prefix: 'Client: ',
+    client_tancat_sufix: ' (closed)',
+    feina: 'Work',
+    total_client_prefix: 'Total client: ',
+    facturable_prefix: '💰 Billable: ',
+    fora_horari: '⏳ Outside focus schedule',
     els_meus_projectes: '📊 My projects',
     tots: 'All',
     en_progres_filter: '🔵 In progress',
@@ -481,6 +440,7 @@ const TRANSLATIONS = {
     nom_az: 'Name (A-Z)',
     estat: 'Status',
     no_clients_filtre: 'No clients match this filter',
+    sense_resultats: 'No results',
     notes_client: 'Client notes',
     clients_tancats: '📂 Closed clients',
     tancar_client: '✅ Close client',
@@ -490,6 +450,7 @@ const TRANSLATIONS = {
     generar_informe: '📋 Generate report',
     afegir_foto: '📷 Add photo',
     afegir_arxiu: '📎 Add file',
+    revisar_encarrecs: '👁️ Review projects',
     guardar_sessio: '💾 Save session',
     carregar_treball: '📂 Load work',
     copia_seguretat: '📦 Backup',
@@ -498,12 +459,9 @@ const TRANSLATIONS = {
     sortir: '🚪 Sign out',
     carregar_llicencia: '📄 Load licence',
     solicitar_whatsapp: '💬 Request via WhatsApp',
-    revisar_encarrecs: '👁️ Review projects',
     ph_nou_client: 'E.g.: Joan - Business cards',
     ph_notes: 'Notes, pending tasks, project details…',
     ph_urgent: '🔴 Urgent (today, blocking...)',
-    ph_important: '🟠 Important (next step)',
-    ph_despres: '🟢 When possible (don\'t forget)',
     ph_buscar: '🔍 Search client or job...',
     ph_hores: 'E.g.: 2.5',
     ph_desc: 'E.g.: Client meeting, email corrections...',
@@ -536,6 +494,9 @@ const TRANSLATIONS = {
     esborrar_antics: '🗑️ Delete old',
     no_tancar: 'No, close without saving',
     si_guardar: 'Yes, save and close',
+    tancar_btn: '✕ Close',
+    esborrar_btn: '🗑️ Delete',
+    afegir_btn: '✓ Add',
     tria_encarrecs: 'Choose one of your active projects:',
     vols_importar: 'Do you want to import this work?',
     atencio_restaurar: '⚠️ WARNING: this will restore ALL your data from the backup.',
@@ -550,12 +511,44 @@ const TRANSLATIONS = {
     label_llicencia: 'Licence included:',
     escriu_esborrar: 'Type DELETE to confirm',
     tria_data: 'Choose the delivery deadline:',
-    info_entrega: 'ℹ️ You\'ll see how many days are left on the main screen',
+    info_entrega: "ℹ️ You'll see how many days are left on the main screen",
     hores_label: 'Hours:',
     desc_label: 'Description (optional):',
     hores_externes: 'For work done outside the app (external work, meetings, emails...)',
-    hores_nota: '💡 These hours will be added to the client\'s total time',
+    hores_nota: "💡 These hours will be added to the client's total time",
     label_client_desc: 'Client + job description',
+    hores_extra: 'Registered Extra Hours',
+    total_treballat: 'Total extra hours:',
+    config_drive: 'Enable automatic Drive backups',
+    config_horari: 'Enable daily Focus schedule',
+    horari_inici: 'Start time',
+    horari_fi: 'End time',
+    predefinits: 'Quick presets:',
+    color_label: 'Color',
+    mida_label: 'Size',
+    state_in_progress: '🔵 In progress',
+    state_waiting_feedback: '✉️ Proof sent',
+    state_waiting_material: '🟡 Waiting for material',
+    state_waiting_budget: '💰 Waiting for budget',
+    state_paused: '⏸ Paused',
+    state_blocked: '🔴 Blocked',
+    state_ready: '✅ Ready',
+    state_in_progress_full: 'In progress',
+    state_waiting_feedback_full: 'Proof sent',
+    state_waiting_material_full: 'Waiting for material',
+    state_waiting_budget_full: 'Waiting for budget',
+    state_paused_full: 'Paused',
+    state_blocked_full: 'Blocked',
+    state_ready_full: 'Ready to deliver',
+    prog_1: 'Initial phase',
+    prog_2: 'In development',
+    prog_3: 'Halfway',
+    prog_4: 'Almost done',
+    prog_5: 'Ready',
+    progres_projecte: 'Project progress',
+    alert_error: 'Error',
+    alert_guardat: 'Saved',
+    alert_importat: 'Imported',
     alert_foto_afegida: 'Photo added',
     alert_foto_eliminada: 'Photo deleted',
     alert_foto_guardada: 'Photo saved',
@@ -563,9 +556,6 @@ const TRANSLATIONS = {
     alert_arxiu_eliminat: 'File deleted',
     alert_client_eliminat: 'Client deleted',
     alert_client_tancat: 'Client closed',
-    alert_error: 'Error',
-    alert_guardat: 'Work saved',
-    alert_importat: 'Work imported',
     alert_hores_afegides: 'Hours added',
     alert_limit_clients: 'Client limit',
     alert_data_desada: 'Date saved',
@@ -576,43 +566,6 @@ const TRANSLATIONS = {
     alert_restaurat: 'Backup restored',
     guardant: 'Saving...',
     esborrant: 'Deleting...',
-    state_in_progress: '🔵 In progress',
-    state_waiting_feedback: '✉️ Proof sent',
-    state_waiting_material: '🟡 Waiting for material',
-    state_waiting_budget: '💰 Waiting for budget',
-    state_paused: '⏸ Paused',
-    state_blocked: '🔴 Blocked',
-    state_ready: '✅ Ready',
-    config_drive: 'Enable automatic Drive backups',
-    config_horari: 'Enable daily Focus schedule',
-    horari_inici: 'Start time',
-    horari_fi: 'End time',
-    predefinits: 'Quick presets:',
-    hores_extra: 'Registered Extra Hours',
-    total_treballat: 'Total worked:',
-    color_label: 'Color',
-    mida_label: 'Size',
-    avui: 'TODAY',
-    dema: 'TOMORROW',
-    venut: 'Overdue by',
-    dies: 'days',
-
-    state_waiting_material_full: 'Waiting for material',
-    state_in_progress_full: 'In progress',
-    state_waiting_feedback_full: 'Proof sent',
-    state_paused_full: 'Paused',
-    state_ready_full: 'Ready to deliver',
-    state_blocked_full: 'Blocked',
-    state_waiting_budget_full: 'Waiting for budget',
-    prog_1: 'Initial phase',
-    prog_2: 'In development',
-    prog_3: 'Halfway',
-    prog_4: 'Almost done',
-    prog_5: 'Ready',
-    progres_projecte: 'Project progress',
-    client_prefix: 'Client: ',
-    client_tancat_sufix: ' (closed)',
-    feina: 'Work',
     selecciona_client: 'Select a client first',
     arxiu_descarregat: 'File downloaded successfully.',
     arxiu_invalid: 'This file is not valid',
@@ -655,10 +608,6 @@ const TRANSLATIONS = {
     enfocat: '🟢 Focused',
     atencio_focus: '🟡 Attention',
     dispers: '🔴 Scattered',
-    total_client_prefix: 'Total client: ',
-    facturable_prefix: '💰 Billable: ',
-    fora_horari: '⏳ Outside focus schedule',
-    sense_resultats: 'No results',
     llicencia_invalid: 'This is not a valid licence file',
     llicencia_caducada_msg: 'This licence has expired',
     llicencia_activada_msg: 'Full FocusWork activated',
@@ -667,99 +616,71 @@ const TRANSLATIONS = {
     arxiu_eliminat_msg: 'deleted successfully',
     error_esborrar_foto: 'Could not delete the photo',
     estat_actualitzat_msg: 'Project marked as: ',
-    tancar_btn: '✕ Close',
-    esborrar_btn: '🗑️ Delete',
-    afegir_btn: '✓ Add',
     dibuixar: 'Draw',
     activat: 'Active',
     llapis: 'Pencil',
+    avui: 'TODAY',
+    dema: 'TOMORROW',
+    venut: 'Overdue by',
+    dies: 'days',
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  IDIOMA ACTIU
-// ─────────────────────────────────────────────────────────────────────────────
+// ── API pública ────────────────────────────────────────────────────────────────
 let _currentLang = localStorage.getItem('fw_lang') || 'ca';
 
-/** Retorna la traducció d'una clau en l'idioma actiu */
 function t(key) {
-  return (TRANSLATIONS[_currentLang] || TRANSLATIONS.ca)[key] || key;
+  const dict = TRANSLATIONS[_currentLang] || TRANSLATIONS.ca;
+  const val = dict[key];
+  if (val !== undefined) return val;
+  const ca = TRANSLATIONS.ca[key];
+  return ca !== undefined ? ca : key;
 }
 window.t = t;
 
-/** Idioma actiu */
 function getLang() { return _currentLang; }
 window.getLang = getLang;
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  APLICAR IDIOMA A L'HTML
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Aplicar idioma ─────────────────────────────────────────────────────────────
 function applyLang(lang) {
   if (!TRANSLATIONS[lang]) return;
   _currentLang = lang;
   localStorage.setItem('fw_lang', lang);
-
-  // Actualitzar atribut HTML lang
   document.documentElement.lang = lang;
 
-  // 1. Elements amb data-i18n (text)
   document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.dataset.i18n;
-    const val = t(key);
-    if (val) el.textContent = val;
+    const v = t(el.dataset.i18n);
+    if (v) el.textContent = v;
   });
-
-  // 2. Elements amb data-i18n-ph (placeholder)
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-    const key = el.dataset.i18nPh;
-    const val = t(key);
-    if (val) el.placeholder = val;
+    const v = t(el.dataset.i18nPh);
+    if (v) el.placeholder = v;
   });
-
-  // 3. Elements amb data-i18n-title (title attribute)
-  document.querySelectorAll('[data-i18n-title]').forEach(el => {
-    const key = el.dataset.i18nTitle;
-    const val = t(key);
-    if (val) el.title = val;
-  });
-
-  // 4. Actualitzar indicador visual del selector
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === lang);
   });
 
-  // 5. Notificar a l'app per refrescar contingut dinàmic
   window.dispatchEvent(new CustomEvent('langchange', { detail: { lang } }));
 }
 window.applyLang = applyLang;
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  CREAR EL SELECTOR DE LLENGUA (injectat al DOM)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Selector de llengua ────────────────────────────────────────────────────────
 function createLangSelector() {
-  const existing = document.getElementById('langSelector');
-  if (existing) return;
-
+  if (document.getElementById('langSelector')) return;
   const sel = document.createElement('div');
   sel.id = 'langSelector';
-  sel.innerHTML = `
-    <button class="lang-btn${_currentLang === 'ca' ? ' active' : ''}" data-lang="ca">CA</button>
-    <button class="lang-btn${_currentLang === 'es' ? ' active' : ''}" data-lang="es">ES</button>
-    <button class="lang-btn${_currentLang === 'en' ? ' active' : ''}" data-lang="en">EN</button>
-  `;
-  sel.addEventListener('click', e => {
-    const btn = e.target.closest('.lang-btn');
-    if (btn) applyLang(btn.dataset.lang);
+  ['ca','es','en'].forEach(lang => {
+    const btn = document.createElement('button');
+    btn.className = 'lang-btn' + (lang === _currentLang ? ' active' : '');
+    btn.dataset.lang = lang;
+    btn.textContent = lang.toUpperCase();
+    btn.addEventListener('click', () => applyLang(lang));
+    sel.appendChild(btn);
   });
-
-  // Injectar al header
-  const header = document.querySelector('header.header') || document.body;
-  header.appendChild(sel);
+  document.body.appendChild(sel);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  INICIALITZAR EN CARREGAR
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   createLangSelector();
   applyLang(_currentLang);
