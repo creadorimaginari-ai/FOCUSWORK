@@ -105,27 +105,20 @@ async function _applyRemoteUpdate(record) {
     ? window._mapClientPublic(record)
     : _defaultMapClient(record);
 
-  // Actualitzar l'estat de l'app si existeix la funció
+  // Actualitzar l'estat de l'app
   if (typeof window.state !== 'undefined' && window.state.clients) {
-    const existingClient = window.state.clients[record.id];
-
-    // Si el client que s'està editant ara mateix → notificar sense sobreescriure
-    if (window.state.currentClientId === record.id) {
-      _showSyncToast('⚠️ Aquest client ha estat actualitzat des d\'un altre dispositiu');
-      // Actualitzar igualment però avisar l'usuari
-    }
-
     window.state.clients[record.id] = mappedClient;
     console.log('✅ Realtime: client actualitzat localment —', mappedClient.name);
   }
 
-  // Invalidar la cache de Supabase DB per forçar recàrrega fresca
+  // Invalidar la cache de Supabase DB i també IndexedDB per evitar llegir dades velles
   if (typeof window.invalidateClientsCache === 'function') {
     window.invalidateClientsCache();
   }
 
-  // Actualitzar la UI
-  _refreshUI(record.id);
+  // ✅ FIX: passar el client ja actualitzat directament a updateUI
+  // sense passar-lo, updateUI fa loadClient() que pot retornar la versió en cache antiga
+  _refreshUI(record.id, mappedClient);
 }
 
 /**
@@ -175,21 +168,31 @@ function _defaultMapClient(client) {
 
 /**
  * Refrescar la interfície d'usuari
+ * @param {string|null} changedClientId - ID del client que ha canviat
+ * @param {object|null} updatedClient - El client ja actualitzat (evita llegir cache antiga)
  */
-function _refreshUI(changedClientId) {
+function _refreshUI(changedClientId, updatedClient = null) {
   try {
-    // Si hi ha una funció de renderització de clients, cridar-la
+    // Actualitzar llista de clients si existeix
     if (typeof window.renderClients === 'function') {
       window.renderClients();
     }
+
+    // ✅ FIX SINCRONITZACIÓ: si el client canviat és el que es veu ara,
+    // passar-lo directament a updateUI per evitar que llegeixi la cache antiga d'IndexedDB
+    const isCurrentClient = changedClientId
+      && typeof window.state !== 'undefined'
+      && window.state.currentClientId === changedClientId;
+
     if (typeof window.updateUI === 'function') {
-      window.updateUI();
-    }
-    // Si el client canviat és el que es visualitza ara, actualitzar-lo
-    if (changedClientId && typeof window.state !== 'undefined'
-        && window.state.currentClientId === changedClientId) {
-      if (typeof window.renderClientDetail === 'function') {
-        window.renderClientDetail(changedClientId);
+      if (isCurrentClient && updatedClient) {
+        // Forçar reset dels flags d'inicialització per que updateWorkpad i updateTasks
+        // actualitzin els textareas amb els valors nous
+        if (typeof window.isWorkpadInitialized !== 'undefined') window.isWorkpadInitialized = false;
+        if (typeof window.areTasksInitialized !== 'undefined') window.areTasksInitialized = false;
+        window.updateUI(updatedClient);
+      } else {
+        window.updateUI();
       }
     }
   } catch (err) {

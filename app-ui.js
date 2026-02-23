@@ -1272,6 +1272,11 @@ console.log('✅ handleFileInputiPad carregada');
 /* ================= WORKPAD OPTIMIZADO ================= */
 let workpadTimeout = null;
 let isWorkpadInitialized = false;
+// ✅ Exportar a window per que supabase-realtime.js pugui resetar-los en rebre canvis remots
+Object.defineProperty(window, 'isWorkpadInitialized', {
+  get: () => isWorkpadInitialized,
+  set: (v) => { isWorkpadInitialized = v; }
+});
 
 async function updateWorkpad(preloadedClient = null) {
   const workpadArea = $('clientWorkpad');
@@ -1319,6 +1324,11 @@ async function handleWorkpadInput(e) {
 /* ================= TASQUES OPTIMIZADO ================= */
 let taskTimeouts = { urgent: null, important: null, later: null };
 let areTasksInitialized = false;
+// ✅ Exportar a window per que supabase-realtime.js pugui resetar-los en rebre canvis remots
+Object.defineProperty(window, 'areTasksInitialized', {
+  get: () => areTasksInitialized,
+  set: (v) => { areTasksInitialized = v; }
+});
 
 async function updateTasks(preloadedClient = null) {
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
@@ -1345,35 +1355,45 @@ async function updateTasks(preloadedClient = null) {
     client.tasks = { urgent: "", important: "", later: "" };
   }
   
-  if (!areTasksInitialized) {
-    let urgentText = client.tasks.urgent || '';
-    if (client.deliveryDate) {
-      const deliveryDate = new Date(client.deliveryDate);
-      const dateStr = deliveryDate.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const delivery = new Date(deliveryDate);
-      delivery.setHours(0, 0, 0, 0);
-      const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
-      let urgencyPrefix = '';
-      if (diffDays < 0) {
-        urgencyPrefix = `⚠️ VENÇUT (${Math.abs(diffDays)}d) - ${dateStr}\n`;
-      } else if (diffDays === 0) {
-        urgencyPrefix = `🔴 AVUI - ${dateStr}\n`;
-      } else if (diffDays === 1) {
-        urgencyPrefix = `🟡 DEMÀ - ${dateStr}\n`;
-      } else if (diffDays <= 3) {
-        urgencyPrefix = `🟡 ${diffDays} DIES - ${dateStr}\n`;
-      } else {
-        urgencyPrefix = `📅 Lliurament: ${dateStr}\n`;
-      }
-      urgentText = urgencyPrefix + (urgentText.replace(/^[⚠️🔴🟡📅].*\n/, ''));
+  // Calcular text urgent amb prefix de data
+  let urgentText = client.tasks.urgent || '';
+  if (client.deliveryDate) {
+    const deliveryDate = new Date(client.deliveryDate);
+    const dateStr = deliveryDate.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const delivery = new Date(deliveryDate);
+    delivery.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
+    let urgencyPrefix = '';
+    if (diffDays < 0) {
+      urgencyPrefix = `⚠️ VENÇUT (${Math.abs(diffDays)}d) - ${dateStr}\n`;
+    } else if (diffDays === 0) {
+      urgencyPrefix = `🔴 AVUI - ${dateStr}\n`;
+    } else if (diffDays === 1) {
+      urgencyPrefix = `🟡 DEMÀ - ${dateStr}\n`;
+    } else if (diffDays <= 3) {
+      urgencyPrefix = `🟡 ${diffDays} DIES - ${dateStr}\n`;
+    } else {
+      urgencyPrefix = `📅 Lliurament: ${dateStr}\n`;
     }
-    
-    if (!urgentArea.matches(':focus')) urgentArea.value = urgentText;
-    if (!importantArea.matches(':focus')) importantArea.value = client.tasks.important || '';
-    if (!laterArea.matches(':focus')) laterArea.value = client.tasks.later || '';
-    
+    urgentText = urgencyPrefix + (urgentText.replace(/^[⚠️🔴🟡📅].*\n/, ''));
+  }
+
+  // ✅ FIX SINCRONITZACIÓ: sempre actualitzar si el camp no té focus
+  // (igual que fa updateWorkpad — no dependre de areTasksInitialized per actualitzar valors)
+  if (!urgentArea.matches(':focus') && urgentArea.value !== urgentText) {
+    urgentArea.value = urgentText;
+  }
+  if (!importantArea.matches(':focus') && importantArea.value !== (client.tasks.important || '')) {
+    importantArea.value = client.tasks.important || '';
+  }
+  if (!laterArea.matches(':focus') && laterArea.value !== (client.tasks.later || '')) {
+    laterArea.value = client.tasks.later || '';
+  }
+
+  // Registrar oninput només una vegada
+  if (!areTasksInitialized) {
     urgentArea.oninput = (e) => handleTaskInput('urgent', e);
     importantArea.oninput = (e) => handleTaskInput('important', e);
     laterArea.oninput = (e) => handleTaskInput('later', e);
