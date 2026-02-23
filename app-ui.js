@@ -893,9 +893,11 @@ async function deleteCurrentClient() {
 }
 
 async function confirmDeleteClient() {
-  const confirm = $('inputDeleteConfirm').value.trim().toUpperCase();
-  if (confirm !== 'ESBORRAR') {
-    showAlert('Error', 'Has d\'escriure ESBORRAR per confirmar', '⚠️');
+  const confirmVal = $('inputDeleteConfirm').value.trim().toUpperCase();
+  const validWords = ['ESBORRAR', 'BORRAR', 'DELETE'];
+  if (!validWords.includes(confirmVal)) {
+    const word = (typeof t === 'function') ? t('ph_esborrar') : 'ESBORRAR';
+    showAlert(t ? t('alert_error') : 'Error', `Has d'escriure ${word} per confirmar`, '⚠️');
     return;
   }
 
@@ -1084,18 +1086,11 @@ async function handlePhotoInputiPad(input) {
   
   console.log('✅ Fitxer rebut:', file.name, file.type);
   
-  // ✅ FIX MÒBIL: restaurar currentClientId si s'ha perdut mentre el navegador estava al background
-  const clientId = state.currentClientId || window._pendingClientId;
-  if (!clientId) {
+  if (!state.currentClientId) {
     showAlert('Error', 'Selecciona un client primer', '⚠️');
     input.value = '';
     return;
   }
-  if (!state.currentClientId && window._pendingClientId) {
-    state.currentClientId = window._pendingClientId;
-    console.log('🔧 currentClientId restaurat:', clientId);
-  }
-  window._pendingClientId = null;
   
   if (!file.type.startsWith('image/')) {
     showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
@@ -1212,22 +1207,13 @@ async function handleFileInputiPad(input) {
   
   console.log('✅ Fitxer rebut:', file.name, file.type, formatFileSize(file.size));
   
-  // ✅ FIX MÒBIL: quan el navegador va al background per obrir el selector d'arxius,
-  // state.currentClientId es pot perdre. Usem _pendingClientId capturat en el moment del clic.
-  const clientId = state.currentClientId || window._pendingClientId;
-  if (!clientId) {
+  if (!state.currentClientId) {
     showAlert('Error', 'Selecciona un client primer', '⚠️');
     input.value = '';
     return;
   }
-  // Restaurar per si s'havia perdut
-  if (!state.currentClientId && window._pendingClientId) {
-    state.currentClientId = window._pendingClientId;
-    console.log('🔧 currentClientId restaurat des de _pendingClientId:', clientId);
-  }
-  window._pendingClientId = null;
   
-  const client = await loadClient(clientId);
+  const client = await loadClient(state.currentClientId);
   if (!client) {
     showAlert('Error', 'Client no trobat', '⚠️');
     input.value = '';
@@ -1272,11 +1258,6 @@ console.log('✅ handleFileInputiPad carregada');
 /* ================= WORKPAD OPTIMIZADO ================= */
 let workpadTimeout = null;
 let isWorkpadInitialized = false;
-// ✅ Exportar a window per que supabase-realtime.js pugui resetar-los en rebre canvis remots
-Object.defineProperty(window, 'isWorkpadInitialized', {
-  get: () => isWorkpadInitialized,
-  set: (v) => { isWorkpadInitialized = v; }
-});
 
 async function updateWorkpad(preloadedClient = null) {
   const workpadArea = $('clientWorkpad');
@@ -1324,11 +1305,6 @@ async function handleWorkpadInput(e) {
 /* ================= TASQUES OPTIMIZADO ================= */
 let taskTimeouts = { urgent: null, important: null, later: null };
 let areTasksInitialized = false;
-// ✅ Exportar a window per que supabase-realtime.js pugui resetar-los en rebre canvis remots
-Object.defineProperty(window, 'areTasksInitialized', {
-  get: () => areTasksInitialized,
-  set: (v) => { areTasksInitialized = v; }
-});
 
 async function updateTasks(preloadedClient = null) {
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
@@ -1355,45 +1331,35 @@ async function updateTasks(preloadedClient = null) {
     client.tasks = { urgent: "", important: "", later: "" };
   }
   
-  // Calcular text urgent amb prefix de data
-  let urgentText = client.tasks.urgent || '';
-  if (client.deliveryDate) {
-    const deliveryDate = new Date(client.deliveryDate);
-    const dateStr = deliveryDate.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const delivery = new Date(deliveryDate);
-    delivery.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
-    let urgencyPrefix = '';
-    if (diffDays < 0) {
-      urgencyPrefix = `⚠️ VENÇUT (${Math.abs(diffDays)}d) - ${dateStr}\n`;
-    } else if (diffDays === 0) {
-      urgencyPrefix = `🔴 AVUI - ${dateStr}\n`;
-    } else if (diffDays === 1) {
-      urgencyPrefix = `🟡 DEMÀ - ${dateStr}\n`;
-    } else if (diffDays <= 3) {
-      urgencyPrefix = `🟡 ${diffDays} DIES - ${dateStr}\n`;
-    } else {
-      urgencyPrefix = `📅 Lliurament: ${dateStr}\n`;
-    }
-    urgentText = urgencyPrefix + (urgentText.replace(/^[⚠️🔴🟡📅].*\n/, ''));
-  }
-
-  // ✅ FIX SINCRONITZACIÓ: sempre actualitzar si el camp no té focus
-  // (igual que fa updateWorkpad — no dependre de areTasksInitialized per actualitzar valors)
-  if (!urgentArea.matches(':focus') && urgentArea.value !== urgentText) {
-    urgentArea.value = urgentText;
-  }
-  if (!importantArea.matches(':focus') && importantArea.value !== (client.tasks.important || '')) {
-    importantArea.value = client.tasks.important || '';
-  }
-  if (!laterArea.matches(':focus') && laterArea.value !== (client.tasks.later || '')) {
-    laterArea.value = client.tasks.later || '';
-  }
-
-  // Registrar oninput només una vegada
   if (!areTasksInitialized) {
+    let urgentText = client.tasks.urgent || '';
+    if (client.deliveryDate) {
+      const deliveryDate = new Date(client.deliveryDate);
+      const dateStr = deliveryDate.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const delivery = new Date(deliveryDate);
+      delivery.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
+      let urgencyPrefix = '';
+      if (diffDays < 0) {
+        urgencyPrefix = `⚠️ VENÇUT (${Math.abs(diffDays)}d) - ${dateStr}\n`;
+      } else if (diffDays === 0) {
+        urgencyPrefix = `🔴 AVUI - ${dateStr}\n`;
+      } else if (diffDays === 1) {
+        urgencyPrefix = `🟡 DEMÀ - ${dateStr}\n`;
+      } else if (diffDays <= 3) {
+        urgencyPrefix = `🟡 ${diffDays} DIES - ${dateStr}\n`;
+      } else {
+        urgencyPrefix = `📅 Lliurament: ${dateStr}\n`;
+      }
+      urgentText = urgencyPrefix + (urgentText.replace(/^[⚠️🔴🟡📅].*\n/, ''));
+    }
+    
+    if (!urgentArea.matches(':focus')) urgentArea.value = urgentText;
+    if (!importantArea.matches(':focus')) importantArea.value = client.tasks.important || '';
+    if (!laterArea.matches(':focus')) laterArea.value = client.tasks.later || '';
+    
     urgentArea.oninput = (e) => handleTaskInput('urgent', e);
     importantArea.oninput = (e) => handleTaskInput('important', e);
     laterArea.oninput = (e) => handleTaskInput('later', e);
@@ -2623,8 +2589,6 @@ function initZoomSystem() {
       e.preventDefault();
       const t1 = e.touches[0], t2 = e.touches[1];
       lastTouchDistance = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-      // ✅ FIX: guardar la distància INICIAL del gest (referència fixa, sense drift)
-      window._initialTouchDistance = lastTouchDistance;
       lastTouchAngle    = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
       // Guardar angle i zoom d'INICI d'aquest gest (no resetar el total!)
       window._gestureBaseRot  = totalRotationDeg;
@@ -2643,12 +2607,10 @@ function initZoomSystem() {
       e.preventDefault();
       const t1 = e.touches[0], t2 = e.touches[1];
       const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-      // ✅ FIX: usar _initialTouchDistance (distància inicial FIXA del gest)
-      // en lloc de lastTouchDistance (que canvia cada frame i acumula errors)
-      const initDist = window._initialTouchDistance || lastTouchDistance;
-      if (initDist > 0) {
+      // Zoom relatiu a la distància inicial del gest (sense drift acumulatiu)
+      if (lastTouchDistance > 0) {
         currentZoom = Math.max(1, Math.min(5,
-          (window._gestureBaseZoom || currentZoom) * (dist / initDist)
+          (window._gestureBaseZoom || currentZoom) * (dist / lastTouchDistance)
         ));
         if (currentZoom === 1) { panX = 0; panY = 0; }
       }
@@ -2675,7 +2637,6 @@ function initZoomSystem() {
     lastTouchDistance   = 0;
     lastTouchAngle      = null;
     accumulatedRotation = 0;
-    window._initialTouchDistance = 0; // ✅ FIX: netejar distància inicial del gest
     // Consolidar: el proper gest partirà d'aquí
     window._gestureBaseRot  = totalRotationDeg;
     window._gestureBaseZoom = currentZoom;
@@ -3152,21 +3113,15 @@ function setupCanvasDrawing() {
     const ux  = dx * Math.cos(rad) - dy * Math.sin(rad);
     const uy  = dx * Math.sin(rad) + dy * Math.cos(rad);
 
-    // Mida de display del canvas-stack (sense rotació, sense zoom).
-    // getBoundingClientRect() ja retorna la mida visual escalada pel zoom CSS,
-    // per tant NO cal tornar a multiplicar per currentZoom (evita doble escala).
+    // Mida de display del canvas-stack (sense rotació, però amb zoom)
     const stack  = document.getElementById('canvasStack');
-    const dispW  = (parseFloat(stack && stack.style.width)  || photoCanvas.width);
-    const dispH  = (parseFloat(stack && stack.style.height) || photoCanvas.height);
-
-    // ux/uy estan en coordenades de pantalla des-rotades, però s'han de des-escalar pel zoom
-    const uxUnzoomed = ux / currentZoom;
-    const uyUnzoomed = uy / currentZoom;
+    const dispW  = (parseFloat(stack && stack.style.width)  || photoCanvas.width)  * currentZoom;
+    const dispH  = (parseFloat(stack && stack.style.height) || photoCanvas.height) * currentZoom;
 
     // Convertir de coordenades de display a píxels interns del canvas
     return {
-      x: (uxUnzoomed / dispW  + 0.5) * photoCanvas.width,
-      y: (uyUnzoomed / dispH  + 0.5) * photoCanvas.height
+      x: (ux / dispW  + 0.5) * photoCanvas.width,
+      y: (uy / dispH  + 0.5) * photoCanvas.height
     };
   }
 
@@ -3645,6 +3600,26 @@ function stopPhotoSync() {
 }
 window.startPhotoSync = startPhotoSync;
 window.stopPhotoSync  = stopPhotoSync;
+
+// ── MULTIIDIOMA — refrescar contingut dinàmic quan canvia la llengua ─────────
+window.addEventListener('langchange', () => {
+  // Refrescar clientName si mostra el text per defecte
+  const clientNameEl = document.getElementById('clientName');
+  if (clientNameEl && typeof t === 'function') {
+    const defaults = ['Cap encàrrec actiu', 'Sin encargo activo', 'No active project'];
+    if (defaults.some(d => clientNameEl.textContent.trim() === d)) {
+      clientNameEl.textContent = t('no_client');
+    }
+  }
+  // Refrescar llista de clients si la vista és visible
+  if (typeof renderClientsOverview === 'function') {
+    const panel = document.getElementById('clientsOverviewPanel');
+    if (panel && panel.style.display !== 'none') renderClientsOverview();
+  }
+  // Refrescar filtre actiu
+  if (typeof renderFilteredClients === 'function') renderFilteredClients();
+});
+// ─────────────────────────────────────────────────────────────────────────────
 // ────────────────────────────────────────────────────────────────────────────
 window.savePhotoComment = savePhotoComment;
   

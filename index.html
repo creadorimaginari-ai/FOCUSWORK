@@ -18,6 +18,7 @@
   <link rel="apple-touch-icon" href="/FOCUSWORK/icons/icon-192.png">
 
   <!-- Styles -->
+  <script src="i18n.js"></script>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-client-view.css">
   <link rel="stylesheet" href="styles-project-states-CORREGIT.css">
@@ -29,7 +30,7 @@
 
     <!-- HEADER -->
     <header class="header">
-      <div id="clientName" class="client-name">Cap encàrrec actiu</div>
+      <div id="clientName" class="client-name" data-i18n-default="no_client">Cap encàrrec actiu</div>
       <div id="activityName" class="activity-name">—</div>
       <div id="timer" class="timer">00:00:00</div>
       <div id="clientTotal" class="client-total"></div>
@@ -50,7 +51,7 @@
 <button id="newClientBtn" title="Nou encàrrec">➕</button>
  <!-- <button id="changeClient">🔄 Canviar d'encàrrec</button> -->
      <button id="focusPriorityBtn" class="primary full-width">
-      👁️ Revisar encàrrecs
+      <span data-i18n="revisar_encarrecs">👁️ Revisar encàrrecs</span>
     </button>
       </div>
   <!-- GRID D'ACTIVITATS (si n'hi ha) -->
@@ -71,46 +72,40 @@
         <path d="M15 18l-6-6 6-6"/>
       </svg>
     </button>
-    <h2 class="overview-title">📊 Els meus projectes</h2>
+    <h2 class="overview-title" data-i18n="els_meus_projectes">📊 Els meus projectes</h2>
   </div>
   
   <!-- Filtres -->
   <div class="clients-filters" id="clientsFilters">
     <button class="filter-btn active" data-filter="all">
-      Tots <span class="filter-badge" id="filterAllCount">0</span>
+      <span data-i18n="tots">Tots</span> <span class="filter-badge" id="filterAllCount">0</span>
     </button>
     <button class="filter-btn" data-filter="in_progress">
-      🔵 En progrés <span class="filter-badge" id="filterProgressCount">0</span>
+      <span data-i18n="en_progres_filter">🔵 En progrés</span> <span class="filter-badge" id="filterProgressCount">0</span>
     </button>
     <button class="filter-btn" data-filter="waiting_feedback">
-      ✉️ Prova enviada <span class="filter-badge" id="filterFeedbackCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="waiting_call">
-      📞 Esp. trucada <span class="filter-badge" id="filterCallCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="waiting_budget">
-      💶 Esp. pressupost <span class="filter-badge" id="filterBudgetCount">0</span>
+      <span data-i18n="prova_enviada_filter">✉️ Prova enviada</span> <span class="filter-badge" id="filterFeedbackCount">0</span>
     </button>
     <button class="filter-btn" data-filter="waiting_material">
-      🟡 Esp. material <span class="filter-badge" id="filterWaitingCount">0</span>
+      <span data-i18n="esperant_filter">🟡 Esperant</span> <span class="filter-badge" id="filterWaitingCount">0</span>
     </button>
     <button class="filter-btn" data-filter="paused">
-      ⏸️ Pausats <span class="filter-badge" id="filterPausedCount">0</span>
+      <span data-i18n="pausats_filter">⸚️ Pausats</span> <span class="filter-badge" id="filterPausedCount">0</span>
     </button>
     <button class="filter-btn" data-filter="urgent">
-      🔴 Urgents <span class="filter-badge" id="filterUrgentCount">0</span>
+      <span data-i18n="urgents_filter">🔴 Urgents</span> <span class="filter-badge" id="filterUrgentCount">0</span>
     </button>
   </div>
   
   <!-- Ordenació -->
   <div class="clients-sorting">
-    <label class="sorting-label">Ordenar per:</label>
+    <label class="sorting-label" data-i18n="ordenar_per">Ordenar per:</label>
     <select class="sorting-select" id="clientsSorting">
-      <option value="urgency">Urgència (entrega propera)</option>
-      <option value="progress">Progrés (menys avançats)</option>
-      <option value="time">Temps treballat (més hores)</option>
-      <option value="name">Nom (A-Z)</option>
-      <option value="state">Estat</option>
+      <option value="urgency" data-i18n="urgencia">Urgència (entrega propera)</option>
+      <option value="progress" data-i18n="progres">Progrés (menys avançats)</option>
+      <option value="time" data-i18n="temps_treballat">Temps treballat (més hores)</option>
+      <option value="name" data-i18n="nom_az">Nom (A-Z)</option>
+      <option value="state" data-i18n="estat">Estat</option>
     </select>
   </div>
   
@@ -147,8 +142,8 @@
       <!-- FECHA DE ENTREGA -->
       <div id="deliveryDateBox" class="delivery-info hidden"></div>
 <div id="clientFixedButtons" class="grid centered" style="margin-top: 12px;">
-  <button id="historyBtn">📂 Clients tancats</button>
-  <button id="closeClient" class="danger">✅ Tancar client</button>
+  <button id="historyBtn" data-i18n="clients_tancats">📂 Clients tancats</button>
+  <button id="closeClient" class="danger" data-i18n="tancar_client">✅ Tancar client</button>
 </div>
     
 
@@ -156,12 +151,12 @@
       <div class="workpad-container">
         <div class="workpad-header">
           <span class="workpad-icon">📝</span>
-          <span class="workpad-title">Notes del client</span>
+          <span class="workpad-title" data-i18n="notes_client">Notes del client</span>
         </div>
         <textarea 
           id="clientWorkpad" 
           class="workpad-area" 
-          placeholder="Apunts, tasques pendents, detalls del projecte…"
+          data-i18n-ph="ph_notes" placeholder="Apunts, tasques pendents, detalls del projecte…"
         ></textarea>
       </div>
 
@@ -173,7 +168,7 @@
         <textarea
           id="taskUrgent"
           class="workpad-area urgent"
-          placeholder="🔴 Urgent (avui, bloquejant...)"
+          data-i18n-ph="ph_urgent" placeholder="🔴 Urgent (avui, bloquejant...)"
         ></textarea>
 
          <!-- <textarea
@@ -193,22 +188,22 @@
       <div id="clientActionsPanel" class="client-actions-panel">
         <div class="grid" style="margin-top: 12px;">
           <button id="setDeliveryDateBtn" class="primary">
-            📅 Data d'entrega
+            <span data-i18n="data_entrega">📅 Data d'entrega</span>
           </button>
         </div> 
    
         <div class="grid centered" style="margin-top: 12px;">
           <button id="addExtraHoursBtn" class="secondary">
-            ⏱️ Afegir hores
+            <span data-i18n="afegir_hores">⏱️ Afegir hores</span>
           </button>
           <button id="viewExtraHoursBtn" class="secondary">
-            📊 Veure resum d'hores
+            <span data-i18n="veure_resum">📊 Veure resum d'hores</span>
           </button>
         </div>
 
         <div class="grid centered" style="margin-top: 12px;">
           <button id="generateReportBtn" class="primary">
-            📋 Generar informe
+            <span data-i18n="generar_informe">📋 Generar informe</span>
           </button>
         </div>
 
@@ -244,8 +239,8 @@
     cursor: pointer;
     text-align: center;
     padding: 12px 24px;
-  " onclick="window._pendingClientId = state.currentClientId; console.log('📷 clientId capturat:', window._pendingClientId);">
-    📷 Afegir foto
+  ">
+    <span data-i18n="afegir_foto">📷 Afegir foto</span>
   </label>
 </div>
 
@@ -255,8 +250,8 @@
     cursor: pointer;
     text-align: center;
     padding: 12px 24px;
-  " onclick="window._pendingClientId = state.currentClientId; console.log('📎 clientId capturat:', window._pendingClientId);">
-    📎 Afegir arxiu
+  ">
+    <span data-i18n="afegir_arxiu">📎 Afegir arxiu</span>
   </label>
 </div>
 <!-- Galeria d'arxius -->
@@ -269,9 +264,9 @@
     <!-- BACKUP Y GESTIÓN -->
     <section class="panel">
       <div class="grid">
-        <button id="exportWorkBtn">💾 Guardar sessió</button>
-        <button id="importWorkBtn">📂 Carregar treball</button>
-        <button id="exportAllBtn" class="full-width">📦 Còpia de seguretat</button>
+        <button id="exportWorkBtn" data-i18n="guardar_sessio">💾 Guardar sessió</button>
+        <button id="importWorkBtn" data-i18n="carregar_treball">📂 Carregar treball</button>
+        <button id="exportAllBtn" class="full-width" data-i18n="copia_seguretat">📦 Còpia de seguretat</button>
       </div>
     </section>
 
@@ -288,13 +283,13 @@
 
       <!-- Fila 1: Focus i Activar Horari en 2 columnes -->
       <div class="footer-main-btns">
-        <button id="focusBtn" class="footer-btn">🎯 Focus</button>
-        <button id="scheduleBtn" class="footer-btn">⏰ Activar Horari</button>
+        <button id="focusBtn" class="footer-btn" data-i18n="focus_btn">🎯 Focus</button>
+        <button id="scheduleBtn" class="footer-btn" data-i18n="activar_horari">⏰ Activar Horari</button>
       </div>
 
       <!-- Fila 2: Sortir centrat, taronja -->
       <button onclick="signOut()" class="footer-btn footer-btn-exit">
-        🚪 Sortir
+        <span data-i18n="sortir">🚪 Sortir</span>
       </button>
 
       <!-- Separador -->
@@ -307,10 +302,10 @@
 
       <div class="footer-license-btns">
         <button id="loadLicenseBtn" type="button" class="footer-license-btn">
-          📄 Carregar llicència
+          <span data-i18n="carregar_llicencia">📄 Carregar llicència</span>
         </button>
         <button id="requestLicenseBtn" type="button" class="footer-license-btn">
-          💬 Sol·licitar per WhatsApp
+          <span data-i18n="solicitar_whatsapp">💬 Sol·licitar per WhatsApp</span>
         </button>
       </div>
 
@@ -332,14 +327,14 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">➕</span>
-        <h2 class="modal-title">Nou client</h2>
+        <h2 class="modal-title" data-i18n="modal_nou_client">Nou client</h2>
       </div>
       <div class="modal-body">
-        <label class="modal-label">Client + descripció de la feina</label>
+        <label class="modal-label" data-i18n="label_client_desc">Client + descripció de la feina</label>
         <textarea
   id="newClientInput"
   class="workpad-area"
-  placeholder="Ex: Joan - Targetes presentació"
+  data-i18n-ph="ph_nou_client" placeholder="Ex: Joan - Targetes presentació"
   rows="2"
   autocomplete="off"
   autocorrect="off"
@@ -352,8 +347,8 @@
       
       
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalNewClient')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmNewClient()">Crear</button>
+        <button class="btn-secondary" onclick="closeModal('modalNewClient')" data-i18n="cancellar">Cancel·lar</button>
+        <button class="btn-primary" onclick="confirmNewClient()" data-i18n="crear">Crear</button>
       </div>
     </div>
   </div>
@@ -363,7 +358,7 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">🔄</span>
-        <h2 class="modal-title">Canviar d'encàrrec</h2>
+        <h2 class="modal-title" data-i18n="modal_canviar">Canviar d'encàrrec</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.7; margin-bottom: 15px;">
@@ -372,7 +367,7 @@
         <div id="activeClientsList" class="clients-list"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalChangeClient')">Cancel·lar</button>
+        <button class="btn-secondary" onclick="closeModal('modalChangeClient')" data-i18n="cancellar">Cancel·lar</button>
       </div>
     </div>
   </div>
@@ -382,15 +377,15 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📂</span>
-        <h2 class="modal-title">Clients tancats</h2>
+        <h2 class="modal-title" data-i18n="modal_clients_tancats">Clients tancats</h2>
       </div>
       <div class="modal-body">
-        <input type="text" id="searchHistory" class="modal-input" placeholder="🔍 Buscar client o feina...">
+        <input type="text" id="searchHistory" class="modal-input" data-i18n-ph="ph_buscar" placeholder="🔍 Buscar client o feina...">
         <div id="historyClientsList" class="clients-list"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-danger" onclick="showBulkDeleteModal()">🗑️ Esborrar antics</button>
-        <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
+        <button class="btn-danger" onclick="showBulkDeleteModal()" data-i18n="esborrar_antics">🗑️ Esborrar antics</button>
+        <button class="btn-secondary" onclick="closeModal('modalHistory')" data-i18n="tancar">Tancar</button>
       </div>
     </div>
   </div>
@@ -400,7 +395,7 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">🗑️</span>
-        <h2 class="modal-title">Esborrar clients antics</h2>
+        <h2 class="modal-title" data-i18n="modal_esborrar_antics">Esborrar clients antics</h2>
       </div>
       <div class="modal-body">
         <div id="bulkDeleteList"></div>
@@ -416,14 +411,14 @@
     <div class="modal modal-confirm">
       <div class="modal-header">
         <span class="modal-icon">✅</span>
-        <h2 class="modal-title">Tancar client</h2>
+        <h2 class="modal-title" data-i18n="modal_tancar_client">Tancar client</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="closeClientText"></p>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalCloseClient')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmCloseClient()">Tancar client</button>
+        <button class="btn-primary" onclick="confirmCloseClient()" data-i18n="modal_tancar_client">Tancar client</button>
       </div>
     </div>
   </div>
@@ -433,14 +428,14 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">💾</span>
-        <h2 class="modal-title">Guardar abans de tancar</h2>
+        <h2 class="modal-title" data-i18n="modal_guardar_tancar">Guardar abans de tancar</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="exportBeforeCloseText"></p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="confirmCloseClient()">No, tancar sense guardar</button>
-        <button class="btn-primary" onclick="exportAndClose()">Sí, guardar i tancar</button>
+        <button class="btn-secondary" onclick="confirmCloseClient()" data-i18n="no_tancar">No, tancar sense guardar</button>
+        <button class="btn-primary" onclick="exportAndClose()" data-i18n="si_guardar">Sí, guardar i tancar</button>
       </div>
     </div>
   </div>
@@ -450,15 +445,15 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📋</span>
-        <h2 class="modal-title">Informe del Projecte</h2>
+        <h2 class="modal-title" data-i18n="modal_informe">Informe del Projecte</h2>
       </div>
       <div class="modal-body">
         <pre id="reportContent" class="report-content"></pre>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalReport')">Tancar</button>
-        <button class="btn-primary" onclick="copyReport()">📋 Copiar</button>
-        <button class="btn-primary" onclick="shareReport()">📤 Compartir</button>
+        <button class="btn-primary" onclick="copyReport()" data-i18n="copiar">📋 Copiar</button>
+        <button class="btn-primary" onclick="shareReport()" data-i18n="compartir">📤 Compartir</button>
       </div>
     </div>
   </div>
@@ -468,20 +463,20 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📂</span>
-        <h2 class="modal-title">Importar Feina</h2>
+        <h2 class="modal-title" data-i18n="modal_importar">Importar Feina</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text">Vols importar aquest treball?</p>
+        <p class="modal-text" data-i18n="vols_importar">Vols importar aquest treball?</p>
         <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
-          <p style="margin: 8px 0;"><strong>Client:</strong> <span id="importClientName"></span></p>
-          <p style="margin: 8px 0;"><strong>Temps total:</strong> <span id="importClientTime"></span></p>
-          <p style="margin: 8px 0;"><strong>Fotos:</strong> <span id="importClientPhotos"></span></p>
-          <p style="margin: 8px 0;"><strong>Notes:</strong> <span id="importClientNotes"></span></p>
+          <p style="margin: 8px 0;"><strong data-i18n="label_client">Client:</strong> <span id="importClientName"></span></p>
+          <p style="margin: 8px 0;"><strong data-i18n="label_temps">Temps total:</strong> <span id="importClientTime"></span></p>
+          <p style="margin: 8px 0;"><strong data-i18n="label_fotos">Fotos:</strong> <span id="importClientPhotos"></span></p>
+          <p style="margin: 8px 0;"><strong data-i18n="label_notes">Notes:</strong> <span id="importClientNotes"></span></p>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalImportWork')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmImport()">Importar</button>
+        <button class="btn-primary" onclick="confirmImport()" data-i18n="importar">Importar</button>
       </div>
     </div>
   </div>
@@ -491,21 +486,21 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📦</span>
-        <h2 class="modal-title">Restaurar còpia completa</h2>
+        <h2 class="modal-title" data-i18n="modal_restaurar">Restaurar còpia completa</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="color: #fbbf24;">⚠️ ATENCIÓ: això restaurarà TOTES les teves dades des de la còpia de seguretat.</p>
         <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
-          <p style="margin: 8px 0;"><strong>Total clients:</strong> <span id="importBackupClients"></span></p>
-          <p style="margin: 8px 0;"><strong>Clients actius:</strong> <span id="importBackupActive"></span></p>
-          <p style="margin: 8px 0;"><strong>Data de la còpia:</strong> <span id="importBackupDate"></span></p>
-          <p style="margin: 8px 0;"><strong>Llicència inclosa:</strong> <span id="importBackupLicense"></span></p>
+          <p style="margin: 8px 0;"><strong data-i18n="label_total_clients">Total clients:</strong> <span id="importBackupClients"></span></p>
+          <p style="margin: 8px 0;"><strong data-i18n="label_clients_actius">Clients actius:</strong> <span id="importBackupActive"></span></p>
+          <p style="margin: 8px 0;"><strong data-i18n="label_data_copia">Data de la còpia:</strong> <span id="importBackupDate"></span></p>
+          <p style="margin: 8px 0;"><strong data-i18n="label_llicencia">Llicència inclosa:</strong> <span id="importBackupLicense"></span></p>
         </div>
         <p class="modal-text" style="font-size: 13px; opacity: 0.8;">La pàgina es recarregarà automàticament després de restaurar.</p>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalImportBackup')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmImportBackup()">Restaurar còpia</button>
+        <button class="btn-primary" onclick="confirmImportBackup()" data-i18n="restaurar">Restaurar còpia</button>
       </div>
     </div>
   </div>
@@ -516,7 +511,7 @@
       <div class="modal-header">
         <span class="modal-icon">🎯</span>
         <div>
-          <h2 class="modal-title">Focus diari</h2>
+          <h2 class="modal-title" data-i18n="modal_focus">Focus diari</h2>
           <p class="modal-subtitle" id="modalUserName"></p>
         </div>
       </div>
@@ -530,7 +525,7 @@
         <div id="modalFocusState" class="focus-state"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalEnfoque')">Acceptar</button>
+        <button class="btn-primary" onclick="closeModal('modalEnfoque')" data-i18n="acceptar">Acceptar</button>
       </div>
     </div>
   </div>
@@ -540,16 +535,16 @@
     <div class="modal modal-confirm">
       <div class="modal-header">
         <span class="modal-icon">🗑️</span>
-        <h2 class="modal-title">Esborrar client</h2>
+        <h2 class="modal-title" data-i18n="modal_esborrar_client">Esborrar client</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="deleteClientText"></p>
-        <label class="modal-label">Escriu ESBORRAR per confirmar</label>
-        <input type="text" id="inputDeleteConfirm" class="modal-input" placeholder="ESBORRAR">
+        <label class="modal-label" data-i18n="escriu_esborrar">Escriu ESBORRAR per confirmar</label>
+        <input type="text" id="inputDeleteConfirm" class="modal-input" data-i18n-ph="ph_esborrar" placeholder="ESBORRAR">
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalDeleteClient')">Cancel·lar</button>
-        <button class="btn-danger" onclick="confirmDeleteClient()">Esborrar</button>
+        <button class="btn-danger" onclick="confirmDeleteClient()" data-i18n="esborrar">Esborrar</button>
       </div>
     </div>
   </div>
@@ -559,10 +554,10 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📅</span>
-        <h2 class="modal-title">Data d'entrega</h2>
+        <h2 class="modal-title" data-i18n="modal_data_entrega">Data d'entrega</h2>
       </div>
       <div class="modal-body">
-        <label class="modal-label">Tria la data límit d'entrega:</label>
+        <label class="modal-label" data-i18n="tria_data">Tria la data límit d'entrega:</label>
         <input type="date" id="inputDeliveryDate" class="modal-input">
         
         <div style="margin-top: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
@@ -572,9 +567,9 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="saveDeliveryDate()">Esborrar data</button>
+        <button class="btn-secondary" onclick="saveDeliveryDate()" data-i18n="esborrar_data">Esborrar data</button>
         <button class="btn-secondary" onclick="closeModal('modalDeliveryDate')">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveDeliveryDate()">Guardar</button>
+        <button class="btn-primary" onclick="saveDeliveryDate()" data-i18n="guardar">Guardar</button>
       </div>
     </div>
   </div>
@@ -584,17 +579,17 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">⏱️</span>
-        <h2 class="modal-title">Afegir hores manuals</h2>
+        <h2 class="modal-title" data-i18n="modal_afegir_hores">Afegir hores manuals</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
           Per a feines fetes fora de l'app (treball extern, reunions, correus...)
         </p>
 
-        <label class="modal-label">Hores:</label>
+        <label class="modal-label" data-i18n="hores_label">Hores:</label>
         <input type="number" id="inputExtraHours" placeholder="Ex: 2.5" step="0.5" min="0" class="modal-input" style="margin-bottom: 15px;">
 
-        <label class="modal-label">Descripció (opcional):</label>
+        <label class="modal-label" data-i18n="desc_label">Descripció (opcional):</label>
         <textarea id="inputExtraDescription" class="modal-input" rows="3" placeholder="Ex: Reunió amb client, correccions per correu..."></textarea>
 
         <div style="margin-top: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
@@ -810,7 +805,6 @@
 <!-- Scripts de Supabase (els nous arxius) -->
 <script src="supabase-config.js"></script>
 <script src="supabase-db.js"></script>
-<script src="supabase-realtime.js"></script>
 <script src="supabase-auth.js"></script>
 
 <!-- Scripts originals de FocusWork -->
@@ -908,8 +902,6 @@ function updateFilterCounts(clients) {
     all: clients.length,
     in_progress: 0,
     waiting_feedback: 0,
-    waiting_call: 0,
-    waiting_budget: 0,
     waiting_material: 0,
     paused: 0,
     urgent: 0
@@ -922,9 +914,7 @@ function updateFilterCounts(clients) {
     // Comptar urgents (entrega en <=3 dies)
     if (client.deliveryDate) {
       const today = new Date();
-      today.setHours(0,0,0,0);
       const delivery = new Date(client.deliveryDate);
-      delivery.setHours(0,0,0,0);
       const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
       if (diffDays <= 3 && diffDays >= 0) counts.urgent++;
     }
@@ -934,8 +924,6 @@ function updateFilterCounts(clients) {
   document.getElementById('filterAllCount').textContent = counts.all;
   document.getElementById('filterProgressCount').textContent = counts.in_progress;
   document.getElementById('filterFeedbackCount').textContent = counts.waiting_feedback;
-  document.getElementById('filterCallCount').textContent = counts.waiting_call;
-  document.getElementById('filterBudgetCount').textContent = counts.waiting_budget;
   document.getElementById('filterWaitingCount').textContent = counts.waiting_material;
   document.getElementById('filterPausedCount').textContent = counts.paused;
   document.getElementById('filterUrgentCount').textContent = counts.urgent;
@@ -981,7 +969,7 @@ function sortClients(clients, sortBy) {
       return sorted.sort((a, b) => a.name.localeCompare(b.name));
       
     case 'state':
-      const stateOrder = ['blocked', 'waiting_call', 'waiting_budget', 'waiting_material', 'waiting_feedback', 'paused', 'in_progress', 'ready_to_deliver'];
+      const stateOrder = ['blocked', 'waiting_material', 'waiting_feedback', 'paused', 'in_progress', 'ready_to_deliver'];
       return sorted.sort((a, b) => {
         const stateA = stateOrder.indexOf(a.state || 'in_progress');
         const stateB = stateOrder.indexOf(b.state || 'in_progress');
