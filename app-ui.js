@@ -443,6 +443,7 @@ async function updateUI(preloadedClient = null) {
   updates.push(() => {
 if (clientInfoPanel) {
   clientInfoPanel.style.display = client ? 'block' : 'none';
+  document.body.classList.toggle('client-view', !!client);
 }
 
 const fixedBtns = $("clientFixedButtons");
@@ -528,22 +529,31 @@ function updateDeliveryDateDisplay(client) {
   delivery.setHours(0, 0, 0, 0);
   const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
   
+  const _tD = typeof t === 'function' ? t : k => k;
+  // Textos multiidioma per a la data d'entrega
+  const _lliur = {
+    venut:   (n) => `⚠️ ${_tD('venut')} ${n} ${_tD('dies')}`,
+    avui:    ()  => `🔴 ${_tD('data_lliurament_avui')}`,
+    dema:    ()  => `🟡 ${_tD('data_lliurament_dema')}`,
+    propers: (n) => `🟡 ${_tD('data_lliurament_en')} ${n} ${_tD('dies')}`,
+    normal:  (d) => `📅 ${_tD('data_lliurament_prefix')} ${d.toLocaleDateString()}`,
+  };
   let message = "";
   let className = "delivery-info";
   if (diffDays < 0) {
-    message = `⚠️ Lliurament vençut (${Math.abs(diffDays)} dies)`;
+    message = _lliur.venut(Math.abs(diffDays));
     className = "delivery-overdue";
   } else if (diffDays === 0) {
-    message = "🔴 Lliurament AVUI!";
+    message = _lliur.avui();
     className = "delivery-today";
   } else if (diffDays === 1) {
-    message = "🟡 Lliurament DEMÀ";
+    message = _lliur.dema();
     className = "delivery-tomorrow";
   } else if (diffDays <= 3) {
-    message = `🟡 Lliurament en ${diffDays} dies`;
+    message = _lliur.propers(diffDays);
     className = "delivery-soon";
   } else {
-    message = `📅 Lliurament: ${deliveryDate.toLocaleDateString("ca-ES")}`;
+    message = _lliur.normal(deliveryDate);
     className = "delivery-normal";
   }
   deliveryBox.textContent = message;
@@ -800,6 +810,7 @@ function exitClient() {
   if (activitiesPanel) activitiesPanel.style.display = 'block';
   if (overviewPanel)   overviewPanel.style.display   = 'none';
   if (clientInfoPanel) clientInfoPanel.style.display  = 'none';
+  document.body.classList.remove('client-view');
 
   updateUI();
 }
@@ -3618,6 +3629,11 @@ window.addEventListener('langchange', () => {
   }
   // Refrescar filtre actiu
   if (typeof renderFilteredClients === 'function') renderFilteredClients();
+  // Refrescar data d'entrega (textos traduïbles)
+  if (typeof updateDeliveryDateDisplay === 'function' && typeof loadClient === 'function') {
+    const clientId = window.state && window.state.currentClientId;
+    if (clientId) loadClient(clientId).then(c => { if (c) updateDeliveryDateDisplay(c); });
+  }
   // Refrescar panel estat del projecte (re-renderitza labels traduïts)
   const stateContainer = document.getElementById('projectStateContainer');
   const progressContainer = document.getElementById('projectProgressContainer');
@@ -4119,50 +4135,91 @@ async function renderFileGallery(preloadedClient = null) {
         background: #1e293b;
       `;
       
-      // ✅ LONG PRESS per esborrar (PER TOTS ELS ARXIUS incloent imatges)
-      let pressTimer = null;
+      // ✅ LONG PRESS per esborrar / TAP per obrir
+      // Lògica anti-accidental:
+      //   - Detecta moviment (scroll) i cancel·la si l'usuari es mou
+      //   - Tap ha de ser < 400ms I sense moviment > 12px
+      //   - Long press és 750ms
+      let pressTimer  = null;
+      let pressActive = false;   // true si el long press ja s'ha disparat
+      let startX = 0, startY = 0;
+      let hasMoved = false;
       let touchStartTime = null;
-      
+      const MOVE_THRESHOLD = 12;   // px — si es mou més, és scroll
+      const TAP_MAX_MS    = 400;   // ms màxims per considerar-ho tap
+      const LONG_MS       = 750;   // ms fins a long press (esborrar)
+
       const startPress = (e) => {
+        const touch = e.touches ? e.touches[0] : e;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        hasMoved    = false;
+        pressActive = false;
         touchStartTime = Date.now();
-        container.style.transform = 'scale(0.95)';
-        container.style.transition = 'transform 0.1s';
-        
+
+        container.style.transition = 'transform 0.15s, opacity 0.15s';
+        container.style.transform  = 'scale(0.95)';
+        container.style.opacity    = '0.85';
+
         pressTimer = setTimeout(() => {
-          // Vibrar si està disponible
-          if (navigator.vibrate) {
-            navigator.vibrate(50);
-          }
-          
-          // Mostrar confirmació
-          confirmDeleteFile(file);
-          
-          // Reset visual
+          if (hasMoved) return; // si s'ha mogut, no esborrar
+          pressActive = true;
           container.style.transform = 'scale(1)';
-        }, 800); // 800ms = 0.8 segons de pulsació
+          container.style.opacity   = '1';
+          if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+          confirmDeleteFile(file);
+        }, LONG_MS);
       };
-      
-      const cancelPress = () => {
-        if (pressTimer) {
-          clearTimeout(pressTimer);
-          pressTimer = null;
+
+      const onMove = (e) => {
+        if (!touchStartTime) return;
+        const touch = e.touches ? e.touches[0] : e;
+        const dx = Math.abs(touch.clientX - startX);
+        const dy = Math.abs(touch.clientY - startY);
+        if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+          hasMoved = true;
+          // Cancel·lar el long press si es mou
+          if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+          container.style.transform = 'scale(1)';
+          container.style.opacity   = '1';
         }
+      };
+
+      const endPress = (e) => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
         container.style.transform = 'scale(1)';
-        
-        // Si és un click curt (menys de 300ms), obrir arxiu
-        if (touchStartTime && (Date.now() - touchStartTime) < 300) {
+        container.style.opacity   = '1';
+
+        const elapsed = touchStartTime ? Date.now() - touchStartTime : 999;
+        touchStartTime = null;
+
+        // Obrir només si: no s'ha mogut, no era long press, i és prou ràpid
+        if (!hasMoved && !pressActive && elapsed < TAP_MAX_MS) {
           openFileViewer(allFiles, index);
         }
-        touchStartTime = null;
+        pressActive = false;
+        hasMoved    = false;
       };
-      
-      // Event listeners per desktop i mòbil
-      container.addEventListener('mousedown', startPress);
+
+      const leavePress = () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        container.style.transform = 'scale(1)';
+        container.style.opacity   = '1';
+        touchStartTime = null;
+        pressActive    = false;
+        hasMoved       = false;
+      };
+
+      // Mouse (desktop)
+      container.addEventListener('mousedown',  startPress);
+      container.addEventListener('mousemove',  onMove);
+      container.addEventListener('mouseup',    endPress);
+      container.addEventListener('mouseleave', leavePress);
+      // Touch (mòbil)
       container.addEventListener('touchstart', startPress, { passive: true });
-      container.addEventListener('mouseup', cancelPress);
-      container.addEventListener('mouseleave', cancelPress);
-      container.addEventListener('touchend', cancelPress);
-      container.addEventListener('touchcancel', cancelPress);
+      container.addEventListener('touchmove',  onMove,     { passive: true });
+      container.addEventListener('touchend',   endPress);
+      container.addEventListener('touchcancel',leavePress);
       
       if (file.type === 'image') {
         // Mostrar thumbnail d'imatge

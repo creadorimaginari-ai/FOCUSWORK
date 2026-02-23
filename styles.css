@@ -1326,12 +1326,20 @@ textarea:focus-visible {
    ══════════════════════════════════════════════════════ */
 #langSelector {
   display: flex;
-  flex-direction: column;   /* un sobre l'altre */
+  flex-direction: column;
   gap: 4px;
-  position: fixed;          /* fix: visible sempre, no desplaça el header */
+  position: fixed;
   top: 14px;
   left: 12px;
   z-index: 9999;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Ocultar botons quan estem dins un client */
+body.client-view #langSelector {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-40px);
 }
 
 .lang-btn {
@@ -1363,4 +1371,109 @@ textarea:focus-visible {
 
 header.header {
   position: relative;
+}
+
+
+/* ══════════════════════════════════════════════════════
+   ALARMA D'ENTREGA
+   ══════════════════════════════════════════════════════ */
+
+#alarmBanner {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border: 2px solid #f97316;
+  border-radius: 16px;
+  padding: 14px 16px;
+  min-width: 280px;
+  max-width: 90vw;
+  box-shadow: 0 0 0 4px rgba(249,115,22,0.2), 0 8px 32px rgba(0,0,0,0.6);
+  animation: alarmSlideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes alarmSlideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(30px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes alarmShake {
+  0%,100% { transform: translateX(-50%) rotate(0deg); }
+  20%     { transform: translateX(-50%) rotate(-2deg); }
+  40%     { transform: translateX(-50%) rotate(2deg); }
+  60%     { transform: translateX(-50%) rotate(-2deg); }
+  80%     { transform: translateX(-50%) rotate(1deg); }
+}
+
+.alarm-shake {
+  animation: alarmShake 0.5s ease !important;
+}
+
+.alarm-banner-icon {
+  font-size: 28px;
+  animation: alarmPulse 1s ease infinite;
+  flex-shrink: 0;
+}
+
+@keyframes alarmPulse {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.2); }
+}
+
+.alarm-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.alarm-banner-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #f97316;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.alarm-banner-clients {
+  font-size: 13px;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alarm-banner-repeat {
+  background: rgba(249,115,22,0.15);
+  border: 1px solid rgba(249,115,22,0.4);
+  color: #f97316;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.alarm-banner-repeat:hover {
+  background: rgba(249,115,22,0.3);
+}
+
+.alarm-banner-close {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.alarm-banner-close:hover {
+  background: rgba(255,255,255,0.15);
+  color: white;
 }
