@@ -15,17 +15,21 @@ window.renderClientCard = function(client) {
     in_progress:      '#3b82f6',
     waiting_feedback: '#8b5cf6',
     waiting_material: '#f59e0b',
+    waiting_budget:   '#f97316',
     paused:           '#64748b',
     blocked:          '#ef4444',
     ready_to_deliver: '#10b981',
   };
+  // Usar t() per traduccions si disponible
+  const _t = (typeof t === 'function') ? t : (k => k);
   const stateLabels = {
-    in_progress:      '🔵 En progrés',
-    waiting_feedback: '✉️ Prova enviada',
-    waiting_material: '🟡 Esperant',
-    paused:           '⏸ Pausat',
-    blocked:          '🔴 Bloquejat',
-    ready_to_deliver: '✅ Llest',
+    in_progress:      _t('state_in_progress'),
+    waiting_feedback: _t('state_waiting_feedback'),
+    waiting_material: _t('state_waiting_material'),
+    waiting_budget:   _t('state_waiting_budget'),
+    paused:           _t('state_paused'),
+    blocked:          _t('state_blocked'),
+    ready_to_deliver: _t('state_ready'),
   };
   const cs    = client.state || 'in_progress';
   const color = stateColors[cs] || '#3b82f6';
