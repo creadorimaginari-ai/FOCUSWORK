@@ -1084,11 +1084,18 @@ async function handlePhotoInputiPad(input) {
   
   console.log('✅ Fitxer rebut:', file.name, file.type);
   
-  if (!state.currentClientId) {
+  // ✅ FIX MÒBIL: restaurar currentClientId si s'ha perdut mentre el navegador estava al background
+  const clientId = state.currentClientId || window._pendingClientId;
+  if (!clientId) {
     showAlert('Error', 'Selecciona un client primer', '⚠️');
     input.value = '';
     return;
   }
+  if (!state.currentClientId && window._pendingClientId) {
+    state.currentClientId = window._pendingClientId;
+    console.log('🔧 currentClientId restaurat:', clientId);
+  }
+  window._pendingClientId = null;
   
   if (!file.type.startsWith('image/')) {
     showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
@@ -1205,13 +1212,22 @@ async function handleFileInputiPad(input) {
   
   console.log('✅ Fitxer rebut:', file.name, file.type, formatFileSize(file.size));
   
-  if (!state.currentClientId) {
+  // ✅ FIX MÒBIL: quan el navegador va al background per obrir el selector d'arxius,
+  // state.currentClientId es pot perdre. Usem _pendingClientId capturat en el moment del clic.
+  const clientId = state.currentClientId || window._pendingClientId;
+  if (!clientId) {
     showAlert('Error', 'Selecciona un client primer', '⚠️');
     input.value = '';
     return;
   }
+  // Restaurar per si s'havia perdut
+  if (!state.currentClientId && window._pendingClientId) {
+    state.currentClientId = window._pendingClientId;
+    console.log('🔧 currentClientId restaurat des de _pendingClientId:', clientId);
+  }
+  window._pendingClientId = null;
   
-  const client = await loadClient(state.currentClientId);
+  const client = await loadClient(clientId);
   if (!client) {
     showAlert('Error', 'Client no trobat', '⚠️');
     input.value = '';
