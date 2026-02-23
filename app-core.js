@@ -997,14 +997,20 @@ function showOnboardingScreen() {
         box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         text-align: center;
       ">
+        <!-- Selector de llengua integrat a l'onboarding -->
+        <div style="display:flex; justify-content:flex-end; gap:6px; margin-bottom:16px;">
+          <button onclick="onboardSelectLang('ca')" id="ob_ca" style="padding:5px 10px;border-radius:6px;border:2px solid #667eea;background:#667eea;color:white;font-weight:700;font-size:12px;cursor:pointer;">CA</button>
+          <button onclick="onboardSelectLang('es')" id="ob_es" style="padding:5px 10px;border-radius:6px;border:2px solid #e2e8f0;background:white;color:#64748b;font-weight:700;font-size:12px;cursor:pointer;">ES</button>
+          <button onclick="onboardSelectLang('en')" id="ob_en" style="padding:5px 10px;border-radius:6px;border:2px solid #e2e8f0;background:white;color:#64748b;font-weight:700;font-size:12px;cursor:pointer;">EN</button>
+        </div>
         <div style="font-size: 64px; margin-bottom: 20px;">👋</div>
-        <h1 style="
+        <h1 id="ob_title" style="
           font-size: 28px;
           font-weight: bold;
           color: #1e293b;
           margin-bottom: 12px;
         ">Benvingut a FocusWork!</h1>
-        <p style="
+        <p id="ob_subtitle" style="
           font-size: 16px;
           color: #64748b;
           margin-bottom: 30px;
@@ -1058,10 +1064,10 @@ function showOnboardingScreen() {
           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(102, 126, 234, 0.5)';"
           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)';"
         >
-          ✅ Començar a usar FocusWork
+          <span id="ob_btn_text">✅ Començar a usar FocusWork</span>
         </button>
         
-        <p style="
+        <p id="ob_tip" style="
           font-size: 12px;
           color: #94a3b8;
           margin-top: 20px;
@@ -1074,7 +1080,70 @@ function showOnboardingScreen() {
   
   // Afegir a la pàgina
   document.body.insertAdjacentHTML('beforeend', onboardingHTML);
-  
+
+  // Funció per canviar idioma des de l'onboarding
+  window.onboardSelectLang = function(lang) {
+    // Aplicar idioma si i18n ja carregat
+    if (typeof applyLang === 'function') applyLang(lang);
+    else {
+      localStorage.setItem('fw_lang', lang);
+    }
+    // Actualitzar botons visuals
+    ['ca','es','en'].forEach(l => {
+      const btn = document.getElementById('ob_' + l);
+      if (!btn) return;
+      if (l === lang) {
+        btn.style.background = '#667eea';
+        btn.style.color = 'white';
+        btn.style.borderColor = '#667eea';
+      } else {
+        btn.style.background = 'white';
+        btn.style.color = '#64748b';
+        btn.style.borderColor = '#e2e8f0';
+      }
+    });
+    // Traduir els textos de l'onboarding
+    const texts = {
+      ca: {
+        title: 'Benvingut a FocusWork!',
+        subtitle: 'Abans de començar, si us plau introdueix el teu nom.<br>Aquest nom apareixerà als informes que generis.',
+        placeholder: 'El teu nom...',
+        btn: '✅ Començar a usar FocusWork',
+        tip: '💡 Pots canviar el teu nom més endavant des de Configuració',
+        error: '❌ Si us plau, introdueix el teu nom',
+      },
+      es: {
+        title: '¡Bienvenido a FocusWork!',
+        subtitle: 'Antes de empezar, por favor introduce tu nombre.<br>Este nombre aparecerá en los informes que generes.',
+        placeholder: 'Tu nombre...',
+        btn: '✅ Empezar a usar FocusWork',
+        tip: '💡 Puedes cambiar tu nombre más adelante desde Configuración',
+        error: '❌ Por favor, introduce tu nombre',
+      },
+      en: {
+        title: 'Welcome to FocusWork!',
+        subtitle: 'Before we start, please enter your name.<br>This name will appear in the reports you generate.',
+        placeholder: 'Your name...',
+        btn: '✅ Start using FocusWork',
+        tip: '💡 You can change your name later from Settings',
+        error: '❌ Please enter your name',
+      },
+    };
+    const tx = texts[lang] || texts.ca;
+    const el = id => document.getElementById(id);
+    if (el('ob_title'))    el('ob_title').textContent = tx.title;
+    if (el('ob_subtitle')) el('ob_subtitle').innerHTML = tx.subtitle;
+    if (el('ob_btn_text')) el('ob_btn_text').textContent = tx.btn;
+    if (el('ob_tip'))      el('ob_tip').textContent = tx.tip;
+    if (el('onboardingUserName')) el('onboardingUserName').placeholder = tx.placeholder;
+    // Guardar el text d'error per a ús posterior
+    window._obErrorText = tx.error;
+  };
+
+  // Marcar CA com actiu per defecte
+  const savedLang = localStorage.getItem('fw_lang') || 'ca';
+  window.onboardSelectLang(savedLang);
+
   const input = document.getElementById('onboardingUserName');
   const button = document.getElementById('onboardingConfirm');
   const error = document.getElementById('onboardingError');
@@ -1097,6 +1166,7 @@ function showOnboardingScreen() {
     
     if (!name) {
       // Mostrar error
+      if (window._obErrorText) error.innerHTML = window._obErrorText;
       error.style.display = 'block';
       input.style.borderColor = '#ef4444';
       input.focus();
@@ -1127,10 +1197,11 @@ function showOnboardingScreen() {
       updateUI();
       scheduleFullAutoBackup();
       
-      // Missatge de benvinguda
+      // Missatge de benvinguda (traduït)
+      const _wt = typeof t === 'function';
       showAlert(
-        `Hola ${userName}! 👋`, 
-        'Benvingut a FocusWork.\n\nComença creant el teu primer encàrrec!',
+        `${_wt ? '' : 'Hola '}${userName}! 👋`,
+        _wt ? t('benvingut_missatge') : 'Benvingut a FocusWork.\n\nComença creant el teu primer encàrrec!',
         '🎉'
       );
       

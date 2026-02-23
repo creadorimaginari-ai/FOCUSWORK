@@ -19,6 +19,7 @@
 
   <!-- Styles -->
   <script src="i18n.js"></script>
+  <script src="alarm.js" defer></script>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-client-view.css">
   <link rel="stylesheet" href="styles-project-states-CORREGIT.css">
@@ -147,6 +148,19 @@
 </div>
     
 
+      <!-- FEINES URGENTS — primer que es veu -->
+      <div class="workpad-container">
+        <div class="workpad-header">
+          <span class="workpad-icon">🔴</span>
+          <span class="workpad-title" data-i18n="ph_urgent" style="color:#ef4444;">Urgent</span>
+        </div>
+        <textarea
+          id="taskUrgent"
+          class="workpad-area urgent"
+          data-i18n-ph="ph_urgent" placeholder="🔴 Urgent (avui, bloquejant...)"
+        ></textarea>
+      </div>
+
       <!-- WORKPAD (Bloc de notas) -->
       <div class="workpad-container">
         <div class="workpad-header">
@@ -160,31 +174,7 @@
         ></textarea>
       </div>
 
-      <!-- FEINES PER URGÈNCIA -->
-      <div class="workpad-container">
-        <div class="workpad-header">
-        </div>
-
-        <textarea
-          id="taskUrgent"
-          class="workpad-area urgent"
-          data-i18n-ph="ph_urgent" placeholder="🔴 Urgent (avui, bloquejant...)"
-        ></textarea>
-
-         <!-- <textarea
-          id="taskImportant"
-          class="workpad-area important"
-          placeholder="🟠 Important (següent pas)"
-        ></textarea>
-
-        <textarea
-          id="taskLater"
-          class="workpad-area later"
-          placeholder="🟢 Quan es pugui (no oblidar)"
-        ></textarea>
-      </div>
-
-     PANEL D'ACCIONS DEL CLIENT -->
+      <!-- PANEL D'ACCIONS DEL CLIENT -->
       <div id="clientActionsPanel" class="client-actions-panel">
         <div class="grid" style="margin-top: 12px;">
           <button id="setDeliveryDateBtn" class="primary">

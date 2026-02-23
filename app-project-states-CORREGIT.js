@@ -11,48 +11,55 @@ function _stateLabel(key) {
 // Estats disponibles del projecte
 // Usem getters per retornar la label en l'idioma actiu cada vegada
 const PROJECT_STATES = {
-  WAITING_MATERIAL: {
-    id: 'waiting_material',
-    get label() { return _stateLabel('state_waiting_material_full'); },
-    icon: '🟡',
-    color: '#fbbf24',
-  },
   IN_PROGRESS: {
     id: 'in_progress',
     get label() { return _stateLabel('state_in_progress_full'); },
+    get description() { return _stateLabel('state_desc_in_progress'); },
     icon: '🔵',
     color: '#3b82f6',
   },
   WAITING_FEEDBACK: {
     id: 'waiting_feedback',
     get label() { return _stateLabel('state_waiting_feedback_full'); },
+    get description() { return _stateLabel('state_desc_waiting_feedback'); },
     icon: '✉️',
     color: '#a855f7',
+  },
+  WAITING_MATERIAL: {
+    id: 'waiting_material',
+    get label() { return _stateLabel('state_waiting_material_full'); },
+    get description() { return _stateLabel('state_desc_waiting_material'); },
+    icon: '🟡',
+    color: '#fbbf24',
+  },
+  WAITING_BUDGET: {
+    id: 'waiting_budget',
+    get label() { return _stateLabel('state_waiting_budget_full'); },
+    get description() { return _stateLabel('state_desc_waiting_budget'); },
+    icon: '💰',
+    color: '#f97316',
   },
   PAUSED: {
     id: 'paused',
     get label() { return _stateLabel('state_paused_full'); },
+    get description() { return _stateLabel('state_desc_paused'); },
     icon: '⏸️',
     color: '#6b7280',
   },
   READY_TO_DELIVER: {
     id: 'ready_to_deliver',
     get label() { return _stateLabel('state_ready_full'); },
+    get description() { return _stateLabel('state_desc_ready'); },
     icon: '🟢',
     color: '#10b981',
   },
   BLOCKED: {
     id: 'blocked',
     get label() { return _stateLabel('state_blocked_full'); },
+    get description() { return _stateLabel('state_desc_blocked'); },
     icon: '🔴',
     color: '#ef4444',
   },
-  WAITING_BUDGET: {
-    id: 'waiting_budget',
-    get label() { return _stateLabel('state_waiting_budget_full'); },
-    icon: '💰',
-    color: '#f97316',
-  }
 };
 
 // Nivells de progrés (1-5 quadrats amb colors: vermell, vermell, taronja, taronja, verd)
