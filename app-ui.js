@@ -2565,11 +2565,15 @@ function initZoomSystem() {
   // ✅ FIX: registrar zoom al lightbox-canvas-container (pare del canvasStack)
   // Això assegura que els events de dos dits arribin sempre, fins i tot quan
   // el canvas té pointer-events:none (mode no-dibuix)
-  const zoomTarget = photoCanvas.closest('.lightbox-canvas-container')
-                     || photoCanvas.parentElement
+  // Registrar al canvasStack (parentElement directe del canvas) 
+  // I TAMBÉ al lightbox-canvas-container per capturar events que s'escapen
+  const zoomTarget = document.getElementById('canvasStack') 
+                     || photoCanvas.parentElement 
                      || photoCanvas;
-  // Prevenir scroll del navegador dins l'editor (iOS / Android)
+  const zoomParent = document.querySelector('.lightbox-canvas-container') || zoomTarget;
+  // Prevenir zoom natiu del navegador a tota la zona d'edició
   zoomTarget.style.touchAction = 'none';
+  zoomParent.style.touchAction = 'none';
 
   // Mouse wheel zoom
   const wheelHandler = (e) => {
@@ -2671,8 +2675,18 @@ function initZoomSystem() {
   zoomTarget.addEventListener('touchend',    touchEndHandler);
   zoomTarget.addEventListener('touchcancel', touchEndHandler);
 
+  // Si el contenidor pare és diferent, afegir-hi els touch handlers de pinch
+  // (per capturar events que el stopPropagation del drawing canvas no bloqueja)
+  if (zoomParent !== zoomTarget) {
+    zoomParent.addEventListener('touchstart',  touchStartHandler, { passive: false });
+    zoomParent.addEventListener('touchmove',   touchMoveHandler,  { passive: false });
+    zoomParent.addEventListener('touchend',    touchEndHandler);
+    zoomParent.addEventListener('touchcancel', touchEndHandler);
+  }
+
   // Guardar ref per cleanup
   photoCanvas._zoomTarget = zoomTarget;
+  photoCanvas._zoomParent = zoomParent;
   photoCanvas._zoomHandlers = {
     wheel: wheelHandler, mousedown: mouseDownHandler,
     mousemove: mouseMoveHandler, mouseup: mouseUpHandler,
@@ -2685,8 +2699,9 @@ function initZoomSystem() {
 function cleanupZoomSystem() {
   if (!photoCanvas || !photoCanvas._zoomHandlers) return;
 
-  const t = photoCanvas._zoomTarget || photoCanvas;
-  const h = photoCanvas._zoomHandlers;
+  const t  = photoCanvas._zoomTarget || photoCanvas;
+  const tp = photoCanvas._zoomParent;
+  const h  = photoCanvas._zoomHandlers;
   t.removeEventListener('wheel',       h.wheel);
   t.removeEventListener('mousedown',   h.mousedown);
   t.removeEventListener('mousemove',   h.mousemove);
@@ -2696,9 +2711,17 @@ function cleanupZoomSystem() {
   t.removeEventListener('touchmove',   h.touchmove);
   t.removeEventListener('touchend',    h.touchend);
   t.removeEventListener('touchcancel', h.touchcancel);
+  if (tp && tp !== t) {
+    tp.removeEventListener('touchstart',  h.touchstart);
+    tp.removeEventListener('touchmove',   h.touchmove);
+    tp.removeEventListener('touchend',    h.touchend);
+    tp.removeEventListener('touchcancel', h.touchcancel);
+    tp.style.touchAction = '';
+  }
 
   delete photoCanvas._zoomHandlers;
   delete photoCanvas._zoomTarget;
+  delete photoCanvas._zoomParent;
   
   // Reset valors
   currentZoom = 1;
@@ -3143,6 +3166,8 @@ function setupCanvasDrawing() {
   }
 
   function onStart(e) {
+    // 2 dits = zoom/rotació, no dibuix — deixar pujar l'event al zoom handler
+    if (e.touches && e.touches.length >= 2) return;
     const tool = currentTool;
     if (tool === 'none' || tool === 'fill') return;
     e.preventDefault(); e.stopPropagation();
@@ -3165,6 +3190,11 @@ function setupCanvasDrawing() {
   }
 
   function onMove(e) {
+    // 2 dits = zoom/rotació, aturar dibuix i deixar pujar l'event
+    if (e.touches && e.touches.length >= 2) {
+      if (isDrawing) { isDrawing = false; shapeStart = null; snapShot = null; }
+      return;
+    }
     if (!isDrawing) return;
     const tool = currentTool;
     if (tool === 'none' || tool === 'fill') return;
@@ -3198,6 +3228,7 @@ function setupCanvasDrawing() {
   }
 
   function onEnd(e) {
+    if (e && e.touches && e.touches.length >= 2) return;
     if (!isDrawing) return;
     if (e) { e.preventDefault(); e.stopPropagation(); }
     isDrawing = false; shapeStart = null; snapShot = null;
@@ -4151,8 +4182,8 @@ async function renderFileGallery(preloadedClient = null) {
       let startX = 0, startY = 0;
       let hasMoved = false;
       let touchStartTime = null;
-      const MOVE_THRESHOLD = 20;   // px — si es mou més, és scroll
-      const TAP_MAX_MS    = 500;   // ms màxims per considerar-ho tap
+      const MOVE_THRESHOLD = 10;   // px per activar flag hasMoved
+      const TAP_MAX_MS    = 350;   // ms màxims per tap (curt i intencionat)
       const LONG_MS       = 750;   // ms fins a long press (esborrar)
 
       const startPress = (e) => {
@@ -4182,10 +4213,14 @@ async function renderFileGallery(preloadedClient = null) {
         const touch = e.touches ? e.touches[0] : e;
         const dx = Math.abs(touch.clientX - startX);
         const dy = Math.abs(touch.clientY - startY);
+        // Qualsevol moviment > MOVE_THRESHOLD marca hasMoved i cancel·la tot
         if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
           hasMoved = true;
-          // Cancel·lar el long press si es mou
-          if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        }
+        // Si hi ha moviment detectable, cancel·lar sempre el long press
+        if (hasMoved && pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
           container.style.transform = 'scale(1)';
           container.style.opacity   = '1';
         }
@@ -4199,7 +4234,8 @@ async function renderFileGallery(preloadedClient = null) {
         const elapsed = touchStartTime ? Date.now() - touchStartTime : 999;
         touchStartTime = null;
 
-        // Obrir només si: no s'ha mogut, no era long press, i és prou ràpid
+        // Obrir NOMÉS si: zero moviment detectat, no long press, i tap curt
+        // hasMoved=true si el dit s'ha mogut > 10px en qualsevol moment
         if (!hasMoved && !pressActive && elapsed < TAP_MAX_MS) {
           openFileViewer(allFiles, index);
         }
