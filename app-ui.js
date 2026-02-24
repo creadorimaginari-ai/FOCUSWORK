@@ -2620,9 +2620,14 @@ function initZoomSystem() {
     const t1 = e.touches[0], t2 = e.touches[1];
     const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
     if (lastTouchDistance > 0) {
-      currentZoom = Math.max(1, Math.min(5,
-        (window._gestureBaseZoom || currentZoom) * (dist / lastTouchDistance)
-      ));
+      // Amplificar el ratio per fer el zoom més fluid i ràpid
+      const rawRatio = dist / lastTouchDistance;
+      // Exponent 1.8: petits moviments → zoom més gran; evita que sigui lent
+      const amplified = rawRatio > 1
+        ? 1 + (rawRatio - 1) * 1.8
+        : 1 - (1 - rawRatio) * 1.8;
+      const newZoom = (window._gestureBaseZoom || currentZoom) * amplified;
+      currentZoom = Math.max(1, Math.min(5, newZoom));
       if (currentZoom === 1) { panX = 0; panY = 0; }
     }
     lastTouchDistance = dist;
