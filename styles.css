@@ -1427,3 +1427,37 @@ textarea:focus-visible {
   background: rgba(255,255,255,0.15);
   color: white;
 }
+
+/* ══ BOTONS ZOOM TOOLBAR ══════════════════════════════════════════════════════ */
+.etb-zoom-btn {
+  font-size: 13px !important;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: #1e40af !important;
+  color: white !important;
+  border: 1px solid #3b82f6 !important;
+}
+.etb-zoom-btn:active {
+  background: #1d4ed8 !important;
+  transform: scale(0.92);
+}
+
+/* Indicador zoom actual */
+#zoomIndicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 60;
+}
+#zoomIndicator.visible {
+  opacity: 1;
+}

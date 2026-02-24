@@ -1177,6 +1177,13 @@ function setupProgressListeners() {
   </div>
   
  <div class="lightbox-canvas-container">
+  <!-- Overlay transparent: captura TOTS els events de 2 dits per al zoom -->
+  <div id="pinchOverlay" style="
+    position:absolute;inset:0;z-index:50;
+    touch-action:none;pointer-events:none;
+  "></div>
+  <!-- Indicador del nivell de zoom actual -->
+  <div id="zoomIndicator">1×</div>
   <button class="lightbox-nav lightbox-nav-prev" onclick="prevPhoto()">‹</button>
   <div class="canvas-stack" id="canvasStack">
     <!-- Capa base: la foto original (mai es toca excepte al guardar) -->
@@ -1212,7 +1219,10 @@ function setupProgressListeners() {
   <button class="etb-btn" onclick="setDrawTool('text')" id="textToggle" title="Text">𝐓</button>
   <button class="etb-btn" onclick="toggleLayerVisibility()" id="layerVisBtn" title="Mostrar/ocultar dibuixos">👁</button>
 
-  <!-- FILA 3: Rotació PC + Guardar + Gestió -->
+  <!-- FILA 3: Zoom + Rotació PC + Guardar + Gestió -->
+  <button class="etb-btn etb-zoom-btn" id="zoomInBtn"  onclick="zoomIn()"    title="Ampliar">🔍+</button>
+  <button class="etb-btn etb-zoom-btn" id="zoomOutBtn" onclick="zoomOut()"   title="Reduir">🔍−</button>
+  <button class="etb-btn etb-zoom-btn" id="zoomResetBtn" onclick="resetZoom()" title="Zoom 1:1">⊡</button>
   <div class="etb-rotate-knob" id="rotateKnob" title="Arrossega esquerra/dreta per rotar">
     <span class="etb-rotate-icon">↻</span>
     <span class="etb-rotate-label">Rotar</span>

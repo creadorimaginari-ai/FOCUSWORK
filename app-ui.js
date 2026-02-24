@@ -2556,20 +2556,29 @@ function applyZoomTransform() {
   stack.style.transform = `translate(${panX}px,${panY}px) scale(${currentZoom}) rotate(${totalRotationDeg}deg)`;
   stack.style.transformOrigin = 'center center';
   if (stack !== photoCanvas) photoCanvas.style.transform = '';
+  // Mostrar indicador de zoom
+  const ind = document.getElementById('zoomIndicator');
+  if (ind) {
+    ind.textContent = currentZoom > 1 ? `${currentZoom.toFixed(1)}×` : '1×';
+    ind.classList.toggle('visible', currentZoom > 1);
+  }
 }
 
 // Sistema d'inicialització de zoom
 function initZoomSystem() {
   if (!photoCanvas) return;
 
-  // Target = canvasStack (pare de photoCanvas + drawingCanvas)
-  // drawingCanvas té pointer-events:none quan no dibuixa → events van aquí
+  // ── Target principal: canvasStack ────────────────────────────────────────
   const zoomTarget = document.getElementById('canvasStack')
-                     || photoCanvas.parentElement
-                     || photoCanvas;
+                     || photoCanvas.parentElement || photoCanvas;
   zoomTarget.style.touchAction = 'none';
 
-  // ── Mouse wheel ──────────────────────────────────────────
+  // ── Pinch Overlay: div transparent que captura els 2 dits ─────────────────
+  // Quan detectem 2 dits al document, activem l'overlay (pointer-events:auto)
+  // Això evita que el drawingCanvas intercepti el pinch
+  const overlay = document.getElementById('pinchOverlay');
+
+  // ── Mouse wheel ────────────────────────────────────────────────────────────
   const wheelHandler = (e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -2578,7 +2587,7 @@ function initZoomSystem() {
     applyZoomTransform();
   };
 
-  // ── Mouse pan ────────────────────────────────────────────
+  // ── Mouse pan ──────────────────────────────────────────────────────────────
   const mouseDownHandler = (e) => {
     if (drawingEnabled || currentZoom <= 1) return;
     isPanning = true;
@@ -2594,81 +2603,112 @@ function initZoomSystem() {
   };
   const mouseUpHandler = () => { isPanning = false; };
 
-  // ── Touch pinch zoom + rotació ───────────────────────────
-  const touchStartHandler = (e) => {
-    if (e.touches.length === 1 && drawingEnabled) return;
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const t1 = e.touches[0], t2 = e.touches[1];
-      lastTouchDistance = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-      lastTouchAngle    = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
-      window._gestureBaseRot  = totalRotationDeg;
-      window._gestureBaseZoom = currentZoom;
-      accumulatedRotation     = 0;
-    } else if (e.touches.length === 1 && currentZoom > 1) {
-      isPanning = true;
-      startPanX = e.touches[0].clientX - panX;
-      startPanY = e.touches[0].clientY - panY;
-    }
-  };
-
-  // CLAU: sense "if (drawingEnabled) return" al principi —
-  // els 2 dits han de funcionar SEMPRE, fins i tot en mode dibuix
-  const touchMoveHandler = (e) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const t1 = e.touches[0], t2 = e.touches[1];
-      const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-      if (lastTouchDistance > 0) {
-        currentZoom = Math.max(1, Math.min(5,
-          (window._gestureBaseZoom || currentZoom) * (dist / lastTouchDistance)
-        ));
-        if (currentZoom === 1) { panX = 0; panY = 0; }
-      }
-      lastTouchDistance = dist;
-      if (lastTouchAngle !== null) {
-        const ang   = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
-        const delta = (ang - lastTouchAngle) * (180 / Math.PI);
-        accumulatedRotation += delta;
-        lastTouchAngle       = ang;
-        totalRotationDeg     = (window._gestureBaseRot || 0) + accumulatedRotation;
-      }
-      applyZoomTransform();
-    } else if (isPanning && e.touches.length === 1 && !drawingEnabled) {
-      e.preventDefault();
-      panX = e.touches[0].clientX - startPanX;
-      panY = e.touches[0].clientY - startPanY;
-      applyZoomTransform();
-    }
-  };
-
-  const touchEndHandler = () => {
-    isPanning           = false;
-    lastTouchDistance   = 0;
-    lastTouchAngle      = null;
-    accumulatedRotation = 0;
+  // ── Touch pinch: via overlay ───────────────────────────────────────────────
+  // L'overlay es posa al davant quan hi ha 2 dits, capturant tots els events
+  const overlayStart = (e) => {
+    e.preventDefault();
+    const t1 = e.touches[0], t2 = e.touches[1];
+    lastTouchDistance = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    lastTouchAngle    = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
     window._gestureBaseRot  = totalRotationDeg;
     window._gestureBaseZoom = currentZoom;
+    accumulatedRotation     = 0;
+  };
+  const overlayMove = (e) => {
+    e.preventDefault();
+    if (e.touches.length < 2) return;
+    const t1 = e.touches[0], t2 = e.touches[1];
+    const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    if (lastTouchDistance > 0) {
+      currentZoom = Math.max(1, Math.min(5,
+        (window._gestureBaseZoom || currentZoom) * (dist / lastTouchDistance)
+      ));
+      if (currentZoom === 1) { panX = 0; panY = 0; }
+    }
+    lastTouchDistance = dist;
+    if (lastTouchAngle !== null) {
+      const ang   = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
+      const delta = (ang - lastTouchAngle) * (180 / Math.PI);
+      accumulatedRotation += delta;
+      lastTouchAngle       = ang;
+      totalRotationDeg     = (window._gestureBaseRot || 0) + accumulatedRotation;
+    }
     applyZoomTransform();
   };
+  const overlayEnd = (e) => {
+    if (e.touches.length === 0) {
+      // Tots els dits han aixecat: desactivar overlay
+      if (overlay) overlay.style.pointerEvents = 'none';
+      isPanning           = false;
+      lastTouchDistance   = 0;
+      lastTouchAngle      = null;
+      accumulatedRotation = 0;
+      window._gestureBaseRot  = totalRotationDeg;
+      window._gestureBaseZoom = currentZoom;
+      applyZoomTransform();
+    }
+  };
+
+  // Registrar handlers a l'overlay
+  if (overlay) {
+    overlay.addEventListener('touchstart', overlayStart, { passive: false });
+    overlay.addEventListener('touchmove',  overlayMove,  { passive: false });
+    overlay.addEventListener('touchend',   overlayEnd);
+    overlay.addEventListener('touchcancel',overlayEnd);
+  }
+
+  // ── Detector de 2 dits al document (fase capture) ─────────────────────────
+  // Quan detectem 2 dits dins la zona del canvas, activem l'overlay
+  const docTouchStart = (e) => {
+    if (e.touches.length < 2) return;
+    const container = document.querySelector('.lightbox-canvas-container');
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const t1 = e.touches[0];
+    // Verificar que el primer dit és dins la zona
+    if (t1.clientX < rect.left || t1.clientX > rect.right ||
+        t1.clientY < rect.top  || t1.clientY > rect.bottom) return;
+    // Activar overlay — ara captura tots els events de pinch
+    if (overlay) {
+      overlay.style.pointerEvents = 'auto';
+      // Simular touchstart a l'overlay amb els mateixos touches
+      overlayStart(e);
+    }
+  };
+  document.addEventListener('touchstart', docTouchStart, { capture: true, passive: false });
+
+  // ── 1 dit: pan quan zoom > 1 (al canvasStack, fora del drawingCanvas) ────
+  const touchStartHandler = (e) => {
+    if (e.touches.length !== 1 || drawingEnabled || currentZoom <= 1) return;
+    isPanning = true;
+    startPanX = e.touches[0].clientX - panX;
+    startPanY = e.touches[0].clientY - panY;
+  };
+  const touchMoveHandler = (e) => {
+    if (!isPanning || e.touches.length !== 1 || drawingEnabled) return;
+    e.preventDefault();
+    panX = e.touches[0].clientX - startPanX;
+    panY = e.touches[0].clientY - startPanY;
+    applyZoomTransform();
+  };
+  const touchEndHandler = () => { isPanning = false; };
 
   zoomTarget.addEventListener('wheel',       wheelHandler,      { passive: false });
   zoomTarget.addEventListener('mousedown',   mouseDownHandler);
   zoomTarget.addEventListener('mousemove',   mouseMoveHandler);
   zoomTarget.addEventListener('mouseup',     mouseUpHandler);
   zoomTarget.addEventListener('mouseleave',  mouseUpHandler);
-  zoomTarget.addEventListener('touchstart',  touchStartHandler, { passive: false });
+  zoomTarget.addEventListener('touchstart',  touchStartHandler, { passive: true });
   zoomTarget.addEventListener('touchmove',   touchMoveHandler,  { passive: false });
   zoomTarget.addEventListener('touchend',    touchEndHandler);
-  zoomTarget.addEventListener('touchcancel', touchEndHandler);
 
   photoCanvas._zoomTarget   = zoomTarget;
+  photoCanvas._zoomDocHandler = docTouchStart;
   photoCanvas._zoomHandlers = {
     wheel: wheelHandler, mousedown: mouseDownHandler,
-    mousemove: mouseMoveHandler, mouseup: mouseUpHandler,
-    mouseleave: mouseUpHandler,
-    touchstart: touchStartHandler, touchmove: touchMoveHandler,
-    touchend: touchEndHandler, touchcancel: touchEndHandler
+    mousemove: mouseMoveHandler, mouseup: mouseUpHandler, mouseleave: mouseUpHandler,
+    touchstart: touchStartHandler, touchmove: touchMoveHandler, touchend: touchEndHandler,
+    overlayStart, overlayMove, overlayEnd
   };
 }
 
@@ -2677,16 +2717,29 @@ function cleanupZoomSystem() {
 
   const t = photoCanvas._zoomTarget || document.getElementById('canvasStack') || photoCanvas;
   const h = photoCanvas._zoomHandlers;
-  t.removeEventListener('wheel',       h.wheel);
-  t.removeEventListener('mousedown',   h.mousedown);
-  t.removeEventListener('mousemove',   h.mousemove);
-  t.removeEventListener('mouseup',     h.mouseup);
-  t.removeEventListener('mouseleave',  h.mouseleave);
-  t.removeEventListener('touchstart',  h.touchstart);
-  t.removeEventListener('touchmove',   h.touchmove);
-  t.removeEventListener('touchend',    h.touchend);
-  t.removeEventListener('touchcancel', h.touchcancel);
+  t.removeEventListener('wheel',      h.wheel);
+  t.removeEventListener('mousedown',  h.mousedown);
+  t.removeEventListener('mousemove',  h.mousemove);
+  t.removeEventListener('mouseup',    h.mouseup);
+  t.removeEventListener('mouseleave', h.mouseleave);
+  t.removeEventListener('touchstart', h.touchstart);
+  t.removeEventListener('touchmove',  h.touchmove);
+  t.removeEventListener('touchend',   h.touchend);
   t.style.touchAction = '';
+  // Eliminar detector de 2 dits del document
+  if (photoCanvas._zoomDocHandler) {
+    document.removeEventListener('touchstart', photoCanvas._zoomDocHandler, { capture: true });
+    delete photoCanvas._zoomDocHandler;
+  }
+  // Reset overlay
+  const overlay = document.getElementById('pinchOverlay');
+  if (overlay) {
+    overlay.style.pointerEvents = 'none';
+    overlay.removeEventListener('touchstart', h.overlayStart);
+    overlay.removeEventListener('touchmove',  h.overlayMove);
+    overlay.removeEventListener('touchend',   h.overlayEnd);
+    overlay.removeEventListener('touchcancel',h.overlayEnd);
+  }
 
   delete photoCanvas._zoomHandlers;
   delete photoCanvas._zoomTarget;
@@ -3231,41 +3284,9 @@ function setupCanvasDrawing() {
     onClickFill({ clientX: t.clientX, clientY: t.clientY, preventDefault:()=>{}, stopPropagation:()=>{} });
   };
 
-  // ── Handlers de zoom pinch al drawingCanvas ──
-  // Necessari perquè dc té pointer-events:auto en mode dibuix i intercepta els events
-  // Registrem els de zoom PRIMER (capturaran els 2 dits abans que onStart/onMove)
-  const dcPinchStart = (e) => {
-    if (e.touches && e.touches.length >= 2) {
-      // Passar l'event al sistema de zoom del canvasStack
-      const zoomT = document.getElementById('canvasStack') || photoCanvas?.parentElement;
-      if (zoomT && zoomT._zoomHandlers) {
-        // Cridar directament el touchStartHandler del zoom
-        photoCanvas._zoomHandlers && photoCanvas._zoomHandlers.touchstart &&
-          photoCanvas._zoomHandlers.touchstart(e);
-      }
-    }
-  };
-  const dcPinchMove = (e) => {
-    if (e.touches && e.touches.length >= 2) {
-      photoCanvas._zoomHandlers && photoCanvas._zoomHandlers.touchmove &&
-        photoCanvas._zoomHandlers.touchmove(e);
-    }
-  };
-  const dcPinchEnd = (e) => {
-    if (!e.touches || e.touches.length < 2) {
-      photoCanvas._zoomHandlers && photoCanvas._zoomHandlers.touchend &&
-        photoCanvas._zoomHandlers.touchend(e);
-    }
-  };
-  // Registrar ABANS dels handlers de dibuix perquè s'executen primer
-  dc.addEventListener('touchstart', dcPinchStart, { passive: false });
-  dc.addEventListener('touchmove',  dcPinchMove,  { passive: false });
-  dc.addEventListener('touchend',   dcPinchEnd);
-
   dc._drawHandlers = {
     mousedown: onStart, mousemove: onMove, mouseup: onEnd, mouseleave: onEnd,
-    touchstart: onStart, touchmove: onMove, touchend: onEnd, click: onClickFill, fillTouch: fillTouchH,
-    pinchStart: dcPinchStart, pinchMove: dcPinchMove, pinchEnd: dcPinchEnd
+    touchstart: onStart, touchmove: onMove, touchend: onEnd, click: onClickFill, fillTouch: fillTouchH
   };
   dc.addEventListener('mousedown',  onStart);
   dc.addEventListener('mousemove',  onMove);
