@@ -1201,11 +1201,9 @@ function setupProgressListeners() {
   <div class="etb-colorpicker-wrap" title="Color">
     <input type="color" id="rgbColorPicker" value="#ef4444"
            oninput="setDrawColorFromPicker(this.value)">
-    <span>Color</span>
-  </div>
+    </div>
   <div class="etb-slider-wrap" style="grid-column: span 2;">
-    <span class="etb-label">Mida</span>
-    <input type="range" class="etb-slider" min="2" max="60" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
+   <input type="range" class="etb-slider" min="2" max="60" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
   </div>
   <button class="etb-btn" onclick="setDrawTool('pencil')" id="drawToggle">✏️</button>
   <button class="etb-btn" onclick="setDrawTool('eraser')" id="eraserToggle">🧹</button>
