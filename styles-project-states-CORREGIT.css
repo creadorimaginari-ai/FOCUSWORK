@@ -1,0 +1,729 @@
+/* ============================================
+   SISTEMA D'ESTATS I PROGRÉS - CLEAN
+   ============================================ */
+
+/* ===============================
+   VARIABLES
+   =============================== */
+:root {
+  /* Ya definidas en otros archivos, pero las incluimos por si acaso */
+  --bg-main: #1e293b;
+  --bg-card: #0f172a;
+  --bg-hover: #334155;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.2);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --color-primary: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #fbbf24;
+  --color-danger: #ef4444;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   SELECTOR D'ESTAT DEL PROJECTE
+   ============================================ */
+
+.project-state-section {
+  position: relative;
+  margin: 20px;
+}
+
+.project-state-current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-state-current:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+.state-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.state-info {
+  flex: 1;
+}
+
+.state-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.state-time {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.state-change-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.state-change-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+/* Dropdown d'estats */
+.state-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px;
+  z-index: 100;
+  box-shadow: var(--shadow-lg);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.state-dropdown.hidden {
+  display: none;
+}
+
+.state-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  position: relative;
+}
+
+.state-option:hover {
+  background: var(--bg-hover);
+}
+
+.state-option.active {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.state-option-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.state-option-info {
+  flex: 1;
+}
+
+.state-option-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.state-option-description {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.state-check {
+  font-size: 18px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* ============================================
+   SELECTOR DE PROGRÉS - QUADRATS
+   ============================================ */
+
+.project-progress-section {
+  margin: 20px;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.progress-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.progress-percent {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.progress-squares {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.progress-square {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.progress-square:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-square.active {
+  /* El color es defineix inline al JavaScript segons el nivell */
+  transform: scale(1);
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease, background 0.3s ease;
+}
+
+.progress-description {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ============================================
+   HISTORIAL D'ESTATS
+   ============================================ */
+
+.state-history-section {
+  margin: 20px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.state-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.state-history-toggle {
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.state-history-toggle:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.state-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.state-history-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.state-history-item:hover {
+  background: var(--bg-hover);
+}
+
+.state-history-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.state-history-content {
+  flex: 1;
+}
+
+.state-history-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.state-history-date {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.state-history-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ============================================
+   TARGETES DE CLIENT (LLISTA)
+   ============================================ */
+
+.client-card {
+  width: 100%;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.client-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--color-primary);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Layout intern: urgent a l'esquerra + info a la dreta */
+.client-card-inner {
+  display: flex;
+  align-items: stretch;
+  min-height: 80px;
+}
+
+/* Columna urgent: franja vermella visible a l'esquerra */
+.client-urgent-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 52px;
+  max-width: 52px;
+  background: rgba(239, 68, 68, 0.12);
+  border-right: 3px solid #ef4444;
+  padding: 10px 6px;
+  flex-shrink: 0;
+}
+
+.client-urgent-dot {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.client-urgent-text {
+  font-size: 10px;
+  font-weight: 600;
+  color: #ef4444;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  max-height: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+/* Info principal: ocupa la resta */
+.client-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Card amb urgent: vora esquerra més gruixuda */
+.card-has-urgent {
+  border-left: none;
+}
+
+.client-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.client-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.client-card-blocked {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.client-card-state {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.client-state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.client-progress-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Mini quadrats per les targetes */
+.mini-square {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.mini-square.active {
+  /* Els colors es defineixen inline segons el nivell */
+  border-width: 2px;
+}
+
+.client-card-info {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.client-card-delivery {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.client-card-delivery.overdue {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.client-card-delivery.today {
+  color: var(--color-danger);
+  font-weight: 700;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0.6; }
+}
+
+.client-card-delivery.urgent {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.client-card-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.client-card-warning {
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #fca5a5;
+  font-weight: 500;
+}
+
+/* ============================================
+   FILTRES DE CLIENTS
+   ============================================ */
+
+.clients-filters {
+  display: flex;
+  gap: 8px;
+  padding: 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.filter-btn.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: var(--color-primary);
+}
+
+.filter-badge {
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ============================================
+   SCROLLBAR PERSONALIZADA
+   ============================================ */
+
+.state-dropdown::-webkit-scrollbar,
+.clients-filters::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.state-dropdown::-webkit-scrollbar-track,
+.clients-filters::-webkit-scrollbar-track {
+  background: var(--bg-main);
+  border-radius: 3px;
+}
+
+.state-dropdown::-webkit-scrollbar-thumb,
+.clients-filters::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.state-dropdown::-webkit-scrollbar-thumb:hover,
+.clients-filters::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .progress-squares {
+    gap: 8px;
+  }
+  
+  .progress-square {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .client-card {
+    padding: 14px;
+  }
+  
+  .clients-filters {
+    padding: 12px;
+  }
+  
+  .mini-square {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* ============================================
+   ACCESIBILIDAD
+   ============================================ */
+
+.state-option:focus-visible,
+.filter-btn:focus-visible,
+.state-change-btn:focus-visible,
+.state-history-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-square,
+  .client-card,
+  .filter-btn,
+  .state-option,
+  .state-history-item {
+    transition: none !important;
+  }
+  
+  .client-card-blocked,
+  .client-card-delivery.today {
+    animation: none !important;
+  }
+}
+
+/* ============================================
+   ESTADOS ADICIONALES
+   ============================================ */
+
+/* Estado cargando */
+.client-card.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Estado seleccionado */
+.client-card.selected {
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Estado deshabilitado */
+.filter-btn:disabled,
+.state-change-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   MEJORAS VISUALES
+   ============================================ */
+
+/* Animación suave de entrada */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.client-card {
+  animation: fadeInUp 0.3s ease;
+}
+
+/* Hover en mini squares */
+.mini-square:hover {
+  transform: scale(1.2);
+  border-color: var(--border-hover);
+}
+
+/* Transición suave en progress fill */
+.progress-fill {
+  box-shadow: 0 0 10px currentColor;
+}
