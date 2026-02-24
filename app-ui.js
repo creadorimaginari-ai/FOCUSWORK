@@ -2562,9 +2562,14 @@ function applyZoomTransform() {
 function initZoomSystem() {
   if (!photoCanvas) return;
 
-  // ✅ FIX CRÍTIC: registrar zoom al contenidor, no al canvas
-  // Quan drawing=false el canvas té pointerEvents:none i perd els events
-  const zoomTarget = photoCanvas.parentElement || photoCanvas;
+  // ✅ FIX: registrar zoom al lightbox-canvas-container (pare del canvasStack)
+  // Això assegura que els events de dos dits arribin sempre, fins i tot quan
+  // el canvas té pointer-events:none (mode no-dibuix)
+  const zoomTarget = photoCanvas.closest('.lightbox-canvas-container')
+                     || photoCanvas.parentElement
+                     || photoCanvas;
+  // Prevenir scroll del navegador dins l'editor (iOS / Android)
+  zoomTarget.style.touchAction = 'none';
 
   // Mouse wheel zoom
   const wheelHandler = (e) => {
@@ -2595,8 +2600,10 @@ function initZoomSystem() {
 
   // Touch pinch zoom + rotació amb dos dits
   const touchStartHandler = (e) => {
+    // Amb 2 dits SEMPRE fem zoom/rotació, independentment del mode de dibuix
     if (e.touches.length === 1 && drawingEnabled) return;
     if (e.touches.length === 2) {
+      e.preventDefault(); // Bloquejar zoom natiu del navegador
       e.preventDefault();
       const t1 = e.touches[0], t2 = e.touches[1];
       lastTouchDistance = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
@@ -2613,9 +2620,8 @@ function initZoomSystem() {
   };
 
   const touchMoveHandler = (e) => {
-    if (e.touches.length === 1 && drawingEnabled) return;
     if (e.touches.length === 2) {
-      e.preventDefault();
+      e.preventDefault(); // Sempre bloquejar scroll amb 2 dits
       const t1 = e.touches[0], t2 = e.touches[1];
       const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
       // Zoom relatiu a la distància inicial del gest (sense drift acumulatiu)
@@ -4145,8 +4151,8 @@ async function renderFileGallery(preloadedClient = null) {
       let startX = 0, startY = 0;
       let hasMoved = false;
       let touchStartTime = null;
-      const MOVE_THRESHOLD = 12;   // px — si es mou més, és scroll
-      const TAP_MAX_MS    = 400;   // ms màxims per considerar-ho tap
+      const MOVE_THRESHOLD = 20;   // px — si es mou més, és scroll
+      const TAP_MAX_MS    = 500;   // ms màxims per considerar-ho tap
       const LONG_MS       = 750;   // ms fins a long press (esborrar)
 
       const startPress = (e) => {
@@ -4235,23 +4241,32 @@ async function renderFileGallery(preloadedClient = null) {
         `;
         container.appendChild(img);
         
-        // Badge de comentari si en té
-        if (file.comment && file.comment.trim()) {
+        // Badge: comentari (💬) o editat (✏️)
+        const _hasComment = file.comment && file.comment.trim();
+        const _hasEdit    = file.edited || file.hasDrawing || file.annotated;
+        if (_hasComment || _hasEdit) {
           const badge = document.createElement('div');
           badge.className = 'comment-badge';
           badge.style.cssText = `
             position: absolute;
             bottom: 5px;
             left: 5px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            backdrop-filter: blur(5px);
+            display: flex;
+            gap: 3px;
             pointer-events: none;
           `;
-          badge.textContent = '💬';
+          if (_hasComment) {
+            const b = document.createElement('span');
+            b.style.cssText = 'background:rgba(0,0,0,0.75);color:white;padding:3px 7px;border-radius:10px;font-size:12px;backdrop-filter:blur(4px);';
+            b.textContent = '💬';
+            badge.appendChild(b);
+          }
+          if (_hasEdit) {
+            const b = document.createElement('span');
+            b.style.cssText = 'background:rgba(249,115,22,0.85);color:white;padding:3px 7px;border-radius:10px;font-size:12px;';
+            b.textContent = '✏️';
+            badge.appendChild(b);
+          }
           container.appendChild(badge);
         }
       } else if (file.type === 'video' && file.thumbnail) {

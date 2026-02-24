@@ -717,7 +717,8 @@ function createLangSelector() {
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
+// Els botons CA/ES/EN NOMÉS apareixen a l'onboarding (creat per app-core.js)
+// Aquí simplement apliquem l'idioma guardat sense crear el selector permanent
 document.addEventListener('DOMContentLoaded', () => {
-  createLangSelector();
   applyLang(_currentLang);
 });

@@ -57,7 +57,7 @@ const PROJECT_STATES = {
     id: 'blocked',
     get label() { return _stateLabel('state_blocked_full'); },
     get description() { return _stateLabel('state_desc_blocked'); },
-    icon: '🔴',
+    icon: '🔒',
     color: '#ef4444',
   },
 };
