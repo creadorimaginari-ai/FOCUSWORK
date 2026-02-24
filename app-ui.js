@@ -2562,15 +2562,15 @@ function applyZoomTransform() {
 function initZoomSystem() {
   if (!photoCanvas) return;
 
-  // ─── Target: canvasStack (pare directe dels dos canvas) ───────────────────
+  // Target = canvasStack (pare de photoCanvas + drawingCanvas)
+  // drawingCanvas té pointer-events:none quan no dibuixa → events van aquí
   const zoomTarget = document.getElementById('canvasStack')
                      || photoCanvas.parentElement
                      || photoCanvas;
   zoomTarget.style.touchAction = 'none';
 
-  // ─── Mouse wheel ──────────────────────────────────────────────────────────
+  // ── Mouse wheel ──────────────────────────────────────────
   const wheelHandler = (e) => {
-    if (!e.target.closest('#canvasStack')) return;
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     currentZoom = Math.max(1, Math.min(5, currentZoom * delta));
@@ -2578,7 +2578,7 @@ function initZoomSystem() {
     applyZoomTransform();
   };
 
-  // ─── Mouse pan ───────────────────────────────────────────────────────────
+  // ── Mouse pan ────────────────────────────────────────────
   const mouseDownHandler = (e) => {
     if (drawingEnabled || currentZoom <= 1) return;
     isPanning = true;
@@ -2594,40 +2594,31 @@ function initZoomSystem() {
   };
   const mouseUpHandler = () => { isPanning = false; };
 
-  // ─── Touch pinch zoom + rotació ───────────────────────────────────────────
-  // CLAU: usem fase CAPTURE al document → funciona fins i tot si un fill
-  // crida stopPropagation (el drawingCanvas ho fa en mode dibuix)
+  // ── Touch pinch zoom + rotació ───────────────────────────
   const touchStartHandler = (e) => {
-    // Ignorar si el toc no és dins la zona del canvas
-    const inStack = e.target.closest('#canvasStack') || e.target.closest('.lightbox-canvas-container');
-    if (!inStack) return;
-
+    if (e.touches.length === 1 && drawingEnabled) return;
     if (e.touches.length === 2) {
-      // Dos dits: sempre zoom (fins i tot en mode dibuix)
       e.preventDefault();
-      e.stopPropagation(); // evitar que altres handlers interfereixin
       const t1 = e.touches[0], t2 = e.touches[1];
-      lastTouchDistance = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      lastTouchAngle    = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
+      lastTouchDistance = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+      lastTouchAngle    = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
       window._gestureBaseRot  = totalRotationDeg;
       window._gestureBaseZoom = currentZoom;
-      accumulatedRotation = 0;
-    } else if (e.touches.length === 1 && !drawingEnabled && currentZoom > 1) {
+      accumulatedRotation     = 0;
+    } else if (e.touches.length === 1 && currentZoom > 1) {
       isPanning = true;
       startPanX = e.touches[0].clientX - panX;
       startPanY = e.touches[0].clientY - panY;
     }
   };
 
+  // CLAU: sense "if (drawingEnabled) return" al principi —
+  // els 2 dits han de funcionar SEMPRE, fins i tot en mode dibuix
   const touchMoveHandler = (e) => {
-    const inStack = e.target.closest('#canvasStack') || e.target.closest('.lightbox-canvas-container');
-    if (!inStack) return;
-
     if (e.touches.length === 2) {
       e.preventDefault();
-      e.stopPropagation();
       const t1 = e.touches[0], t2 = e.touches[1];
-      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
       if (lastTouchDistance > 0) {
         currentZoom = Math.max(1, Math.min(5,
           (window._gestureBaseZoom || currentZoom) * (dist / lastTouchDistance)
@@ -2636,11 +2627,11 @@ function initZoomSystem() {
       }
       lastTouchDistance = dist;
       if (lastTouchAngle !== null) {
-        const ang   = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
+        const ang   = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
         const delta = (ang - lastTouchAngle) * (180 / Math.PI);
         accumulatedRotation += delta;
-        lastTouchAngle = ang;
-        totalRotationDeg = (window._gestureBaseRot || 0) + accumulatedRotation;
+        lastTouchAngle       = ang;
+        totalRotationDeg     = (window._gestureBaseRot || 0) + accumulatedRotation;
       }
       applyZoomTransform();
     } else if (isPanning && e.touches.length === 1 && !drawingEnabled) {
@@ -2651,8 +2642,7 @@ function initZoomSystem() {
     }
   };
 
-  const touchEndHandler = (e) => {
-    if (e && e.touches && e.touches.length >= 2) return;
+  const touchEndHandler = () => {
     isPanning           = false;
     lastTouchDistance   = 0;
     lastTouchAngle      = null;
@@ -2662,21 +2652,16 @@ function initZoomSystem() {
     applyZoomTransform();
   };
 
-  // ─── Registrar listeners ──────────────────────────────────────────────────
-  // wheel i mouse: al zoomTarget (canvasStack)
-  zoomTarget.addEventListener('wheel',      wheelHandler,     { passive: false });
-  zoomTarget.addEventListener('mousedown',  mouseDownHandler);
-  zoomTarget.addEventListener('mousemove',  mouseMoveHandler);
-  zoomTarget.addEventListener('mouseup',    mouseUpHandler);
-  zoomTarget.addEventListener('mouseleave', mouseUpHandler);
+  zoomTarget.addEventListener('wheel',       wheelHandler,      { passive: false });
+  zoomTarget.addEventListener('mousedown',   mouseDownHandler);
+  zoomTarget.addEventListener('mousemove',   mouseMoveHandler);
+  zoomTarget.addEventListener('mouseup',     mouseUpHandler);
+  zoomTarget.addEventListener('mouseleave',  mouseUpHandler);
+  zoomTarget.addEventListener('touchstart',  touchStartHandler, { passive: false });
+  zoomTarget.addEventListener('touchmove',   touchMoveHandler,  { passive: false });
+  zoomTarget.addEventListener('touchend',    touchEndHandler);
+  zoomTarget.addEventListener('touchcancel', touchEndHandler);
 
-  // touch: al DOCUMENT en fase CAPTURE — bypassa stopPropagation dels fills
-  document.addEventListener('touchstart',  touchStartHandler, { capture: true, passive: false });
-  document.addEventListener('touchmove',   touchMoveHandler,  { capture: true, passive: false });
-  document.addEventListener('touchend',    touchEndHandler,   { capture: true });
-  document.addEventListener('touchcancel', touchEndHandler,   { capture: true });
-
-  // Guardar ref per cleanup
   photoCanvas._zoomTarget   = zoomTarget;
   photoCanvas._zoomHandlers = {
     wheel: wheelHandler, mousedown: mouseDownHandler,
@@ -2692,18 +2677,16 @@ function cleanupZoomSystem() {
 
   const t = photoCanvas._zoomTarget || document.getElementById('canvasStack') || photoCanvas;
   const h = photoCanvas._zoomHandlers;
-  // Mouse + wheel: eliminats del zoomTarget (canvasStack)
-  t.removeEventListener('wheel',      h.wheel);
-  t.removeEventListener('mousedown',  h.mousedown);
-  t.removeEventListener('mousemove',  h.mousemove);
-  t.removeEventListener('mouseup',    h.mouseup);
-  t.removeEventListener('mouseleave', h.mouseleave);
+  t.removeEventListener('wheel',       h.wheel);
+  t.removeEventListener('mousedown',   h.mousedown);
+  t.removeEventListener('mousemove',   h.mousemove);
+  t.removeEventListener('mouseup',     h.mouseup);
+  t.removeEventListener('mouseleave',  h.mouseleave);
+  t.removeEventListener('touchstart',  h.touchstart);
+  t.removeEventListener('touchmove',   h.touchmove);
+  t.removeEventListener('touchend',    h.touchend);
+  t.removeEventListener('touchcancel', h.touchcancel);
   t.style.touchAction = '';
-  // Touch: eliminats del document en fase capture (on es van registrar)
-  document.removeEventListener('touchstart',  h.touchstart, { capture: true });
-  document.removeEventListener('touchmove',   h.touchmove,  { capture: true });
-  document.removeEventListener('touchend',    h.touchend,   { capture: true });
-  document.removeEventListener('touchcancel', h.touchcancel,{ capture: true });
 
   delete photoCanvas._zoomHandlers;
   delete photoCanvas._zoomTarget;
@@ -3248,9 +3231,41 @@ function setupCanvasDrawing() {
     onClickFill({ clientX: t.clientX, clientY: t.clientY, preventDefault:()=>{}, stopPropagation:()=>{} });
   };
 
+  // ── Handlers de zoom pinch al drawingCanvas ──
+  // Necessari perquè dc té pointer-events:auto en mode dibuix i intercepta els events
+  // Registrem els de zoom PRIMER (capturaran els 2 dits abans que onStart/onMove)
+  const dcPinchStart = (e) => {
+    if (e.touches && e.touches.length >= 2) {
+      // Passar l'event al sistema de zoom del canvasStack
+      const zoomT = document.getElementById('canvasStack') || photoCanvas?.parentElement;
+      if (zoomT && zoomT._zoomHandlers) {
+        // Cridar directament el touchStartHandler del zoom
+        photoCanvas._zoomHandlers && photoCanvas._zoomHandlers.touchstart &&
+          photoCanvas._zoomHandlers.touchstart(e);
+      }
+    }
+  };
+  const dcPinchMove = (e) => {
+    if (e.touches && e.touches.length >= 2) {
+      photoCanvas._zoomHandlers && photoCanvas._zoomHandlers.touchmove &&
+        photoCanvas._zoomHandlers.touchmove(e);
+    }
+  };
+  const dcPinchEnd = (e) => {
+    if (!e.touches || e.touches.length < 2) {
+      photoCanvas._zoomHandlers && photoCanvas._zoomHandlers.touchend &&
+        photoCanvas._zoomHandlers.touchend(e);
+    }
+  };
+  // Registrar ABANS dels handlers de dibuix perquè s'executen primer
+  dc.addEventListener('touchstart', dcPinchStart, { passive: false });
+  dc.addEventListener('touchmove',  dcPinchMove,  { passive: false });
+  dc.addEventListener('touchend',   dcPinchEnd);
+
   dc._drawHandlers = {
     mousedown: onStart, mousemove: onMove, mouseup: onEnd, mouseleave: onEnd,
-    touchstart: onStart, touchmove: onMove, touchend: onEnd, click: onClickFill, fillTouch: fillTouchH
+    touchstart: onStart, touchmove: onMove, touchend: onEnd, click: onClickFill, fillTouch: fillTouchH,
+    pinchStart: dcPinchStart, pinchMove: dcPinchMove, pinchEnd: dcPinchEnd
   };
   dc.addEventListener('mousedown',  onStart);
   dc.addEventListener('mousemove',  onMove);
@@ -4140,6 +4155,28 @@ async function renderFileGallery(preloadedClient = null) {
     gap: 12px;
     padding: 12px;
   `;
+
+  // ── Scroll detector: si la galeria fa scroll, bloquejar tots els taps ──
+  // És el mètode més fiable per distingir scroll de tap en mòbil
+  if (!gallery._scrollHandlerAdded) {
+    gallery._scrollHandlerAdded = true;
+    let _scrollTimer = null;
+    gallery.addEventListener('scroll', () => {
+      window._galleryScrolling = true;
+      if (_scrollTimer) clearTimeout(_scrollTimer);
+      _scrollTimer = setTimeout(() => { window._galleryScrolling = false; }, 400);
+    }, { passive: true });
+    // El scroll del parent (clientInfoPanel) també ha de bloquejar
+    const parentPanel = gallery.closest('.client-info-panel, #clientInfoPanel, .client-section');
+    if (parentPanel && !parentPanel._scrollHandlerAdded) {
+      parentPanel._scrollHandlerAdded = true;
+      parentPanel.addEventListener('scroll', () => {
+        window._galleryScrolling = true;
+        if (_scrollTimer) clearTimeout(_scrollTimer);
+        _scrollTimer = setTimeout(() => { window._galleryScrolling = false; }, 400);
+      }, { passive: true });
+    }
+  }
   
   const fragment = document.createDocumentFragment();
   
@@ -4209,8 +4246,8 @@ async function renderFileGallery(preloadedClient = null) {
         const elapsed = touchStartTime ? Date.now() - touchStartTime : 9999;
         touchStartTime = null;
 
-        // Obrir NOMÉS si: sense cap moviment I tap molt curt I no long-press
-        if (!hasMoved && !pressActive && elapsed < TAP_MAX_MS) {
+        // Obrir NOMÉS si: sense moviment, tap curt, no long-press, i galeria no scrollant
+        if (!hasMoved && !pressActive && elapsed < TAP_MAX_MS && !window._galleryScrolling) {
           openFileViewer(allFiles, index);
         }
         pressActive = false;

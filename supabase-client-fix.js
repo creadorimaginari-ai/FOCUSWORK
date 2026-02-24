@@ -42,9 +42,13 @@
     
     window.loadAllClientsSupabase = async function() {
       try {
+        const { data: userData } = await window.supabase.auth.getUser();
+        const userId = userData?.user?.id;
+        if (!userId) return {};
         const { data, error } = await window.supabase
           .from('clients')
-          .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
+          .select('id,name,email,phone,company,notes,status,activities,tags,created_at,user_id')
+          .eq('user_id', userId)
           .order('created_at', { ascending: false });
         if (error) throw error;
         
@@ -66,7 +70,7 @@
       try {
         const { data, error } = await window.supabase
           .from('clients')
-          .select('id,name,email,phone,company,notes,status,activities,tags,created_at')
+          .select('id,name,email,phone,company,notes,status,activities,tags,created_at,user_id')
           .eq('id', clientId)
           .limit(1);
         if (error || !data || !data.length) return null;
@@ -81,8 +85,12 @@
     };
     
     window.saveClientSupabase = async function(client) {
+      const { data: userData } = await window.supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) return false;
       const d = {
         id: client.id,
+        user_id: client.user_id || userId,   // sempre posar el user_id del propietari
         name: client.name || '',
         email: client.email || null,
         phone: client.phone || null,
