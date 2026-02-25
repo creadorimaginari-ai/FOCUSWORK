@@ -2568,17 +2568,20 @@ function applyZoomTransform() {
 function initZoomSystem() {
   if (!photoCanvas) return;
 
-  // ── Target principal: canvasStack ────────────────────────────────────────
+  // ─── Solució definitiva: capture phase al contenidor ─────────────────────
+  // stopPropagation en capture fase IMPEDEIX que l'event arribi al drawingCanvas
+  // Resultats:
+  //   2 dits dins zona canvas → zoom/rotació, drawingCanvas no veu res
+  //   1 dit dins zona canvas  → dibuix normal (no interceptem)
+  //   1 dit fora zona canvas  → navegació normal
+  const container = document.querySelector('.lightbox-canvas-container');
   const zoomTarget = document.getElementById('canvasStack')
                      || photoCanvas.parentElement || photoCanvas;
-  zoomTarget.style.touchAction = 'none';
 
-  // ── Pinch Overlay: div transparent que captura els 2 dits ─────────────────
-  // Quan detectem 2 dits al document, activem l'overlay (pointer-events:auto)
-  // Això evita que el drawingCanvas intercepti el pinch
-  const overlay = document.getElementById('pinchOverlay');
+  if (container) container.style.touchAction = 'none';
+  if (zoomTarget) zoomTarget.style.touchAction = 'none';
 
-  // ── Mouse wheel ────────────────────────────────────────────────────────────
+  // ── Mouse wheel ────────────────────────────────────────────────────────
   const wheelHandler = (e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -2587,7 +2590,7 @@ function initZoomSystem() {
     applyZoomTransform();
   };
 
-  // ── Mouse pan ──────────────────────────────────────────────────────────────
+  // ── Mouse pan ──────────────────────────────────────────────────────────
   const mouseDownHandler = (e) => {
     if (drawingEnabled || currentZoom <= 1) return;
     isPanning = true;
@@ -2603,10 +2606,14 @@ function initZoomSystem() {
   };
   const mouseUpHandler = () => { isPanning = false; };
 
-  // ── Touch pinch: via overlay ───────────────────────────────────────────────
-  // L'overlay es posa al davant quan hi ha 2 dits, capturant tots els events
-  const overlayStart = (e) => {
+  // ── Touch pinch: capture al contenidor ────────────────────────────────
+  const captureStart = (e) => {
+    if (e.touches.length < 2) return; // 1 dit: deixar passar al drawingCanvas
+
+    // 2 dits: interceptar AQUí, drawingCanvas no veurà mai aquest event
     e.preventDefault();
+    e.stopPropagation(); // ← en capture phase, impedeix que arribi al fill
+
     const t1 = e.touches[0], t2 = e.touches[1];
     lastTouchDistance = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
     lastTouchAngle    = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
@@ -2614,23 +2621,25 @@ function initZoomSystem() {
     window._gestureBaseZoom = currentZoom;
     accumulatedRotation     = 0;
   };
-  const overlayMove = (e) => {
+
+  const captureMove = (e) => {
+    if (e.touches.length < 2) return; // 1 dit: deixar passar
+
     e.preventDefault();
-    if (e.touches.length < 2) return;
+    e.stopPropagation();
+
     const t1 = e.touches[0], t2 = e.touches[1];
     const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+
     if (lastTouchDistance > 0) {
-      // Amplificar el ratio per fer el zoom més fluid i ràpid
-      const rawRatio = dist / lastTouchDistance;
-      // Exponent 1.8: petits moviments → zoom més gran; evita que sigui lent
-      const amplified = rawRatio > 1
-        ? 1 + (rawRatio - 1) * 1.8
-        : 1 - (1 - rawRatio) * 1.8;
-      const newZoom = (window._gestureBaseZoom || currentZoom) * amplified;
-      currentZoom = Math.max(1, Math.min(5, newZoom));
+      const ratio = dist / lastTouchDistance;
+      currentZoom = Math.max(1, Math.min(5,
+        (window._gestureBaseZoom || currentZoom) * ratio
+      ));
       if (currentZoom === 1) { panX = 0; panY = 0; }
     }
     lastTouchDistance = dist;
+
     if (lastTouchAngle !== null) {
       const ang   = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
       const delta = (ang - lastTouchAngle) * (180 / Math.PI);
@@ -2640,10 +2649,12 @@ function initZoomSystem() {
     }
     applyZoomTransform();
   };
-  const overlayEnd = (e) => {
-    if (e.touches.length === 0) {
-      // Tots els dits han aixecat: desactivar overlay
-      if (overlay) overlay.style.pointerEvents = 'none';
+
+  const captureEnd = (e) => {
+    if (e.touches.length >= 2) return;
+    // Tots els dits o hem quedat amb 1: reset estat
+    if (lastTouchDistance > 0) {
+      // Acabem de fer pinch - consolidar
       isPanning           = false;
       lastTouchDistance   = 0;
       lastTouchAngle      = null;
@@ -2654,35 +2665,7 @@ function initZoomSystem() {
     }
   };
 
-  // Registrar handlers a l'overlay
-  if (overlay) {
-    overlay.addEventListener('touchstart', overlayStart, { passive: false });
-    overlay.addEventListener('touchmove',  overlayMove,  { passive: false });
-    overlay.addEventListener('touchend',   overlayEnd);
-    overlay.addEventListener('touchcancel',overlayEnd);
-  }
-
-  // ── Detector de 2 dits al document (fase capture) ─────────────────────────
-  // Quan detectem 2 dits dins la zona del canvas, activem l'overlay
-  const docTouchStart = (e) => {
-    if (e.touches.length < 2) return;
-    const container = document.querySelector('.lightbox-canvas-container');
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const t1 = e.touches[0];
-    // Verificar que el primer dit és dins la zona
-    if (t1.clientX < rect.left || t1.clientX > rect.right ||
-        t1.clientY < rect.top  || t1.clientY > rect.bottom) return;
-    // Activar overlay — ara captura tots els events de pinch
-    if (overlay) {
-      overlay.style.pointerEvents = 'auto';
-      // Simular touchstart a l'overlay amb els mateixos touches
-      overlayStart(e);
-    }
-  };
-  document.addEventListener('touchstart', docTouchStart, { capture: true, passive: false });
-
-  // ── 1 dit: pan quan zoom > 1 (al canvasStack, fora del drawingCanvas) ────
+  // ── Pan amb 1 dit quan zoom > 1 (no dibuix) ───────────────────────────
   const touchStartHandler = (e) => {
     if (e.touches.length !== 1 || drawingEnabled || currentZoom <= 1) return;
     isPanning = true;
@@ -2698,30 +2681,45 @@ function initZoomSystem() {
   };
   const touchEndHandler = () => { isPanning = false; };
 
-  zoomTarget.addEventListener('wheel',       wheelHandler,      { passive: false });
-  zoomTarget.addEventListener('mousedown',   mouseDownHandler);
-  zoomTarget.addEventListener('mousemove',   mouseMoveHandler);
-  zoomTarget.addEventListener('mouseup',     mouseUpHandler);
-  zoomTarget.addEventListener('mouseleave',  mouseUpHandler);
+  // ── Registrar listeners ────────────────────────────────────────────────
+  // Wheel i mouse al canvasStack
+  zoomTarget.addEventListener('wheel',      wheelHandler,     { passive: false });
+  zoomTarget.addEventListener('mousedown',  mouseDownHandler);
+  zoomTarget.addEventListener('mousemove',  mouseMoveHandler);
+  zoomTarget.addEventListener('mouseup',    mouseUpHandler);
+  zoomTarget.addEventListener('mouseleave', mouseUpHandler);
+  // Touch 1 dit (pan) al canvasStack, sense capture
   zoomTarget.addEventListener('touchstart',  touchStartHandler, { passive: true });
   zoomTarget.addEventListener('touchmove',   touchMoveHandler,  { passive: false });
   zoomTarget.addEventListener('touchend',    touchEndHandler);
 
+  // Touch 2 dits (pinch/zoom) al CONTENIDOR, amb CAPTURE
+  // stopPropagation en capture phase evita que arribi al drawingCanvas
+  const captureEl = container || zoomTarget;
+  captureEl.addEventListener('touchstart',  captureStart, { capture: true, passive: false });
+  captureEl.addEventListener('touchmove',   captureMove,  { capture: true, passive: false });
+  captureEl.addEventListener('touchend',    captureEnd,   { capture: true });
+  captureEl.addEventListener('touchcancel', captureEnd,   { capture: true });
+
+  // Guardar refs per cleanup
   photoCanvas._zoomTarget   = zoomTarget;
-  photoCanvas._zoomDocHandler = docTouchStart;
+  photoCanvas._zoomCapture  = captureEl;
   photoCanvas._zoomHandlers = {
     wheel: wheelHandler, mousedown: mouseDownHandler,
     mousemove: mouseMoveHandler, mouseup: mouseUpHandler, mouseleave: mouseUpHandler,
     touchstart: touchStartHandler, touchmove: touchMoveHandler, touchend: touchEndHandler,
-    overlayStart, overlayMove, overlayEnd
+    captureStart, captureMove, captureEnd
   };
 }
 
 function cleanupZoomSystem() {
   if (!photoCanvas || !photoCanvas._zoomHandlers) return;
 
-  const t = photoCanvas._zoomTarget || document.getElementById('canvasStack') || photoCanvas;
-  const h = photoCanvas._zoomHandlers;
+  const t  = photoCanvas._zoomTarget  || document.getElementById('canvasStack') || photoCanvas;
+  const ce = photoCanvas._zoomCapture || t;
+  const h  = photoCanvas._zoomHandlers;
+
+  // Mouse + wheel
   t.removeEventListener('wheel',      h.wheel);
   t.removeEventListener('mousedown',  h.mousedown);
   t.removeEventListener('mousemove',  h.mousemove);
@@ -2731,23 +2729,16 @@ function cleanupZoomSystem() {
   t.removeEventListener('touchmove',  h.touchmove);
   t.removeEventListener('touchend',   h.touchend);
   t.style.touchAction = '';
-  // Eliminar detector de 2 dits del document
-  if (photoCanvas._zoomDocHandler) {
-    document.removeEventListener('touchstart', photoCanvas._zoomDocHandler, { capture: true });
-    delete photoCanvas._zoomDocHandler;
-  }
-  // Reset overlay
-  const overlay = document.getElementById('pinchOverlay');
-  if (overlay) {
-    overlay.style.pointerEvents = 'none';
-    overlay.removeEventListener('touchstart', h.overlayStart);
-    overlay.removeEventListener('touchmove',  h.overlayMove);
-    overlay.removeEventListener('touchend',   h.overlayEnd);
-    overlay.removeEventListener('touchcancel',h.overlayEnd);
-  }
+
+  // Capture (2 dits)
+  ce.removeEventListener('touchstart',  h.captureStart, { capture: true });
+  ce.removeEventListener('touchmove',   h.captureMove,  { capture: true });
+  ce.removeEventListener('touchend',    h.captureEnd,   { capture: true });
+  ce.removeEventListener('touchcancel', h.captureEnd,   { capture: true });
 
   delete photoCanvas._zoomHandlers;
   delete photoCanvas._zoomTarget;
+  delete photoCanvas._zoomCapture;
   
   // Reset valors
   currentZoom = 1;
