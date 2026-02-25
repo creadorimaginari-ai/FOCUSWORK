@@ -74,6 +74,10 @@
       </svg>
     </button>
     <h2 class="overview-title" data-i18n="els_meus_projectes">📊 Els meus projectes</h2>
+    <button id="adminPanelBtn" onclick="openAdminPanel()" title="Panell administrador"
+      style="display:none;margin-left:auto;background:#7c3aed;border:none;color:white;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
+      ⚙️ Admin
+    </button>
   </div>
   
   <!-- Filtres -->
@@ -1201,9 +1205,11 @@ function setupProgressListeners() {
   <div class="etb-colorpicker-wrap" title="Color">
     <input type="color" id="rgbColorPicker" value="#ef4444"
            oninput="setDrawColorFromPicker(this.value)">
-    </div>
+    <span>Color</span>
+  </div>
   <div class="etb-slider-wrap" style="grid-column: span 2;">
-   <input type="range" class="etb-slider" min="2" max="60" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
+    <span class="etb-label">Mida</span>
+    <input type="range" class="etb-slider" min="2" max="60" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
   </div>
   <button class="etb-btn" onclick="setDrawTool('pencil')" id="drawToggle">✏️</button>
   <button class="etb-btn" onclick="setDrawTool('eraser')" id="eraserToggle">🧹</button>
@@ -1517,6 +1523,93 @@ label.primary {
    <script src="loadclient-photos-fix.js"></script>
   <!-- Mòdul de facturació (Gmail) -->
   <script src="facturacio.js"></script>
+
+<!-- ════════════════════════════════════════════════════════
+     PANELL D'ADMINISTRADOR
+     Accessible només per l'usuari admin (carlesglobalgrafic@gmail.com)
+════════════════════════════════════════════════════════ -->
+<div id="adminPanel" style="
+  display:none; position:fixed; inset:0; z-index:99999;
+  background:#0f172a; overflow-y:auto;
+">
+  <div style="max-width:600px; margin:0 auto; padding:20px;">
+    
+    <!-- Header -->
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid #334155;">
+      <button onclick="closeAdminPanel()" style="background:#1e293b; border:1px solid #475569; color:white; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:16px;">← Tornar</button>
+      <h2 style="color:white; margin:0; font-size:20px;">⚙️ Panell Administrador</h2>
+    </div>
+
+    <!-- Llista usuaris -->
+    <div id="adminUsersList">
+      <div style="color:#94a3b8; text-align:center; padding:40px;">Carregant usuaris...</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal canvi límit -->
+<div id="adminLimitModal" style="
+  display:none; position:fixed; inset:0; z-index:100000;
+  background:rgba(0,0,0,0.7); display:none;
+  align-items:center; justify-content:center;
+">
+  <div style="background:#1e293b; border:1px solid #475569; border-radius:16px; padding:28px; width:320px; max-width:90vw;">
+    <h3 style="color:white; margin:0 0 8px; font-size:18px;">Canviar límit de clients</h3>
+    <p id="adminLimitUserName" style="color:#94a3b8; margin:0 0 20px; font-size:14px;"></p>
+    
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
+      <button onclick="setUserLimit(5)"   class="limit-opt-btn">5 clients</button>
+      <button onclick="setUserLimit(10)"  class="limit-opt-btn">10 clients</button>
+      <button onclick="setUserLimit(20)"  class="limit-opt-btn">20 clients</button>
+      <button onclick="setUserLimit(50)"  class="limit-opt-btn">50 clients</button>
+      <button onclick="setUserLimit(-1)"  class="limit-opt-btn limit-unlimited">♾️ Il·limitat</button>
+      <button onclick="closeAdminLimitModal()" class="limit-opt-btn limit-cancel">Cancel·lar</button>
+    </div>
+
+    <div style="border-top:1px solid #334155; padding-top:16px;">
+      <label style="color:#94a3b8; font-size:12px; display:block; margin-bottom:6px;">O escriu un número personalitzat:</label>
+      <div style="display:flex; gap:8px;">
+        <input type="number" id="adminCustomLimit" min="1" max="9999" placeholder="Ex: 30"
+          style="flex:1; background:#0f172a; border:1px solid #475569; color:white; padding:8px 12px; border-radius:8px; font-size:14px;">
+        <button onclick="setUserLimitCustom()" style="background:#7c3aed; border:none; color:white; padding:8px 16px; border-radius:8px; cursor:pointer;">✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.limit-opt-btn {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.limit-opt-btn:hover { background: #334155; border-color: #7c3aed; }
+.limit-unlimited { border-color: #10b981; color: #10b981; }
+.limit-unlimited:hover { background: #064e3b; }
+.limit-cancel { border-color: #ef4444; color: #ef4444; }
+.limit-cancel:hover { background: #450a0a; }
+.admin-user-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-user-card:hover { border-color: #7c3aed; }
+</style>
+
+<script src="admin-panel.js"></script>
 </body>
 
 </html>
