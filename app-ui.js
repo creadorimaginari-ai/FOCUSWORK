@@ -2607,23 +2607,33 @@ function initZoomSystem() {
   const mouseUpHandler = () => { isPanning = false; };
 
   // ── Touch pinch: capture al contenidor ────────────────────────────────
-  const captureStart = (e) => {
-    if (e.touches.length < 2) return; // 1 dit: deixar passar al drawingCanvas
+  // Clau de la fluïdesa: guardem la distància INICIAL del gest (_startDist)
+  // i sempre calculem zoom = zoomBase * (distActual / distInicial)
+  // Això elimina l'acumulació d'errors frame a frame
+  let _startDist  = 0;
+  let _startAngle = 0;
+  let _rafId      = null;
+  let _pendingZoom = null;
+  let _pendingRot  = null;
 
-    // 2 dits: interceptar AQUí, drawingCanvas no veurà mai aquest event
+  const captureStart = (e) => {
+    if (e.touches.length < 2) return;
+
     e.preventDefault();
-    e.stopPropagation(); // ← en capture phase, impedeix que arribi al fill
+    e.stopPropagation();
 
     const t1 = e.touches[0], t2 = e.touches[1];
-    lastTouchDistance = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-    lastTouchAngle    = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
+    _startDist  = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
+    _startAngle = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
+    lastTouchAngle      = _startAngle;
     window._gestureBaseRot  = totalRotationDeg;
     window._gestureBaseZoom = currentZoom;
     accumulatedRotation     = 0;
+    lastTouchDistance   = _startDist;
   };
 
   const captureMove = (e) => {
-    if (e.touches.length < 2) return; // 1 dit: deixar passar
+    if (e.touches.length < 2) return;
 
     e.preventDefault();
     e.stopPropagation();
@@ -2631,38 +2641,46 @@ function initZoomSystem() {
     const t1 = e.touches[0], t2 = e.touches[1];
     const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
 
-    if (lastTouchDistance > 0) {
-      const ratio = dist / lastTouchDistance;
-      currentZoom = Math.max(1, Math.min(5,
-        (window._gestureBaseZoom || currentZoom) * ratio
-      ));
-      if (currentZoom === 1) { panX = 0; panY = 0; }
+    // Zoom relatiu a la distància INICIAL — estable i sense drift
+    if (_startDist > 0) {
+      const targetZoom = (window._gestureBaseZoom || 1) * (dist / _startDist);
+      _pendingZoom = Math.max(1, Math.min(5, targetZoom));
+      if (_pendingZoom === 1) { panX = 0; panY = 0; }
     }
-    lastTouchDistance = dist;
 
+    // Rotació incremental suau
     if (lastTouchAngle !== null) {
       const ang   = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
       const delta = (ang - lastTouchAngle) * (180 / Math.PI);
       accumulatedRotation += delta;
       lastTouchAngle       = ang;
-      totalRotationDeg     = (window._gestureBaseRot || 0) + accumulatedRotation;
+      _pendingRot = (window._gestureBaseRot || 0) + accumulatedRotation;
     }
-    applyZoomTransform();
+
+    // requestAnimationFrame per render fluid (una actualització per frame)
+    if (!_rafId) {
+      _rafId = requestAnimationFrame(() => {
+        _rafId = null;
+        if (_pendingZoom !== null) { currentZoom = _pendingZoom; _pendingZoom = null; }
+        if (_pendingRot  !== null) { totalRotationDeg = _pendingRot; _pendingRot = null; }
+        applyZoomTransform();
+      });
+    }
   };
 
   const captureEnd = (e) => {
     if (e.touches.length >= 2) return;
-    // Tots els dits o hem quedat amb 1: reset estat
-    if (lastTouchDistance > 0) {
-      // Acabem de fer pinch - consolidar
-      isPanning           = false;
-      lastTouchDistance   = 0;
-      lastTouchAngle      = null;
-      accumulatedRotation = 0;
-      window._gestureBaseRot  = totalRotationDeg;
-      window._gestureBaseZoom = currentZoom;
-      applyZoomTransform();
-    }
+    if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+    if (_pendingZoom !== null) { currentZoom = _pendingZoom; _pendingZoom = null; }
+    if (_pendingRot  !== null) { totalRotationDeg = _pendingRot; _pendingRot = null; }
+    isPanning           = false;
+    lastTouchDistance   = 0;
+    lastTouchAngle      = null;
+    accumulatedRotation = 0;
+    _startDist          = 0;
+    window._gestureBaseRot  = totalRotationDeg;
+    window._gestureBaseZoom = currentZoom;
+    applyZoomTransform();
   };
 
   // ── Pan amb 1 dit quan zoom > 1 (no dibuix) ───────────────────────────
