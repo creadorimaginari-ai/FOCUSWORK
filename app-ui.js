@@ -640,6 +640,7 @@ async function confirmNewClient() {
   state.clients[id] = client;
 
   state.currentClientId = id;
+  window._lastClientId  = id;   // backup per si iOS reseteja state
   state.currentActivity = ACTIVITIES.WORK;
   state.sessionElapsed = 0;
   state.lastTick = Date.now();
@@ -726,7 +727,7 @@ async function selectClient(clientId) {
 await updateUI(client);
 
 const clientInfoPanel = document.getElementById('clientInfoPanel');
-if (clientInfoPanel) clientInfoPanel.style.display = 'block';
+if (clientInfoPanel) { clientInfoPanel.style.display = 'block'; clientInfoPanel.dataset.clientId = state.currentClientId || ''; }
 
 const btns = $("clientFixedButtons");
 if (btns) btns.style.display = "grid";
@@ -879,7 +880,7 @@ await updateUI(client);
 
 // assegurar panell del client visible
 const clientInfoPanel = document.getElementById('clientInfoPanel');
-if (clientInfoPanel) clientInfoPanel.style.display = 'block';
+if (clientInfoPanel) { clientInfoPanel.style.display = 'block'; clientInfoPanel.dataset.clientId = state.currentClientId || ''; }
 
 // assegurar botons visibles
 const btns = $("clientFixedButtons");
@@ -1096,7 +1097,14 @@ async function handlePhotoInputiPad(input) {
   }
   
   console.log('✅ Fitxer rebut:', file.name, file.type);
-  
+
+  // Llegir clientId de múltiples fonts: state, DOM, window (iOS pot ressetar state)
+  if (!state.currentClientId) {
+    state.currentClientId = window._lastClientId
+      || document.getElementById('clientInfoPanel')?.dataset?.clientId
+      || null;
+  }
+
   if (!state.currentClientId) {
     showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     input.value = '';
@@ -1217,7 +1225,14 @@ async function handleFileInputiPad(input) {
   }
   
   console.log('✅ Fitxer rebut:', file.name, file.type, formatFileSize(file.size));
-  
+
+  // Llegir clientId de múltiples fonts: state, DOM, window (iOS pot ressetar state)
+  if (!state.currentClientId) {
+    state.currentClientId = window._lastClientId
+      || document.getElementById('clientInfoPanel')?.dataset?.clientId
+      || null;
+  }
+
   if (!state.currentClientId) {
     showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
     input.value = '';
@@ -4723,7 +4738,7 @@ async function selectClient(clientId) {
 
   // Mostrar panells del client
   const clientInfoPanel = document.getElementById('clientInfoPanel');
-  if (clientInfoPanel) clientInfoPanel.style.display = 'block';
+  if (clientInfoPanel) { clientInfoPanel.style.display = 'block'; clientInfoPanel.dataset.clientId = state.currentClientId || ''; }
 
   const fixedBtns = document.getElementById('clientFixedButtons');
   if (fixedBtns) { fixedBtns.style.display = 'grid'; fixedBtns.classList.remove('hidden'); }
