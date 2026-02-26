@@ -958,7 +958,18 @@ async function initApp() {
     // ✅ BUGFIX: checkMigration no existia — era migrateFromLocalStorage
     await migrateFromLocalStorage();
     
-    // 5. Continuar com abans
+    // 5. Recuperar userName de Supabase si no el tenim al localStorage
+    if (!userName) {
+      const meta = user.user_metadata || {};
+      const nameFromSupabase = meta.name || meta.full_name || meta.display_name || null;
+      if (nameFromSupabase) {
+        userName = nameFromSupabase;
+        localStorage.setItem('focowork_user_name', userName);
+        console.log('✅ userName recuperat de Supabase:', userName);
+      }
+    }
+
+    // Si encara no tenim nom, mostrar onboarding
     if (!userName) {
       showOnboardingScreen();
       return;
