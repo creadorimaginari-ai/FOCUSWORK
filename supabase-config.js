@@ -37,6 +37,7 @@
     
     // Variable per l'usuari actual
     let currentUser = null;
+    let appInitializing = false; // 🔒 Guard anti-bucle
     
     // Funció d'inicialització d'auth
     window.initAuth = async function() {
@@ -76,13 +77,20 @@
       if (event === 'SIGNED_IN') {
         currentUser = session.user;
         console.log('✅ Login exitós:', currentUser.email);
+
+        // 🔒 Evitar bucle: si ja s'està inicialitzant, no tornar a cridar initApp
+        if (appInitializing) {
+          console.log('⚠️ initApp ja en curs, ignorant SIGNED_IN duplicat');
+          return;
+        }
+        appInitializing = true;
         
         if (typeof window.hideLoginScreen === 'function') {
           window.hideLoginScreen();
         }
         
         if (typeof window.initApp === 'function') {
-          window.initApp();
+          window.initApp().finally(() => { appInitializing = false; });
         }
 
         // ✅ REALTIME: iniciar sincronització en temps real

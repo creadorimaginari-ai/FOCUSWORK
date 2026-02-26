@@ -427,12 +427,8 @@ async function handleLogin() {
     await signIn(email, password);
     
     authSuccess.textContent = '✅ Login correcte!';
-    
-    setTimeout(() => {
-      hideLoginScreen();
-      // La migració es farà automàticament des de initApp()
-      // NO cridar checkMigration() aquí per evitar duplicats
-    }, 1000);
+    // ✅ FIX: No cridar hideLoginScreen aquí — onAuthStateChange ja ho fa
+    // Evitem el doble initApp que causava que l'app es quedés penjada
     
   } catch (error) {
     authSuccess.style.display = 'none';
