@@ -4,6 +4,56 @@
  * VERSIÓ SIMPLIFICADA I ROBUSTA
  *************************************************/
 
+/* ===============================================================
+ * ✅ OFFLINE PROXY — bloqueig total de Supabase en mode offline
+ * Substitueix window.supabase per un objecte fals que retorna
+ * dades buides sense fer cap petició de xarxa.
+ * S'aplica ABANS de crear el client real de Supabase.
+ * =============================================================== */
+(function installOfflineProxy() {
+  const isOffline = localStorage.getItem('fw_offline_mode') === 'true';
+  if (!isOffline) return;
+
+  console.log('📴 Mode offline detectat — instal·lant proxy Supabase (cap petició de xarxa)');
+
+  const _noopQuery = () => ({
+    select: () => _noopQuery(),
+    insert: () => _noopQuery(),
+    update: () => _noopQuery(),
+    upsert: () => _noopQuery(),
+    delete: () => _noopQuery(),
+    eq:     () => _noopQuery(),
+    neq:    () => _noopQuery(),
+    in:     () => _noopQuery(),
+    order:  () => _noopQuery(),
+    limit:  () => _noopQuery(),
+    single: () => Promise.resolve({ data: null, error: null }),
+    then:   (resolve) => resolve({ data: [], error: null }),
+  });
+
+  const _noopAuth = {
+    getSession:      () => Promise.resolve({ data: { session: null }, error: null }),
+    getUser:         () => Promise.resolve({ data: { user: null },    error: null }),
+    signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Mode offline' } }),
+    signOut:         () => Promise.resolve({ error: null }),
+    onAuthStateChange: (cb) => {
+      // Disparar INITIAL_SESSION sense usuari per no bloquejar l'app
+      setTimeout(() => cb('INITIAL_SESSION', null), 0);
+      return { data: { subscription: { unsubscribe: () => {} } } };
+    },
+  };
+
+  window.supabase = {
+    from:    () => _noopQuery(),
+    auth:    _noopAuth,
+    storage: { from: () => ({ upload: () => Promise.resolve({ error: null }), getPublicUrl: () => ({ data: { publicUrl: '' } }) }) },
+    createClient: () => window.supabase, // per si algú crida createClient
+  };
+
+  console.log('✅ Proxy Supabase offline instal·lat — totes les crides retornen buit');
+})();
+
+
 (function() {
   'use strict';
   
