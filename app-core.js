@@ -43,6 +43,7 @@ async function initDB() {
 }
 
 async function dbGet(storeName, key) {
+  if (!db) return null; // ✅ DB no inicialitzada — retornar null silenciosament
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([storeName], 'readonly');
     const store = transaction.objectStore(storeName);
@@ -53,6 +54,7 @@ async function dbGet(storeName, key) {
 }
 
 async function dbPut(storeName, data) {
+  if (!db) return null; // ✅ DB no inicialitzada — ignorar silenciosament
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
@@ -63,6 +65,7 @@ async function dbPut(storeName, data) {
 }
 
 async function dbDelete(storeName, key) {
+  if (!db) return null;
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([storeName], 'readwrite');
     const store = transaction.objectStore(storeName);
@@ -73,6 +76,7 @@ async function dbDelete(storeName, key) {
 }
 
 async function dbGetAll(storeName) {
+  if (!db) return [];
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([storeName], 'readonly');
     const store = transaction.objectStore(storeName);
@@ -749,11 +753,16 @@ function preciseTickLoop() {
   requestAnimationFrame(preciseTickLoop);
 }
 
-preciseTickLoop();
+// ✅ preciseTickLoop s'inicia des d'initApp (mode normal)
+// o des d'offline-mode.js (mode offline)
+// en ambdós casos DESPRÉS que initDB() hagi acabat
 
 
 // ================= TICK PRINCIPAL =================
 async function tick() {
+  // ✅ FIX: no fer res si la DB no està inicialitzada
+  if (!window.db) return;
+
   resetDayIfNeeded();
 
   if (!state.currentClientId || !state.currentActivity || !state.lastTick) {
@@ -970,6 +979,8 @@ async function initApp() {
     console.log('💾 Inicialitzant base de dades local...');
     await initDB();
     await loadState();
+    // ✅ Iniciar timer DESPRÉS que DB estigui llesta
+    preciseTickLoop();
     
     // 4. Verificar si cal migrar dades locals
     // ✅ BUGFIX: checkMigration no existia — era migrateFromLocalStorage
