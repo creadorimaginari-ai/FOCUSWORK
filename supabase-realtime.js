@@ -21,7 +21,8 @@ let _userIsTyping     = false;
 let _typingTimer      = null;
 
 const SELF_SAVE_DEBOUNCE = 3000;
-const POLL_INTERVAL      = 3000;
+const POLL_INTERVAL      = 3000;  // backup quan WS no funciona
+const POLL_INTERVAL_WS   = 30000; // cada 30s si WebSocket actiu (estalvia egress)
 const TYPING_COOLDOWN    = 2000;
 
 /* ── CAPA 1: WEBSOCKET ── */
@@ -42,6 +43,8 @@ function initRealtimeSync() {
         if (status === 'SUBSCRIBED') {
           console.log('✅ WebSocket actiu');
           _showSyncIndicator('connected');
+          // ✅ OPTIMITZACIÓ: reiniciar polling amb interval llarg (30s) ara que WS funciona
+          if (_pollingInterval) { clearInterval(_pollingInterval); _pollingInterval = null; }
           _startPolling();
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           console.warn('⚠️ WebSocket tancat —', status);
@@ -68,8 +71,11 @@ async function handleRemoteChange(payload) {
 
 function _startPolling() {
   if (_pollingInterval) return;
-  console.log('🔄 Polling iniciat (cada ' + POLL_INTERVAL/1000 + 's)');
-  _pollingInterval = setInterval(_pollCurrentClient, POLL_INTERVAL);
+  // ✅ OPTIMITZACIÓ EGRESS: si WebSocket actiu, polling cada 30s (backup lleuger)
+  // Si WebSocket no funciona, polling cada 3s (mode rescat)
+  const interval = _realtimeChannel ? POLL_INTERVAL_WS : POLL_INTERVAL;
+  console.log('🔄 Polling iniciat (cada ' + interval/1000 + 's) — WS: ' + !!_realtimeChannel);
+  _pollingInterval = setInterval(_pollCurrentClient, interval);
   document.addEventListener('input',   _onUserTyping, { passive: true });
   document.addEventListener('keydown', _onUserTyping, { passive: true });
 }

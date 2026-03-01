@@ -64,7 +64,7 @@ async function loadAllClientsSupabase() {
   try {
     const { data, error } = await window.supabase
       .from('clients')
-      .select('*')
+      .select('id,user_id,name,email,phone,company,notes,status,closed_at,total,billable_time,tags,state,state_label,state_icon,state_color,state_updated_at,progress,progress_label,progress_percent,progress_color,delivery_date,created_at,updated_at') // ✅ OPTIMITZACIÓ EGRESS: sense files/photos/state_history
       .eq('user_id', userId)           // ✅ filtre per usuari — evita llegir tota la taula
       .order('created_at', { ascending: false });
 
