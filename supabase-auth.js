@@ -526,6 +526,18 @@ async function canCreateMoreClients() {
   const limit = await getUserClientLimit();
   if (limit === Infinity) return { ok: true };
 
+  // ✅ En mode offline: comptar clients directament de IndexedDB sense carregar fotos
+  if (typeof window.isOfflineMode === 'function' && window.isOfflineMode()) {
+    try {
+      const clients = await dbGetAll('clients');
+      const active = clients.filter(c => c.active !== false).length;
+      if (active >= limit) return { ok: false, current: active, limit };
+      return { ok: true, current: active, limit };
+    } catch(e) {
+      return { ok: true }; // Si falla, deixar crear
+    }
+  }
+
   const allClients = await loadAllClients();
   const active = Object.values(allClients).filter(c => c.active).length;
 

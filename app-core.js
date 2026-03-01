@@ -335,15 +335,19 @@ async function loadState() {
 
 async function save() {
   try {
+    // ✅ Mai guardar 'clients' dins state — tenen el seu propi store a IndexedDB
+    // Guardar-los dins state pot causar errors per volum excessiu (fotos base64)
+    const { clients, ...stateToSave } = state;
     await dbPut('state', {
       id: 'main',
-      data: state,
+      data: stateToSave,
       timestamp: Date.now()
     });
     
     if (state.currentClientId) scheduleAutoBackup();
     return true;
   } catch (e) {
+    console.error('Error guardant state:', e);
     showAlert('Error', 'No s\'han pogut guardar les dades', '❌');
     return false;
   }
@@ -351,11 +355,13 @@ async function save() {
 
 /* ================= GESTIÓ DE CLIENTS ================= */
 async function saveClient(client) {
-  // Guardar a Supabase (sense columnes que no existeixen)
-  try {
-    await saveClientSupabase(client);
-  } catch (error) {
-    console.error('Error guardant a Supabase:', error);
+  // Guardar a Supabase (només si NO estem en mode offline)
+  if (!isOfflineMode()) {
+    try {
+      await saveClientSupabase(client);
+    } catch (error) {
+      console.error('Error guardant a Supabase:', error);
+    }
   }
   
   // Guardar SEMPRE a IndexedDB local (fotos, total, billableTime, tasks...)
@@ -386,12 +392,14 @@ async function saveClient(client) {
 
 async function loadClient(clientId) {
   try {
-    // 1. Intentar Supabase
+    // 1. Intentar Supabase (només si NO estem en mode offline)
     let client = null;
-    try {
-      client = await loadClientSupabase(clientId);
-    } catch(e) {
-      console.warn('Supabase no disponible');
+    if (!isOfflineMode()) {
+      try {
+        client = await loadClientSupabase(clientId);
+      } catch(e) {
+        console.warn('Supabase no disponible');
+      }
     }
     
     // 2. Si no, agafar de IndexedDB local
@@ -472,8 +480,8 @@ async function loadClient(clientId) {
 
 async function loadAllClients() {
   try {
-    // ✅ Intentar carregar de Supabase primer
-    if (window.getCurrentUser && typeof loadAllClientsSupabase === 'function') {
+    // ✅ Intentar carregar de Supabase primer (només si NO estem en mode offline)
+    if (!isOfflineMode() && window.getCurrentUser && typeof loadAllClientsSupabase === 'function') {
       try {
         const supabaseClients = await loadAllClientsSupabase();
         if (supabaseClients && Object.keys(supabaseClients).length > 0) {
@@ -865,8 +873,13 @@ function updateTimerDisplay() {
 // ================= ACTUALITZAR TOTAL CLIENT =================
 async function updateClientTotal() {
   if (!state.currentClientId) return;
-
-  const client = await loadClient(state.currentClientId);
+  // En mode offline, llegir directament de IndexedDB sense tocar Supabase
+  let client;
+  if (isOfflineMode()) {
+    client = await dbGet('clients', state.currentClientId);
+  } else {
+    client = await loadClient(state.currentClientId);
+  }
   if (!client) return;
 
   const el = $("clientTotal");

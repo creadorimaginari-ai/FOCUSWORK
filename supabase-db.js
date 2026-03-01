@@ -53,6 +53,10 @@ window.invalidateClientsCache = invalidateClientsCache;
 
 /* ── CARREGAR TOTS ELS CLIENTS ── */
 async function loadAllClientsSupabase() {
+  // No intentar Supabase en mode offline
+  if (typeof window.isOfflineMode === 'function' && window.isOfflineMode()) {
+    return null;
+  }
   // Retornar cache si és fresca
   if (_clientsCache && (Date.now() - _clientsCacheTime) < CACHE_TTL) {
     return _clientsCache;
@@ -89,6 +93,10 @@ async function loadAllClientsSupabase() {
 
 /* ── CARREGAR UN CLIENT ── */
 async function loadClientSupabase(clientId) {
+  // No intentar Supabase en mode offline
+  if (typeof window.isOfflineMode === 'function' && window.isOfflineMode()) {
+    return null;
+  }
   try {
     const { data, error } = await window.supabase
       .from('clients')
@@ -106,6 +114,10 @@ async function loadClientSupabase(clientId) {
 
 /* ── GUARDAR CLIENT ── */
 async function saveClientSupabase(client) {
+  // No intentar Supabase en mode offline (evita errors CORS/NetworkError)
+  if (typeof window.isOfflineMode === 'function' && window.isOfflineMode()) {
+    return false;
+  }
   const userId = getCurrentUserId();
   if (!userId) {
     console.warn('⚠️ No hi ha usuari autenticat, no es pot guardar');
