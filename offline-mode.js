@@ -164,6 +164,9 @@ async function _handleOfflineAccess() {
     // 6. Actualitzar UI
     if (typeof updateUI === 'function') updateUI();
 
+    // 7. Iniciar timer ara que DB és llesta
+    if (typeof preciseTickLoop === 'function') preciseTickLoop();
+
   }, 800);
 }
 
@@ -280,6 +283,16 @@ window._exitOfflineMode = function() {
 
       _patchGetCurrentUser();
       console.log('📴 Mode offline restaurat de sessió anterior');
+
+      // ✅ FIX: Inicialitzar IndexedDB també en restauració de sessió
+      // Sense això, db queda null i save()/dbPut() fallen amb error
+      if (typeof initDB === 'function') {
+        initDB().then(() => {
+          console.log('✅ IndexedDB inicialitzat en mode offline (restauració)');
+        }).catch(e => {
+          console.warn('⚠️ Error inicialitzant IndexedDB en restauració:', e);
+        });
+      }
 
       // Mostrar banner quan el DOM estigui llest
       if (document.readyState === 'loading') {
