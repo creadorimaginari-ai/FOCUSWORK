@@ -54,13 +54,18 @@ async function dbGet(storeName, key) {
 }
 
 async function dbPut(storeName, data) {
-  if (!db) return null; // ✅ DB no inicialitzada — ignorar silenciosament
+  if (!db) {
+    try { await initDB(); } catch(e) { console.warn('dbPut: initDB falló', e); return null; }
+  }
+  if (!db) return null;
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([storeName], 'readwrite');
-    const store = transaction.objectStore(storeName);
-    const request = store.put(data);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    try {
+      const transaction = db.transaction([storeName], 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const request = store.put(data);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    } catch(e) { reject(e); }
   });
 }
 
