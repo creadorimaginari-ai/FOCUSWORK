@@ -254,9 +254,10 @@ let state = {
 async function loadState() {
   try {
     const user = window.getCurrentUser();
+    const offline = typeof window.isOfflineMode === 'function' && window.isOfflineMode();
     
-    if (user) {
-      // 1. Carregar clients de Supabase
+    if (user && !offline) {
+      // 1. Carregar clients de Supabase (només si NO estem en mode offline)
       console.log('📥 Carregant clients des de Supabase...');
       
       try {

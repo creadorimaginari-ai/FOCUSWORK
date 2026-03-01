@@ -131,11 +131,21 @@ async function _handleOfflineAccess() {
     authSuccess.style.display = 'block';
   }
 
-  setTimeout(() => {
-    // Substituir getCurrentUser temporalment
+  setTimeout(async () => {
+    // 1. Substituir getCurrentUser temporalment
     _patchGetCurrentUser();
 
-    // Amagar pantalla de login i entrar a l'app
+    // 2. Inicialitzar IndexedDB PRIMER (sense això db és null i tot falla)
+    if (typeof initDB === 'function') {
+      try {
+        await initDB();
+        console.log('✅ IndexedDB inicialitzat en mode offline');
+      } catch(e) {
+        console.warn('⚠️ Error inicialitzant IndexedDB:', e);
+      }
+    }
+
+    // 3. Amagar pantalla de login i mostrar app
     if (typeof hideLoginScreen === 'function') {
       hideLoginScreen();
     } else {
@@ -145,11 +155,14 @@ async function _handleOfflineAccess() {
       if (app) app.style.display = 'block';
     }
 
-    // Mostrar banner d'avís
+    // 4. Mostrar banner d'avís
     _showOfflineBanner();
 
-    // Carregar dades locals
-    if (typeof loadState === 'function') loadState();
+    // 5. Carregar dades locals (ara que DB ja està inicialitzada)
+    if (typeof loadState === 'function') await loadState();
+
+    // 6. Actualitzar UI
+    if (typeof updateUI === 'function') updateUI();
 
   }, 800);
 }
