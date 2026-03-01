@@ -506,14 +506,18 @@ window.signUp = signUp;
 // Per defecte: 5 clients. Admin pot canviar via Supabase Dashboard → Auth → Users
 // Format: user_metadata.max_clients = 10 (o -1 per il·limitat)
 async function getUserClientLimit() {
+  // ✅ MODE OFFLINE: sense límit (no podem consultar Supabase)
+  if (typeof window.isOfflineMode === 'function' && window.isOfflineMode()) return Infinity;
+  if (window._offlineOverrideClientLimit) return Infinity;
+
   try {
     const { data } = await supabase.auth.getUser();
     const meta = data?.user?.user_metadata || {};
-    // Si max_clients és -1 = il·limitat
     if (meta.max_clients === -1 || meta.plan === 'full') return Infinity;
-    return meta.max_clients || 5; // per defecte 5
+    return meta.max_clients || 5;
   } catch(e) {
-    return 5;
+    // Si Supabase no respon (quota exhaurida, etc.) → no bloquejar
+    return Infinity;
   }
 }
 

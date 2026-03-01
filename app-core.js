@@ -303,9 +303,25 @@ async function loadState() {
     
     // 2. Si no hi ha usuari o error, carregar d'IndexedDB
     const savedState = await dbGet('state', 'main');
-    if (savedState) {
+    if (savedState && savedState.data) {
       state = { ...state, ...savedState.data };
       console.log('✅ Estat carregat des d\'IndexedDB local');
+    }
+
+    // ✅ FIX MODE OFFLINE: si no hi ha clients a state, carregar tots de IndexedDB
+    if (!state.clients || Object.keys(state.clients).length === 0) {
+      try {
+        const localClients = await dbGetAll('clients');
+        if (localClients && localClients.length > 0) {
+          state.clients = {};
+          for (const c of localClients) {
+            state.clients[c.id] = c;
+          }
+          console.log('✅ ' + localClients.length + ' clients carregats de IndexedDB (mode offline)');
+        }
+      } catch(e) {
+        console.warn('⚠️ Error carregant clients locals:', e);
+      }
     }
   } catch (e) {
     console.warn('⚠️ Error carregant estat:', e);

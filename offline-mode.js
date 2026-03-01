@@ -87,6 +87,8 @@ function _injectOfflineButton() {
 
 /* ── Gestionar accés offline ── */
 async function _handleOfflineAccess() {
+  // En mode offline, canCreateMoreClients sempre retorna ok
+  window._offlineOverrideClientLimit = true;
   // Verificar que hi ha dades locals
   let hasLocalData = false;
   try {
@@ -152,9 +154,24 @@ async function _handleOfflineAccess() {
   }, 800);
 }
 
+/* ── Guardar user_id real quan Supabase funciona ── */
+const REAL_USER_KEY = 'fw_real_user_id';
+function _saveRealUserId(userId) {
+  if (userId && userId !== 'offline-user') {
+    localStorage.setItem(REAL_USER_KEY, userId);
+  }
+}
+function _getRealUserId() {
+  return localStorage.getItem(REAL_USER_KEY);
+}
+
 /* ── Sobreescriure getCurrentUser en mode offline ── */
 function _patchGetCurrentUser() {
+  // Usar el user_id real guardat per poder llegir IndexedDB correctament
+  const realUserId = _getRealUserId();
   const offlineUser = _getOfflineUser();
+  // Si tenim l'id real, usem-lo (permet llegir dades de Supabase-db filtrades per user_id)
+  if (realUserId) offlineUser.id = realUserId;
 
   // Guardar original
   if (!window._originalGetCurrentUser && typeof window.getCurrentUser === 'function') {
@@ -269,6 +286,8 @@ window._exitOfflineMode = function() {
 
     window.supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session && session.user) {
+        // Guardar sempre l'id real per poder-lo usar en mode offline futur
+        _saveRealUserId(session.user.id);
         if (isOfflineMode()) {
           console.log('✅ Supabase actiu — desactivant mode offline automàticament');
           deactivateOfflineMode();
