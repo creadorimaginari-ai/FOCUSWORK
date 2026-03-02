@@ -65,7 +65,7 @@ function _injectOfflineButton() {
       border-radius: 8px;
       background: rgba(251, 191, 36, 0.08);
       color: #fbbf24;
-      font-size: 13px;
+      font-size: 10px;
       cursor: pointer;
       margin-top: 8px;
       transition: all 0.2s;
@@ -218,36 +218,37 @@ function _showOfflineBanner() {
   banner.id = 'offlineBanner';
   banner.style.cssText = `
     position: fixed;
-    top: 0; left: 0; right: 0;
-    background: linear-gradient(135deg, #92400e, #b45309);
+    bottom: 0; left: 0; right: 0;
+    background: rgba(120, 53, 15, 0.92);
     color: #fef3c7;
     text-align: center;
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    z-index: 99999;
+    padding: 4px 12px;
+    font-size: 10px;
+    font-weight: 400;
+    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
+    backdrop-filter: blur(4px);
   `;
   banner.innerHTML = `
-    <span>📴 Mode offline — mostrant dades locals d'aquest dispositiu</span>
+    <span>📴 Mode offline</span>
     <button onclick="_exitOfflineMode()" style="
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
       color: #fef3c7;
-      padding: 3px 10px;
+      padding: 1px 7px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 10px;
       cursor: pointer;
     ">Tornar al login</button>
   `;
-  document.body.prepend(banner);
+  document.body.appendChild(banner);
 
-  // Afegir marge a l'app per no tapar contingut
+  // Afegir marge a l'app a baix per no tapar contingut
   const app = document.querySelector('.app');
-  if (app) app.style.paddingTop = '36px';
+  if (app) app.style.paddingBottom = '26px';
 }
 
 /* ── Sortir del mode offline ── */
@@ -266,7 +267,7 @@ window._exitOfflineMode = function() {
   const banner = document.getElementById('offlineBanner');
   if (banner) banner.remove();
   const app = document.querySelector('.app');
-  if (app) app.style.paddingTop = '';
+  if (app) app.style.paddingBottom = '';
 
   // Tornar al login
   if (typeof showLoginScreen === 'function') showLoginScreen();
@@ -329,7 +330,7 @@ window._exitOfflineMode = function() {
           const banner = document.getElementById('offlineBanner');
           if (banner) banner.remove();
           const app = document.querySelector('.app');
-          if (app) app.style.paddingTop = '';
+          if (app) app.style.paddingBottom = '';
         }
       }
 

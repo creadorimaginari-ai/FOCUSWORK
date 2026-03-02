@@ -598,8 +598,8 @@ function updateFocusScheduleStatus() {
 
 /* ================= CLIENTS OPTIMIZADO ================= */
 async function newClient() {
-  // ✅ Comprovar límit per usuari (configurable des de Supabase per cada usuari)
-  if (typeof canCreateMoreClients === 'function') {
+  // Comprovar límit només si NO estem en mode offline (en offline sempre ok)
+  if (!isOfflineMode() && typeof canCreateMoreClients === 'function') {
     const check = await canCreateMoreClients();
     if (!check.ok) {
       showAlert(t('alert_limit_clients'), 
@@ -616,6 +616,10 @@ async function newClient() {
 async function confirmNewClient() {
   const name = $('newClientInput').value.trim();
   if (!name) return;
+
+  // ✅ Tancar modal i actualitzar UI immediatament
+  closeModal('modalNewClient');
+
   const id = uid();
   const client = {
     id,
@@ -631,24 +635,24 @@ async function confirmNewClient() {
     extraHours: [],
     tasks: { urgent: "", important: "", later: "" }
   };
-  
-  await saveClient(client);
 
-  // ✅ BUGFIX: afegir a state.clients en memòria immediatament
-  // Sense això, el client nou no apareixia a la llista fins a recarregar
+  // Afegir a memòria immediatament (sense esperar IndexedDB)
   if (!state.clients) state.clients = {};
   state.clients[id] = client;
-
   state.currentClientId = id;
   state.currentActivity = ACTIVITIES.WORK;
   state.sessionElapsed = 0;
   state.lastTick = Date.now();
   isWorkpadInitialized = false;
   areTasksInitialized = false;
-  await save();
+
+  // Actualitzar UI immediatament
   await updateUI();
-  closeModal('modalNewClient');
-}
+
+  // Guardar en segon pla (no bloqueja la UI)
+  saveClient(client).catch(e => console.warn('Error guardant client:', e));
+  save().catch(e => console.warn('Error guardant state:', e));
+
 
 async function changeClient() {
   const allClients = await loadAllClients();
