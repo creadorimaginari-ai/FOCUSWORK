@@ -1,10 +1,10 @@
 /*************************************************
- * FOCUSWORK — Service Worker v5
+ * FOCUSWORK — Service Worker v6
  * Cache agressiu: primera càrrega normal,
  * totes les següents = 0 bytes de servidor
  *************************************************/
 
-const CACHE_VERSION = 'focuswork-v5';
+const CACHE_VERSION = 'focuswork-v6';
 const BASE = '/FOCUSWORK';
 
 // Tots els assets que cal fer cache
@@ -43,7 +43,7 @@ const CACHE_ASSETS = [
 ];
 
 // Assets externs (Supabase CDN) — cache separat
-const EXTERNAL_CACHE = 'focuswork-external-v5';
+const EXTERNAL_CACHE = 'focuswork-external-v6';
 const EXTERNAL_ASSETS = [
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
@@ -152,4 +152,4 @@ self.addEventListener('message', event => {
   }
 });
 
-console.log('✅ Service Worker v5 carregat');
+console.log('✅ Service Worker v6 carregat');
