@@ -9,6 +9,9 @@
    photos-storage.js guarda  data: null  quan té URL,
    per això cal mirar photo.url com a primer candidat.
 ───────────────────────────────────────────── */
+// Variable global del lightbox (declarada aquí per evitar errors de TDZ)
+let currentLightboxIndex = 0;
+
 function getPhotoSrc(photo) {
   // ✅ Preferir base64 local si existeix — evita cache del navegador amb URL de Supabase
   // Quan es guarda una foto editada, sempre guardem photo.data = base64
@@ -1879,7 +1882,6 @@ window.deleteExtraHour = deleteExtraHour;
 window.exitClient = exitClient;  // ⬅️ AFEGIT
 
 /* ================= LIGHTBOX PER GALERIA ================= */
-let currentLightboxIndex = 0;
 
 function openLightbox(photos, index) {
   window.currentClientPhotos = photos;
