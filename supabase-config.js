@@ -77,6 +77,19 @@
       return localStorage.getItem('fw_real_user_id') || 'offline-user';
     };
 
+    // Definir initAuth per mode offline
+    window.initAuth = async function() {
+      console.log('🔐 initAuth en mode offline — retornant usuari local');
+      try {
+        const u = JSON.parse(localStorage.getItem('fw_offline_user') || '{}');
+        const realId = localStorage.getItem('fw_real_user_id');
+        if (realId) u.id = realId;
+        return u.id ? u : { id: 'offline-user', email: 'offline@local' };
+      } catch(e) {
+        return { id: 'offline-user', email: 'offline@local' };
+      }
+    };
+
     console.log('✅ Proxy Supabase offline instal·lat');
     return; // ← sortir aquí, no inicialitzar Supabase real
   }
