@@ -12,6 +12,14 @@
 // Variable global del lightbox (declarada aquí per evitar errors de TDZ)
 let currentLightboxIndex = 0;
 
+let _originalUpdateUI = null;
+
+// Variables globals del paint/canvas (declarades aquí per evitar TDZ)
+let photoCanvas = null;
+let drawHistory = [];
+let currentTool = 'none';
+let _syncInterval = null;
+
 function getPhotoSrc(photo) {
   // ✅ Preferir base64 local si existeix — evita cache del navegador amb URL de Supabase
   // Quan es guarda una foto editada, sempre guardem photo.data = base64
@@ -2292,13 +2300,11 @@ function handleLightboxSwipe() {
   }
 }
 /* ================= EDITOR DE DIBUIX PER FOTOS ================= */
-let photoCanvas = null;
 let photoCtx = null;
 let isDrawingOnPhoto = false;
 let drawingEnabled = false;
 let drawColor = '#ef4444';
 let drawSize = 3;
-let drawHistory = [];
 let originalPhotoData = null;
 
 // Variables de zoom i pan
@@ -2832,7 +2838,6 @@ function getCanvasPoint(e) {
 //  SISTEMA D'EINES UNIFICAT
 //  Eines: pencil | eraser | fill | rect | circle | line
 // ═══════════════════════════════════════════════════════
-let currentTool   = 'none';  // eina activa
 let fillModeEnabled = false; // compat. backward
 
 const TOOL_IDS = {
@@ -3454,7 +3459,6 @@ window.saveEditedPhoto = saveEditedPhoto;
 // ── SYNC ENTRE DISPOSITIUS ──────────────────────────────────────────────────
 // Quan el lightbox és obert, comprova cada 15s si la foto ha canviat a Supabase.
 // Si la URL ha canviat (un altre dispositiu ha guardat), recarrega silenciosament.
-let _syncInterval = null;
 
 function startPhotoSync() {
   stopPhotoSync();
@@ -4554,7 +4558,7 @@ async function selectClient(clientId) {
 
 // Guardar referència a la updateUI original CORRECTA (la de la línia ~338)
 // per evitar que futures sobrescriptures la trenquin
-const _originalUpdateUI = updateUI;
+_originalUpdateUI = updateUI;
 
 // Exposar al window
 window.updateProjectList = updateProjectList;
