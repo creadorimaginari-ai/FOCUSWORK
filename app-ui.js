@@ -3,23 +3,31 @@
  * Llicències, Importació i Exportació
  *************************************************/
 
+// Variables globals (declarades aquí per evitar errors TDZ)
+let currentLightboxIndex = 0;
+let _originalUpdateUI = null;
+let photoCanvas = null;
+let photoCtx = null;
+let isDrawingOnPhoto = false;
+let drawingEnabled = false;
+let drawColor = '#ef4444';
+let drawSize = 3;
+let originalPhotoData = null;
+let drawHistory = [];
+let currentTool = 'none';
+let fillModeEnabled = false;
+let _syncInterval = null;
+let totalRotationDeg = 0;
+let isWorkpadInitialized = false;
+let areTasksInitialized = false;
+
+
 /* ─────────────────────────────────────────────
    FUNCIÓ AUXILIAR: obtenir la font d'una foto
    Suporta tant URL Supabase Storage com base64 local.
    photos-storage.js guarda  data: null  quan té URL,
    per això cal mirar photo.url com a primer candidat.
 ───────────────────────────────────────────── */
-// Variable global del lightbox (declarada aquí per evitar errors de TDZ)
-let currentLightboxIndex = 0;
-
-let _originalUpdateUI = null;
-
-// Variables globals del paint/canvas (declarades aquí per evitar TDZ)
-let photoCanvas = null;
-let drawHistory = [];
-let currentTool = 'none';
-let _syncInterval = null;
-
 function getPhotoSrc(photo) {
   // ✅ Preferir base64 local si existeix — evita cache del navegador amb URL de Supabase
   // Quan es guarda una foto editada, sempre guardem photo.data = base64
@@ -717,6 +725,196 @@ async function changeClient() {
   openModal('modalChangeClient');
 }
 
+async function selectClient(clientId) {
+  const previousClient = state.currentClientId;
+  
+  if (state.currentClientId === clientId) {
+    closeModal('modalChangeClient');
+    return;
+  }
+  
+  state.currentClientId = clientId;
+  
+  state.currentActivity = ACTIVITIES.WORK;
+  state.sessionElapsed = 0;
+  state.lastTick = Date.now();
+  
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
+  
+  await save();
+  
+  const client = await loadClient(clientId);
+  
+await updateUI(client);
+
+const clientInfoPanel = document.getElementById('clientInfoPanel');
+if (clientInfoPanel) clientInfoPanel.style.display = 'block';
+
+const btns = $("clientFixedButtons");
+if (btns) btns.style.display = "grid";
+
+closeModal('modalChangeClient');
+
+}   // ← aquesta clau faltava
+
+async function closeClient() {
+  const client = await loadClient(state.currentClientId);
+  if (!client) return;
+  
+  if (client.photos.length > 0 || (client.notes && client.notes.trim())) {
+    $('exportBeforeCloseText').textContent = `Aquest client té ${client.photos.length} fotos i notes.\n\nVols exportar el treball abans de tancar?`;
+    window.clientToClose = client.id;
+    openModal('modalExportBeforeClose');
+    return;
+  }
+  
+  $('closeClientText').textContent = `${t('label_client')} ${client.name}\n${t('label_temps')} ${formatTime(client.total)}`;
+  window.clientToClose = client.id;
+  openModal('modalCloseClient');
+}
+
+async function confirmCloseClient() {
+  const clientId = window.clientToClose || state.currentClientId;
+  const client = await loadClient(clientId);
+  if (!client) return;
+
+  // ✅ Si s'ha cridat directament (no des de facturació), obrir modal de dades
+  if (!window._billingConfirmed) {
+    window.clientToClose = clientId;
+    closeModal('modalCloseClient');
+    closeModal('modalExportBeforeClose');
+    if (typeof openBillingModal === 'function') {
+      openBillingModal(clientId);
+      return;
+    }
+  }
+  window._billingConfirmed = false;
+
+  client.active = false;
+  client.closedAt = Date.now();
+  await saveClient(client);
+
+  // ✅ BUGFIX: actualitzar state.clients en memòria immediatament
+  // Sense això el client continuava apareixent com a actiu a la llista
+  if (state.clients && state.clients[clientId]) {
+    state.clients[clientId].active = false;
+    state.clients[clientId].closedAt = client.closedAt;
+  }
+
+  state.currentClientId = null;
+  state.currentActivity = null;
+  state.lastTick = null;
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
+  await save();
+  await updateUI();
+  closeModal('modalCloseClient');
+  closeModal('modalExportBeforeClose');
+  showAlert(t('alert_client_tancat'), `${client.name}\n${t('label_temps')} ${formatTime(client.total)}`, '✅');
+  window.clientToClose = null;
+}
+
+function exportAndClose() {
+  exportCurrentWork();
+  setTimeout(confirmCloseClient, 500);
+}
+
+function exitClient() {
+  state.currentClientId = null;
+  state.currentActivity = null;
+  state.lastTick = null;
+  save();
+
+  // ✅ FIX: assegurar que activitiesPanel és visible en tornar a l'inici
+  const activitiesPanel = document.getElementById('activitiesPanel');
+  const overviewPanel   = document.getElementById('clientsOverviewPanel');
+  const clientInfoPanel = document.getElementById('clientInfoPanel');
+  if (activitiesPanel) activitiesPanel.style.display = 'block';
+  if (overviewPanel)   overviewPanel.style.display   = 'none';
+  if (clientInfoPanel) clientInfoPanel.style.display  = 'none';
+  document.body.classList.remove('client-view');
+
+  updateUI();
+}
+/*************************************************
+ * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 3/5
+ * Històric i Fotos - VERSIÓN CORREGIDA
+ *************************************************/
+
+/* ================= HISTÒRIC ================= */
+async function showHistory() {
+  const allClients = await loadAllClients();
+  const closed = Object.values(allClients).filter(c => !c.active);
+  if (!closed.length) {
+    showAlert(t('alert_error'), t('sense_clients_esborrar'), 'ℹ️');
+    return;
+  }
+  renderHistoryList(closed);
+  openModal('modalHistory');
+}
+
+function renderHistoryList(clients) {
+  const list = $('historyClientsList');
+  list.innerHTML = '';
+  if (!clients.length) {
+    list.innerHTML = `<p class="modal-text" style="opacity: 0.6;">${t('sense_resultats')}</p>`;
+    return;
+  }
+  
+  clients
+    .sort((a, b) => (b.closedAt || b.createdAt || 0) - (a.closedAt || a.createdAt || 0))
+    .forEach(client => {
+      const item = document.createElement('div');
+      item.className = 'client-item';
+      
+      const closedDate = client.closedAt 
+        ? new Date(client.closedAt).toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit' })
+        : '';
+      
+      const notesPreview = client.notes && client.notes.trim() 
+        ? ` • ${client.notes.slice(0, 30)}...` 
+        : '';
+      
+      item.innerHTML = `
+        <div class="client-name">${client.name} ${closedDate ? `(${closedDate})` : ''}</div>
+        <div class="client-time">
+          Total: ${formatTime(client.total)} • 
+          📷 ${client.photos?.length || 0} fotos${notesPreview}
+        </div>
+      `;
+      
+      item.onclick = () => selectHistoryClient(client.id);
+      list.appendChild(item);
+    });
+}
+
+async function selectHistoryClient(clientId) {
+  state.currentClientId = clientId;
+  state.currentActivity = ACTIVITIES.WORK;
+  state.sessionElapsed = 0;
+  state.lastTick = Date.now();
+  isWorkpadInitialized = false;
+  areTasksInitialized = false;
+  
+  const client = await loadClient(clientId);
+await updateUI(client);
+
+// assegurar panell del client visible
+const clientInfoPanel = document.getElementById('clientInfoPanel');
+if (clientInfoPanel) clientInfoPanel.style.display = 'block';
+
+// assegurar botons visibles
+const btns = $("clientFixedButtons");
+if (btns) btns.style.display = "grid";
+
+setTimeout(() => {
+  renderPhotoGallery(client);
+}, 100);
+
+closeModal('modalHistory');
+
+}   // ← tanca selectClient
 
 /* ================= ESBORRAR CLIENT ================= */
 async function deleteCurrentClient() {
@@ -1093,7 +1291,6 @@ console.log('✅ handleFileInputiPad carregada');
 
 /* ================= WORKPAD OPTIMIZADO ================= */
 let workpadTimeout = null;
-let isWorkpadInitialized = false;
 
 async function updateWorkpad(preloadedClient = null) {
   const workpadArea = $('clientWorkpad');
@@ -1140,7 +1337,6 @@ async function handleWorkpadInput(e) {
 
 /* ================= TASQUES OPTIMIZADO ================= */
 let taskTimeouts = { urgent: null, important: null, later: null };
-let areTasksInitialized = false;
 
 async function updateTasks(preloadedClient = null) {
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
@@ -2300,12 +2496,6 @@ function handleLightboxSwipe() {
   }
 }
 /* ================= EDITOR DE DIBUIX PER FOTOS ================= */
-let photoCtx = null;
-let isDrawingOnPhoto = false;
-let drawingEnabled = false;
-let drawColor = '#ef4444';
-let drawSize = 3;
-let originalPhotoData = null;
 
 // Variables de zoom i pan
 let currentZoom = 1;
@@ -2324,7 +2514,6 @@ let accumulatedRotation = 0;
 //  L'angle s'acumula a `totalRotationDeg` i s'aplica com a CSS.
 //  Quan es guarda la foto, es fusionen foto+dibuix+rotació en un canvas.
 // ══════════════════════════════════════════════════════════════════════
-let totalRotationDeg = 0;   // angle total acumulat (graus)
 let isRotating       = false;
 
 function applyRotationTransform() {
@@ -2838,7 +3027,6 @@ function getCanvasPoint(e) {
 //  SISTEMA D'EINES UNIFICAT
 //  Eines: pencil | eraser | fill | rect | circle | line
 // ═══════════════════════════════════════════════════════
-let fillModeEnabled = false; // compat. backward
 
 const TOOL_IDS = {
   pencil: 'drawToggle',
