@@ -701,6 +701,24 @@
   </div>
 
   <!-- MODAL: Eliminar Foto -->
+  <!-- MODAL: Guardar foto editada (substituir o conservar ambdues) -->
+  <div id="modalSavePhoto" class="modal-overlay hidden">
+    <div class="modal modal-confirm">
+      <div class="modal-header">
+        <span class="modal-icon">💾</span>
+        <h2 class="modal-title">Guardar foto editada</h2>
+      </div>
+      <div class="modal-body">
+        <p class="modal-text">Vols substituir la foto original o conservar-la també?</p>
+      </div>
+      <div class="modal-footer" style="flex-direction:column; gap:10px;">
+        <button class="btn-primary" style="width:100%" onclick="confirmSavePhoto('replace')">✏️ Substituir original</button>
+        <button class="btn-secondary" style="width:100%" onclick="confirmSavePhoto('keep')">🗂️ Conservar ambdues</button>
+        <button class="btn-secondary" style="width:100%; opacity:0.7" onclick="closeModal('modalSavePhoto')">Cancel·lar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalDeletePhoto" class="modal-overlay hidden">
     <div class="modal modal-confirm">
       <div class="modal-header">

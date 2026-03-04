@@ -2911,9 +2911,15 @@ async function saveEditedPhoto() {
     photoCanvas.classList.remove('drawing-mode');
   }
   
-  const confirmed = confirm('💾 Vols guardar els canvis a aquesta foto?\n\nLa foto original serà substituïda.');
-  if (!confirmed) return;
-  
+  // Mostrar modal en lloc del confirm() natiu
+  openModal('modalSavePhoto');
+}
+
+async function confirmSavePhoto(mode) {
+  // mode: 'replace' → substituir original | 'keep' → conservar ambdues
+  closeModal('modalSavePhoto');
+  if (!photoCanvas || !window.currentClientPhotos) return;
+
   try {
     // Fusionar foto + dibuix + rotació CSS en un sol canvas
     const rad  = totalRotationDeg * Math.PI / 180;
@@ -2939,69 +2945,111 @@ async function saveEditedPhoto() {
     // Mostrar progrés
     showAlert(t('guardant'), t('pujant_foto'), '⏳');
 
-    // ✅ FIX SYNC: usar un ID únic amb timestamp per la versió editada
-    // Supabase Storage retorna sempre la mateixa URL per al mateix path
-    // → altres dispositius carreguen la versió antiga del cache
-    // Solució: guardar amb un path nou (photoId_timestamp) → URL nova → cache buit
     const editedPhotoId = photo.id + '_v' + Date.now();
     let newUrl = null;
     if (typeof uploadPhotoToStorage === 'function') {
       newUrl = await uploadPhotoToStorage(editedData, editedPhotoId, clientId);
     }
 
-    // Esborrar versió antiga de Storage si tenia URL (cleanup)
-    if (photo.url && typeof deletePhotoFromStorage === 'function') {
-      try { await deletePhotoFromStorage(photo.id, clientId); } catch(e) {}
-    }
+    if (mode === 'keep') {
+      // ── MODE: CONSERVAR AMBDUES ──────────────────────────────────────────
+      // Afegir la versió anotada com a foto nova, sense tocar l'original
+      const newPhotoObj = {
+        id:      editedPhotoId,
+        date:    new Date().toISOString(),
+        type:    'image',
+        name:    'Imatge',
+        mimeType: 'image/jpeg',
+        comment: photo.comment || '',
+        url:     newUrl || null,
+        data:    newUrl ? null : editedData
+      };
 
-    // Actualitzar referència en memòria
-    photo.data = editedData;
-    photo.url  = newUrl || null;
-    originalPhotoData = editedData;
-
-    // IndexedDB: guardar base64 + nova URL
-    await dbPut('photos', {
-      id:       photo.id,
-      clientId: clientId,
-      url:      photo.url,
-      data:     editedData,
-      date:     photo.date,
-      comment:  photo.comment || ""
-    });
-
-    // Supabase BD: actualitzar files[] o photos[] amb nova URL
-    const client = await loadClient(clientId);
-    if (client) {
-      let updated = false;
-      (client.files || []).forEach(f => {
-        if (f.id === photo.id) { f.url = photo.url; f.data = editedData; updated = true; }
+      // IndexedDB: nova entrada
+      await dbPut('photos', {
+        id:       editedPhotoId,
+        clientId: clientId,
+        url:      newUrl || null,
+        data:     editedData,
+        date:     newPhotoObj.date,
+        comment:  newPhotoObj.comment
       });
-      if (!updated) {
-        (client.photos || []).forEach(p => {
-          if (p.id === photo.id) { p.url = photo.url; p.data = editedData; }
-        });
+
+      // Supabase BD: afegir a files[] sense tocar l'original
+      const client = await loadClient(clientId);
+      if (client) {
+        if (!client.files) client.files = [];
+        client.files.push(newPhotoObj);
+        await saveClient(client);
       }
-      await saveClient(client);
+
+      // Actualitzar galeria i tornar a la foto original (no canviar el canvas)
+      await renderFileGallery();
+      showAlert('✅ Foto anotada afegida', "S'ha guardat com a nova foto. L'original es conserva.", '🗂️');
+
+    } else {
+      // ── MODE: SUBSTITUIR ORIGINAL ────────────────────────────────────────
+      // Esborrar versió antiga de Storage si tenia URL (cleanup)
+      if (photo.url && typeof deletePhotoFromStorage === 'function') {
+        try { await deletePhotoFromStorage(photo.id, clientId); } catch(e) {}
+      }
+
+      // Actualitzar referència en memòria
+      photo.data = editedData;
+      photo.url  = newUrl || null;
+      originalPhotoData = editedData;
+
+      // IndexedDB: actualitzar entrada existent
+      await dbPut('photos', {
+        id:       photo.id,
+        clientId: clientId,
+        url:      photo.url,
+        data:     editedData,
+        date:     photo.date,
+        comment:  photo.comment || ""
+      });
+
+      // Supabase BD: actualitzar files[] o photos[] amb nova URL
+      const client = await loadClient(clientId);
+      if (client) {
+        let updated = false;
+        (client.files || []).forEach(f => {
+          if (f.id === photo.id) { f.url = photo.url; f.data = editedData; updated = true; }
+        });
+        if (!updated) {
+          (client.photos || []).forEach(p => {
+            if (p.id === photo.id) { p.url = photo.url; p.data = editedData; }
+          });
+        }
+        // ✅ FIX DUPLICATS: Si la foto existeix a photos[] I a files[], eliminar de photos[]
+        const inFiles  = (client.files  || []).some(f => f.id === photo.id);
+        const inPhotos = (client.photos || []).some(p => p.id === photo.id);
+        if (inFiles && inPhotos) {
+          client.photos = client.photos.filter(p => p.id !== photo.id);
+        }
+        await saveClient(client);
+      }
+
+      // Re-dibuixar canvas des del base64 local (instantani, sense esperar xarxa)
+      const refreshImg = new Image();
+      refreshImg.onload = () => {
+        if (!photoCanvas || !photoCtx) return;
+        photoCanvas.width  = refreshImg.width;
+        photoCanvas.height = refreshImg.height;
+        photoCtx.drawImage(refreshImg, 0, 0);
+        drawHistory = [];
+        saveDrawState();
+      };
+      refreshImg.src = editedData;
+
+      showAlert(t('alert_foto_guardada'), t('foto_guardada_msg'), '✅');
     }
-
-    // Re-dibuixar canvas des del base64 local (instantani, sense esperar xarxa)
-    const refreshImg = new Image();
-    refreshImg.onload = () => {
-      if (!photoCanvas || !photoCtx) return;
-      photoCanvas.width  = refreshImg.width;
-      photoCanvas.height = refreshImg.height;
-      photoCtx.drawImage(refreshImg, 0, 0);
-      drawHistory = [];
-      saveDrawState();
-    };
-    refreshImg.src = editedData;
-
-    showAlert(t('alert_foto_guardada'), t('foto_guardada_msg'), '✅');
   } catch (e) {
     console.error('Error guardant foto editada:', e);
     showAlert(t('alert_error'), `${t('error_llegir_arxiu')}: ${e.message}`, '❌');
   }
 }
+window.confirmSavePhoto = confirmSavePhoto;
 
 // Funció global per obtenir coordenades del canvas
 function getCanvasPoint(e) {
