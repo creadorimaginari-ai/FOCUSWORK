@@ -2400,6 +2400,17 @@ async function deleteCurrentPhoto() {
   try {
     await dbDelete('photos', photo.id);
     
+    // ✅ FIX: Eliminar també de client.photos[] i client.files[] i fer saveClient
+    // perquè renderFileGallery() recarrega el client des de BD i la foto reapareixia
+    if (state.currentClientId) {
+      const client = await loadClient(state.currentClientId);
+      if (client) {
+        client.photos = (client.photos || []).filter(p => p.id !== photo.id);
+        client.files  = (client.files  || []).filter(f => f.id !== photo.id);
+        await saveClient(client);
+      }
+    }
+    
     window.currentClientPhotos.splice(currentLightboxIndex, 1);
     
     if (window.currentClientPhotos.length === 0) {
@@ -2414,7 +2425,7 @@ async function deleteCurrentPhoto() {
     }
     
     updateLightboxDisplay();
-    renderPhotoGallery();
+    await renderPhotoGallery();
     
     showAlert(t('alert_foto_eliminada'), t('foto_eliminada_msg'), '✅');
   } catch (e) {
