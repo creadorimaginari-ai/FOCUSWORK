@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restaurar FocusWork</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, sans-serif;
+    background: #0f1117;
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #1a1d2e;
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  p { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 24px; }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    border-radius: 10px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: opacity 0.2s;
+  }
+  .btn:active { opacity: 0.8; }
+  .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+  .btn-secondary { background: rgba(255,255,255,0.1); color: white; }
+  .status {
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    display: none;
+  }
+  .status.ok { background: rgba(76,175,80,0.2); color: #4CAF50; border: 1px solid rgba(76,175,80,0.3); }
+  .status.error { background: rgba(244,67,54,0.2); color: #f44336; border: 1px solid rgba(244,67,54,0.3); }
+  .status.info { background: rgba(33,150,243,0.2); color: #2196F3; border: 1px solid rgba(33,150,243,0.3); }
+  input[type=file] { display: none; }
+  .client-info {
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+    text-align: left;
+    display: none;
+  }
+  .client-info .name { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+  .client-info .detail { font-size: 12px; color: rgba(255,255,255,0.5); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div style="font-size:48px;margin-bottom:16px;">🔧</div>
+  <h1>Restaurar FocusWork</h1>
+  <p>Carrega el fitxer de backup JSON per restaurar les dades locals</p>
+
+  <div class="client-info" id="clientInfo">
+    <div class="name" id="clientName"></div>
+    <div class="detail" id="clientDetail"></div>
+  </div>
+
+  <input type="file" id="fileInput" accept=".json">
+  
+  <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+    📂 Seleccionar fitxer JSON
+  </button>
+  
+  <button class="btn btn-secondary" id="btnRestore" onclick="restoreData()" style="display:none">
+    ✅ Restaurar dades
+  </button>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+  let parsedData = null;
+
+  document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        parsedData = JSON.parse(ev.target.result);
+        
+        if (!parsedData.client) {
+          showStatus('error', '❌ Format de backup no vàlid');
+          return;
+        }
+
+        const client = parsedData.client;
+        const hours = Math.floor((client.total || 0) / 3600);
+        const minutes = Math.floor(((client.total || 0) % 3600) / 60);
+
+        document.getElementById('clientName').textContent = client.name || 'Sense nom';
+        document.getElementById('clientDetail').textContent = 
+          `ID: ${client.id} • Temps: ${hours}h ${minutes}m • Estat: ${client.stateLabel || client.state || '-'}`;
+        document.getElementById('clientInfo').style.display = 'block';
+        document.getElementById('btnRestore').style.display = 'block';
+
+        showStatus('info', `📋 Backup carregat: ${file.name}`);
+
+      } catch(err) {
+        showStatus('error', '❌ Error llegint el fitxer: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  function restoreData() {
+    if (!parsedData || !parsedData.client) {
+      showStatus('error', '❌ No hi ha dades per restaurar');
+      return;
+    }
+
+    try {
+      const client = parsedData.client;
+
+      // Convertir format backup → format app
+      const clientConverted = {
+        id: client.id,
+        name: client.name || '',
+        email: client.email || null,
+        phone: client.phone || null,
+        company: client.company || null,
+        notes: client.notes || null,
+        status: client.active ? 'active' : 'closed',
+        total: client.total || 0,
+        billableTime: client.billableTime || 0,
+        activities: client.activities || {},
+        tasks: client.tasks || {},
+        state: client.state || 'in_progress',
+        stateLabel: client.stateLabel || '',
+        stateIcon: client.stateIcon || '',
+        stateColor: client.stateColor || '',
+        stateHistory: client.stateHistory || [],
+        progress: client.progress || 0,
+        progressLabel: client.progressLabel || '',
+        progressPercent: client.progressPercent || 0,
+        progressColor: client.progressColor || '',
+        deliveryDate: client.deliveryDate || null,
+        extraHours: client.extraHours || [],
+        photos: client.photos || [],
+        files: client.files || [],
+        created_at: client.createdAt ? new Date(client.createdAt).toISOString() : new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Guardar al localStorage (clau que usa FocusWork)
+      const existing = JSON.parse(localStorage.getItem('focuswork_clients') || '{}');
+      existing[client.id] = clientConverted;
+      localStorage.setItem('focuswork_clients', JSON.stringify(existing));
+
+      // També guardar sessió offline simulada
+      localStorage.setItem('focuswork_offline_mode', 'true');
+      localStorage.setItem('focuswork_restored', 'true');
+
+      showStatus('ok', `✅ Client "${client.name}" restaurat correctament! Ara ves a l'app i prem "Accedir sense connexió"`);
+      document.getElementById('btnRestore').style.display = 'none';
+
+    } catch(err) {
+      showStatus('error', '❌ Error restaurant: ' + err.message);
+    }
+  }
+
+  function showStatus(type, msg) {
+    const el = document.getElementById('status');
+    el.className = 'status ' + type;
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+</script>
+</body>
+</html>
