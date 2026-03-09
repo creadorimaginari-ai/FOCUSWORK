@@ -949,17 +949,65 @@ async function migrateFromLocalStorage() {
 /* ================= INICIALITZACIÓ ================= */
 async function initApp() {
   try {
-    // ✅ ESPERAR QUE SUPABASE ESTIGUI LLEST
     console.log('🔄 Iniciant FocusWork...');
-    console.log('🔍 Comprovant disponibilitat de Supabase...');
-    
-    // Comprovar si la llibreria de Supabase s'ha carregat
-    if (typeof window.supabase === 'undefined') {
-      console.error('❌ ERROR: La llibreria de Supabase no s\'ha carregat');
-      console.error('Verifica que el CDN estigui accessible: https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-      alert('Error: No s\'ha pogut carregar la llibreria de Supabase.\n\nComprova la teva connexió a Internet i recarrega la pàgina.');
+
+    // ✅ DETECCIÓ OFFLINE PRIMERENCA
+    // Si no hi ha xarxa o Supabase no s'ha carregat, activar mode offline directament
+    const isNetworkOffline = !navigator.onLine;
+    const isSupabaseMissing = typeof window.supabase === 'undefined';
+
+    if (isNetworkOffline || isSupabaseMissing) {
+      console.log('📴 Sense connexió detectada — activant mode offline directament');
+
+      // Activar offline-mode si està disponible
+      if (typeof window.activateOfflineMode === 'function') {
+        window.activateOfflineMode();
+      } else {
+        // Fallback: marcar manualment
+        window._offlineModeActive = true;
+        window.isOfflineMode = () => true;
+        window.getCurrentUser = () => null;
+      }
+
+      // Intentar restaurar sessió guardada
+      let offlineUser = null;
+      try {
+        const savedSession = localStorage.getItem('focuswork_offline_session') || localStorage.getItem('supabase.auth.token');
+        if (savedSession) {
+          const parsed = JSON.parse(savedSession);
+          offlineUser = parsed?.user || parsed?.currentSession?.user || null;
+        }
+      } catch(e) { /* no hi ha sessió guardada */ }
+
+      if (!offlineUser) {
+        // Sense sessió guardada → mostrar login amb missatge offline
+        console.log('👤 Sense sessió offline guardada — mostrant login');
+        showLoginScreen();
+        // Mostrar avís d'offline si existeix la funció
+        if (typeof window.showOfflineBanner === 'function') window.showOfflineBanner();
+        return;
+      }
+
+      console.log('✅ Sessió offline restaurada:', offlineUser.email);
+
+      // Continuar inicialització amb IndexedDB
+      await initDB();
+      await loadState();
+      preciseTickLoop();
+      await migrateFromLocalStorage();
+
+      if (!userName) {
+        showOnboardingScreen();
+        return;
+      }
+
+      await loadClients(offlineUser);
+      renderApp();
       return;
     }
+
+    // ─── MODE ONLINE: flux normal ───
+    console.log('🔍 Comprovant disponibilitat de Supabase...');
     
     console.log('✅ Llibreria Supabase carregada');
     
@@ -992,6 +1040,11 @@ async function initApp() {
     }
     
     console.log('✅ Usuari autenticat:', user.email);
+
+    // ✅ Guardar sessió per ús offline
+    try {
+      localStorage.setItem('focuswork_offline_session', JSON.stringify({ user: { email: user.email, id: user.id } }));
+    } catch(e) { /* localStorage pot estar ple */ }
     
     // 3. Inicialitzar IndexedDB local (backup)
     console.log('💾 Inicialitzant base de dades local...');
