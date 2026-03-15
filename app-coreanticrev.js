@@ -117,17 +117,7 @@ function activityLabel(act) {
 const $ = (id) => document.getElementById(id);
 
 function uid() {
-  // ✅ Generar UUID vàlid per Supabase
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  
-  // Fallback per navegadors antics
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
 function formatTime(sec) {
@@ -151,7 +141,7 @@ function isWithinFocusSchedule(date = new Date()) {
   const secondsStart = sh * 3600 + sm * 60;
   const secondsEnd = eh * 3600 + em * 60;
   
-  return secondsNow >= secondsStart && secondsNow < secondsEnd;
+  return secondsNow >= secondsStart && secondsNow <= secondsEnd;
 }
 
 // Nova funció: Obtenir el següent canvi d'horari (inici o fi)
@@ -205,14 +195,15 @@ function calculateBillableSeconds(startTime, endTime) {
     const nextChange = getNextScheduleChange(currentDate);
     const segmentEnd = Math.min(endTime, nextChange);
     
-if (isWithin) {
-  billableSeconds += (segmentEnd - currentTime);
-}
-
-currentTime = segmentEnd;
-}
-
-return Math.floor(billableSeconds / 1000);
+    // Si aquest segment és dins l'horari facturable, comptar-lo
+    if (isWithin) {
+      billableSeconds += Math.floor((segmentEnd - currentTime) / 1000);
+    }
+    
+    currentTime = segmentEnd;
+  }
+  
+  return billableSeconds;
 }
 
 /* ================= MODALS ================= */
@@ -253,62 +244,12 @@ let state = {
 
 async function loadState() {
   try {
-    const user = window.getCurrentUser();
-    
-    if (user) {
-      // 1. Carregar clients de Supabase
-      console.log('📥 Carregant clients des de Supabase...');
-      
-      try {
-        const supabaseClients = await loadAllClientsSupabase();
-        
-        if (supabaseClients && Object.keys(supabaseClients).length > 0) {
-          console.log(`✅ Carregats ${Object.keys(supabaseClients).length} clients de Supabase`);
-          
-          // Actualitzar estat amb clients de Supabase
-          state.clients = supabaseClients;
-          
-          // Guardar també a IndexedDB local com a cache/backup
-          for (const client of Object.values(supabaseClients)) {
-            const clientData = { ...client };
-            delete clientData.photos; // Les fotos ja estan a Supabase
-            
-            try {
-              await dbPut('clients', clientData);
-            } catch (e) {
-              console.warn('Error guardant client local:', e);
-            }
-          }
-          
-          // Carregar estat general d'IndexedDB (userName, etc.)
-          const savedState = await dbGet('state', 'main');
-          if (savedState && savedState.data) {
-            // Mantenir userName i altres dades, però NO sobrescriure clients
-            const { clients, ...restState } = savedState.data;
-            state = { ...state, ...restState };
-          }
-          
-          console.log('✅ Estat sincronitzat amb Supabase');
-          return;
-        } else {
-          console.log('ℹ️ No hi ha clients a Supabase');
-        }
-      } catch (error) {
-        console.error('❌ Error carregant de Supabase:', error);
-        console.log('📥 Carregant des d\'IndexedDB local com a fallback...');
-      }
-    } else {
-      console.log('👤 Usuari no autenticat - carregant dades locals');
-    }
-    
-    // 2. Si no hi ha usuari o error, carregar d'IndexedDB
     const savedState = await dbGet('state', 'main');
     if (savedState) {
       state = { ...state, ...savedState.data };
-      console.log('✅ Estat carregat des d\'IndexedDB local');
     }
   } catch (e) {
-    console.warn('⚠️ Error carregant estat:', e);
+    console.warn('No s\'ha pogut carregar l\'estat:', e);
   }
 }
 
@@ -330,14 +271,6 @@ async function save() {
 
 /* ================= GESTIÓ DE CLIENTS ================= */
 async function saveClient(client) {
-  // Guardar a Supabase (sense columnes que no existeixen)
-  try {
-    await saveClientSupabase(client);
-  } catch (error) {
-    console.error('Error guardant a Supabase:', error);
-  }
-  
-  // Guardar SEMPRE a IndexedDB local (fotos, total, billableTime, tasks...)
   try {
     const photos = client.photos || [];
     const clientData = { ...client };
@@ -347,100 +280,33 @@ async function saveClient(client) {
     
     for (const photo of photos) {
       await dbPut('photos', {
-        id:       photo.id || uid(),
+        id: photo.id || uid(),
         clientId: client.id,
-        url:      photo.url  || null,   // ✅ preservar URL Supabase Storage
-        data:     photo.data || null,   // ✅ preservar base64 local
-        date:     photo.date,
-        comment:  photo.comment || ""
+        data: photo.data,
+        date: photo.date,
+        comment: photo.comment || ""
       });
     }
     
     return true;
   } catch (e) {
-    console.error('Error guardant client local:', e);
+    console.error('Error guardant client:', e);
     return false;
   }
 }
 
 async function loadClient(clientId) {
   try {
-    // 1. Intentar Supabase
-    let client = null;
-    try {
-      client = await loadClientSupabase(clientId);
-    } catch(e) {
-      console.warn('Supabase no disponible');
-    }
+    const client = await dbGet('clients', clientId);
+    if (!client) return null;
     
-    // 2. Si no, agafar de IndexedDB local
-    if (!client) {
-      client = await dbGet('clients', clientId);
-      if (!client) return null;
-    }
-    
-    // 3. Combinar amb dades locals que Supabase no té
-    try {
-      const local = await dbGet('clients', clientId);
-      if (local) {
-        client.total        = client.total        || local.total        || 0;
-        client.billableTime = client.billableTime || local.billableTime || 0;
-        client.tasks        = client.tasks        || local.tasks        || { urgent: "", important: "", later: "" };
-        client.deliveryDate = client.deliveryDate || local.deliveryDate || null;
-        client.extraHours   = client.extraHours   || local.extraHours   || [];
-
-        // ✅ BUGFIX: restaurar base64 dels arxius (àudios/vocals) que Supabase
-        // guarda sense data (data:null) però que sí tenim a IndexedDB local.
-        // Supabase retalla el base64 per estalviar espai, però localment el tenim.
-        if (local.files && local.files.length > 0) {
-          const localFilesMap = {};
-          local.files.forEach(f => { localFilesMap[f.id] = f; });
-
-          client.files = (client.files || []).map(f => {
-            const localF = localFilesMap[f.id];
-            if (!f.data && localF && localF.data) {
-              // Recuperar base64 local que Supabase no té
-              return { ...f, data: localF.data };
-            }
-            return f;
-          });
-
-          // Afegir arxius locals que potser no han arribat a Supabase encara
-          const supabaseIds = new Set((client.files || []).map(f => f.id));
-          local.files.forEach(f => {
-            if (!supabaseIds.has(f.id)) {
-              client.files.push(f);
-            }
-          });
-        }
-      }
-    } catch(e) {}
-    
-    // 4. Respectar l'estat real de Supabase (active/closed)
-    // ✅ BUGFIX: NO forçar active=true — si Supabase diu que és closed, cal respectar-ho
-    // Sense aquest fix, els clients tancats no es podien esborrar mai
-    if (client.status !== undefined) {
-      client.active = (client.status === 'active' || client.status === null || client.status === '' || client.status === undefined);
-    } else {
-      client.active = client.active !== false;
-    }
-    
-    // 5. SEMPRE carregar fotos de IndexedDB
-    try {
-      const photos = await dbGetByIndex('photos', 'clientId', clientId);
-      client.photos = photos.map(p => ({
-        id:      p.id,
-        url:     p.url  || null,   // ✅ restaurar URL Supabase Storage
-        data:    p.data || null,   // ✅ restaurar base64 local
-        date:    p.date,
-        comment: p.comment || ""
-      }));
-      if (client.photos.length > 0) {
-        console.log(`📷 ${client.photos.length} fotos per ${client.name}`);
-      }
-    } catch(e) {
-      client.photos = client.photos || [];
-    }
+    const photos = await dbGetByIndex('photos', 'clientId', clientId);
+    client.photos = photos.map(p => ({
+      id: p.id,
+      data: p.data,
+      date: p.date,
+      comment: p.comment || ""
+    }));
     
     return client;
   } catch (e) {
@@ -451,30 +317,15 @@ async function loadClient(clientId) {
 
 async function loadAllClients() {
   try {
-    // ✅ Intentar carregar de Supabase primer
-    if (window.getCurrentUser && typeof loadAllClientsSupabase === 'function') {
-      try {
-        const supabaseClients = await loadAllClientsSupabase();
-        if (supabaseClients && Object.keys(supabaseClients).length > 0) {
-          return supabaseClients;
-        }
-      } catch (supabaseError) {
-        console.error('Error carregant de Supabase:', supabaseError);
-        // Continuar amb la càrrega local si falla
-      }
-    }
-    
-    // Carregar de local com a fallback
     const clients = await dbGetAll('clients');
     const clientsObj = {};
     
     for (const client of clients) {
       const photos = await dbGetByIndex('photos', 'clientId', client.id);
       client.photos = photos.map(p => ({
-        id:      p.id,
-        url:     p.url  || null,   // ✅ restaurar URL Supabase Storage
-        data:    p.data || null,   // ✅ restaurar base64 local
-        date:    p.date,
+        id: p.id,
+        data: p.data,
+        date: p.date,
         comment: p.comment || ""
       }));
       clientsObj[client.id] = client;
@@ -489,24 +340,11 @@ async function loadAllClients() {
 
 async function deleteClient(clientId) {
   try {
-    // ✅ Esborrar de Supabase primer
-    if (window.getCurrentUser && typeof deleteClientSupabase === 'function') {
-      try {
-        await deleteClientSupabase(clientId);
-        console.log('✅ Client esborrat de Supabase');
-      } catch (supabaseError) {
-        console.error('Error esborrant de Supabase:', supabaseError);
-        // Continuar amb l'esborrat local
-      }
-    }
-    
-    // Esborrar fotos locals
     const photos = await dbGetByIndex('photos', 'clientId', clientId);
     for (const photo of photos) {
       await dbDelete('photos', photo.id);
     }
     
-    // Esborrar client local
     await dbDelete('clients', clientId);
     return true;
   } catch (e) {
@@ -712,145 +550,112 @@ function resetTodayFocus() {
   showAlert('Enfocament reiniciat', 'Dades reiniciades', '✅');
 }
 
-/* ================= MOTOR DE TEMPS (PRECISIÓ ABSOLUTA) ================= */
-
+/* ================= MOTOR DE TEMPS (OPTIMITZAT I PRECÍS) ================= */
 let lastSaveTime = 0;
 
-// Loop precís que evita drift
-let lastPreciseTickTime = Date.now();
-
-function preciseTickLoop() {
-  const now = Date.now();
-  const elapsed = now - lastPreciseTickTime;
-
-  if (elapsed >= 1000) {
-    // Compensar retard acumulat
-    lastPreciseTickTime = now - (elapsed % 1000);
-    tick();
-  }
-
-  requestAnimationFrame(preciseTickLoop);
-}
-
-preciseTickLoop();
-
-
-// ================= TICK PRINCIPAL =================
+// FUNCIÓ PRINCIPAL: Actualitza temps cada segon amb PRECISIÓ ABSOLUTA
 async function tick() {
   resetDayIfNeeded();
-
+  
   if (!state.currentClientId || !state.currentActivity || !state.lastTick) {
-    updateTimerDisplay();
+    state.lastTick = Date.now();
+    updateTimerDisplay(); // Actualitzar display
     return;
   }
-
+  
   const client = await loadClient(state.currentClientId);
   if (!client || !client.active) {
+    state.lastTick = Date.now();
     updateTimerDisplay();
     return;
   }
-
+  
   const now = Date.now();
-
-  // Inicialitzar acumuladors si no existeixen
-  if (!state._msRemainder) state._msRemainder = 0;
-  if (!state._tickClock) state._tickClock = now;
-
-  // Temps real passat des de l'últim tick real
-  const deltaMs = now - state._tickClock;
-  state._tickClock = now;
-
-  if (deltaMs <= 0) {
-    updateTimerDisplay();
+  const elapsed = Math.floor((now - state.lastTick) / 1000);
+  
+  if (elapsed <= 0) {
+    updateTimerDisplay(); // Actualitzar display fins i tot si elapsed=0
     return;
   }
-
-  // Acumular temps real
-  state._msRemainder += deltaMs;
-
-  // Segons complets disponibles
-  const elapsedSeconds = Math.floor(state._msRemainder / 1000);
-
-  if (elapsedSeconds <= 0) {
-    updateTimerDisplay();
-    return;
-  }
-
-  // Restar ms ja convertits
-  state._msRemainder -= elapsedSeconds * 1000;
-
-  // Avançar lastTick només pel temps real consumit
-  state.lastTick += elapsedSeconds * 1000;
-
-  // Temps sessió
-  state.sessionElapsed += elapsedSeconds;
-
-  // Temps client
-  client.total = (client.total || 0) + elapsedSeconds;
-
+  
+  // ✅ CORRECCIÓ CRÍTICA: Calcular temps facturable amb precisió absoluta
+  // En lloc de només comprovar si "ara" estem dins l'horari, calculem
+  // exactament quants segons del període (lastTick → now) són facturables
+  const billableElapsed = calculateBillableSeconds(state.lastTick, now);
+  
+  // Actualitzar temps
+  state.lastTick = now;
+  state.sessionElapsed += elapsed;
+  client.total = (client.total || 0) + elapsed;
   client.activities = client.activities || {};
-  client.activities[state.currentActivity] =
-    (client.activities[state.currentActivity] || 0) + elapsedSeconds;
-
-  // Temps facturable exacte
-  const billableElapsed = calculateBillableSeconds(
-    state.lastTick - elapsedSeconds * 1000,
-    state.lastTick
-  );
-
-  client.billableTime =
-    (client.billableTime || 0) + billableElapsed;
-
-  state.focus[state.currentActivity] =
-    (state.focus[state.currentActivity] || 0) + billableElapsed;
-
-  // Guardar cada 5 segons
+  client.activities[state.currentActivity] = (client.activities[state.currentActivity] || 0) + elapsed;
+  
+  // ✅ Temps facturable: només sumar els segons que són realment facturables
+  client.billableTime = (client.billableTime || 0) + billableElapsed;
+  state.focus[state.currentActivity] = (state.focus[state.currentActivity] || 0) + billableElapsed;
+  
+  // Guardar cada 5 segons (no cada segon)
   if (Date.now() - lastSaveTime > 5000) {
     await saveClient(client);
     await save();
     lastSaveTime = Date.now();
   }
-
+  
+  // Actualitzar NOMÉS el cronòmetre (no tota la UI)
   updateTimerDisplay();
 }
 
-// ================= DISPLAY DEL CRONÒMETRE =================
+// FUNCIÓ NOVA: Actualitza només el display del cronòmetre (no re-renderitza res més)
 function updateTimerDisplay() {
   const timerEl = $("timer");
   if (!timerEl) return;
-
+  
   if (state.currentClientId && state.currentActivity && state.lastTick) {
+    // Calcular temps actual amb precisió
     const now = Date.now();
-
-    // usar temps real acumulat, no floor visual
-    const extraMs = now - state.lastTick;
-    const extraSeconds = Math.round(extraMs / 1000);
-
-    timerEl.textContent = formatTime(
-      state.sessionElapsed + Math.max(0, extraSeconds)
-    );
+    const extraElapsed = Math.floor((now - state.lastTick) / 1000);
+    const currentElapsed = state.sessionElapsed + extraElapsed;
+    timerEl.textContent = formatTime(currentElapsed);
   } else {
     timerEl.textContent = "00:00:00";
   }
 }
 
-
-
-// ================= ACTUALITZAR TOTAL CLIENT =================
+// NOVA FUNCIÓ: Actualitza total del client (crida cada 5 segons)
 async function updateClientTotal() {
   if (!state.currentClientId) return;
-
+  
   const client = await loadClient(state.currentClientId);
   if (!client) return;
-
-  const el = $("clientTotal");
-  if (el) el.textContent = `Total client: ${formatTime(client.total)}`;
+  
+  const clientTotalEl = $("clientTotal");
+  if (clientTotalEl) {
+    clientTotalEl.textContent = `Total client: ${formatTime(client.total)}`;
+  }
 }
 
+// Timer principal: tick cada segon
+setInterval(tick, 1000);
+
+// Timer secundari: actualitzar total client cada 5 segons
 setInterval(updateClientTotal, 5000);
 
+// ✅ RENDERITZAT SUAU DEL CRONÒMETRE
+// Aquesta funció s'executa a 60fps per mostrar el temps en temps real
+// NOTA: Aquest càlcul és només visual, el càlcul real i precís es fa a tick()
 function smoothTimerRender() {
-  updateTimerDisplay();
+  const timerEl = $("timer");
+  if (!timerEl) {
+    requestAnimationFrame(smoothTimerRender);
+    return;
+  }
+
+  if (state.currentClientId && state.currentActivity && state.lastTick) {
+    const now = Date.now();
+    const extra = Math.floor((now - state.lastTick) / 1000);
+    timerEl.textContent = formatTime(state.sessionElapsed + extra);
+  }
+
   requestAnimationFrame(smoothTimerRender);
 }
 
@@ -905,72 +710,23 @@ async function migrateFromLocalStorage() {
 /* ================= INICIALITZACIÓ ================= */
 async function initApp() {
   try {
-    // ✅ ESPERAR QUE SUPABASE ESTIGUI LLEST
-    console.log('🔄 Iniciant FocusWork...');
-    console.log('🔍 Comprovant disponibilitat de Supabase...');
-    
-    // Comprovar si la llibreria de Supabase s'ha carregat
-    if (typeof window.supabase === 'undefined') {
-      console.error('❌ ERROR: La llibreria de Supabase no s\'ha carregat');
-      console.error('Verifica que el CDN estigui accessible: https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-      alert('Error: No s\'ha pogut carregar la llibreria de Supabase.\n\nComprova la teva connexió a Internet i recarrega la pàgina.');
-      return;
-    }
-    
-    console.log('✅ Llibreria Supabase carregada');
-    
-    // Esperar fins que initAuth estigui disponible (màxim 5 segons)
-    console.log('🔄 Esperant que la configuració de Supabase estigui llesta...');
-    let retries = 0;
-    while (typeof window.initAuth !== 'function' && retries < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      retries++;
-    }
-    
-    if (typeof window.initAuth !== 'function') {
-      console.error('❌ ERROR: La funció initAuth no està disponible');
-      console.error('Verifica que supabase-config.js s\'hagi carregat correctament');
-      alert('Error carregant la configuració d\'autenticació.\n\nRecarrega la pàgina o contacta amb suport tècnic.');
-      return;
-    }
-    
-    console.log('✅ Configuració de Supabase carregada');
-    
-    // 1. Inicialitzar autenticació
-    console.log('🔐 Inicialitzant autenticació...');
-    const user = await initAuth();
-    
-    // 2. Si no hi ha usuari, mostrar login
-    if (!user) {
-      console.log('👤 Usuari no autenticat - mostrant pantalla de login');
-      showLoginScreen();
-      return;
-    }
-    
-    console.log('✅ Usuari autenticat:', user.email);
-    
-    // 3. Inicialitzar IndexedDB local (backup)
-    console.log('💾 Inicialitzant base de dades local...');
     await initDB();
     await loadState();
-    
-    // 4. Verificar si cal migrar dades locals
-    // ✅ BUGFIX: checkMigration no existia — era migrateFromLocalStorage
     await migrateFromLocalStorage();
     
-    // 5. Continuar com abans
+    // Comprovar si és la primera vegada (onboarding obligatori)
     if (!userName) {
       showOnboardingScreen();
-      return;
+      return; // No continuar fins que l'usuari introdueixi el nom
     }
     
     updateUI();
     scheduleFullAutoBackup();
     
-    console.log('✅ FocusWork V4.0 inicialitzat amb Supabase');
+    console.log('✅ FocusWork V4.0 inicialitzat amb IndexedDB');
   } catch (e) {
     console.error('Error inicialitzant app:', e);
-    showAlert('Error', 'No s\'ha pogut inicialitzar l\'app', '❌');
+    showAlert('Error', 'No s\'ha pogut inicialitzar l\'aplicació', '❌');
   }
 }
 
@@ -997,20 +753,14 @@ function showOnboardingScreen() {
         box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         text-align: center;
       ">
-        <!-- Selector de llengua integrat a l'onboarding -->
-        <div style="display:flex; justify-content:flex-end; gap:6px; margin-bottom:16px;">
-          <button onclick="onboardSelectLang('ca')" id="ob_ca" style="padding:5px 10px;border-radius:6px;border:2px solid #667eea;background:#667eea;color:white;font-weight:700;font-size:12px;cursor:pointer;">CA</button>
-          <button onclick="onboardSelectLang('es')" id="ob_es" style="padding:5px 10px;border-radius:6px;border:2px solid #e2e8f0;background:white;color:#64748b;font-weight:700;font-size:12px;cursor:pointer;">ES</button>
-          <button onclick="onboardSelectLang('en')" id="ob_en" style="padding:5px 10px;border-radius:6px;border:2px solid #e2e8f0;background:white;color:#64748b;font-weight:700;font-size:12px;cursor:pointer;">EN</button>
-        </div>
         <div style="font-size: 64px; margin-bottom: 20px;">👋</div>
-        <h1 id="ob_title" style="
+        <h1 style="
           font-size: 28px;
           font-weight: bold;
           color: #1e293b;
           margin-bottom: 12px;
         ">Benvingut a FocusWork!</h1>
-        <p id="ob_subtitle" style="
+        <p style="
           font-size: 16px;
           color: #64748b;
           margin-bottom: 30px;
@@ -1064,10 +814,10 @@ function showOnboardingScreen() {
           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(102, 126, 234, 0.5)';"
           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)';"
         >
-          <span id="ob_btn_text">✅ Començar a usar FocusWork</span>
+          ✅ Començar a usar FocusWork
         </button>
         
-        <p id="ob_tip" style="
+        <p style="
           font-size: 12px;
           color: #94a3b8;
           margin-top: 20px;
@@ -1080,70 +830,7 @@ function showOnboardingScreen() {
   
   // Afegir a la pàgina
   document.body.insertAdjacentHTML('beforeend', onboardingHTML);
-
-  // Funció per canviar idioma des de l'onboarding
-  window.onboardSelectLang = function(lang) {
-    // Aplicar idioma si i18n ja carregat
-    if (typeof applyLang === 'function') applyLang(lang);
-    else {
-      localStorage.setItem('fw_lang', lang);
-    }
-    // Actualitzar botons visuals
-    ['ca','es','en'].forEach(l => {
-      const btn = document.getElementById('ob_' + l);
-      if (!btn) return;
-      if (l === lang) {
-        btn.style.background = '#667eea';
-        btn.style.color = 'white';
-        btn.style.borderColor = '#667eea';
-      } else {
-        btn.style.background = 'white';
-        btn.style.color = '#64748b';
-        btn.style.borderColor = '#e2e8f0';
-      }
-    });
-    // Traduir els textos de l'onboarding
-    const texts = {
-      ca: {
-        title: 'Benvingut a FocusWork!',
-        subtitle: 'Abans de començar, si us plau introdueix el teu nom.<br>Aquest nom apareixerà als informes que generis.',
-        placeholder: 'El teu nom...',
-        btn: '✅ Començar a usar FocusWork',
-        tip: '💡 Pots canviar el teu nom més endavant des de Configuració',
-        error: '❌ Si us plau, introdueix el teu nom',
-      },
-      es: {
-        title: '¡Bienvenido a FocusWork!',
-        subtitle: 'Antes de empezar, por favor introduce tu nombre.<br>Este nombre aparecerá en los informes que generes.',
-        placeholder: 'Tu nombre...',
-        btn: '✅ Empezar a usar FocusWork',
-        tip: '💡 Puedes cambiar tu nombre más adelante desde Configuración',
-        error: '❌ Por favor, introduce tu nombre',
-      },
-      en: {
-        title: 'Welcome to FocusWork!',
-        subtitle: 'Before we start, please enter your name.<br>This name will appear in the reports you generate.',
-        placeholder: 'Your name...',
-        btn: '✅ Start using FocusWork',
-        tip: '💡 You can change your name later from Settings',
-        error: '❌ Please enter your name',
-      },
-    };
-    const tx = texts[lang] || texts.ca;
-    const el = id => document.getElementById(id);
-    if (el('ob_title'))    el('ob_title').textContent = tx.title;
-    if (el('ob_subtitle')) el('ob_subtitle').innerHTML = tx.subtitle;
-    if (el('ob_btn_text')) el('ob_btn_text').textContent = tx.btn;
-    if (el('ob_tip'))      el('ob_tip').textContent = tx.tip;
-    if (el('onboardingUserName')) el('onboardingUserName').placeholder = tx.placeholder;
-    // Guardar el text d'error per a ús posterior
-    window._obErrorText = tx.error;
-  };
-
-  // Marcar CA com actiu per defecte
-  const savedLang = localStorage.getItem('fw_lang') || 'ca';
-  window.onboardSelectLang(savedLang);
-
+  
   const input = document.getElementById('onboardingUserName');
   const button = document.getElementById('onboardingConfirm');
   const error = document.getElementById('onboardingError');
@@ -1166,7 +853,6 @@ function showOnboardingScreen() {
     
     if (!name) {
       // Mostrar error
-      if (window._obErrorText) error.innerHTML = window._obErrorText;
       error.style.display = 'block';
       input.style.borderColor = '#ef4444';
       input.focus();
@@ -1197,11 +883,10 @@ function showOnboardingScreen() {
       updateUI();
       scheduleFullAutoBackup();
       
-      // Missatge de benvinguda (traduït)
-      const _wt = typeof t === 'function';
+      // Missatge de benvinguda
       showAlert(
-        `${_wt ? '' : 'Hola '}${userName}! 👋`,
-        _wt ? t('benvingut_missatge') : 'Benvingut a FocusWork.\n\nComença creant el teu primer encàrrec!',
+        `Hola ${userName}! 👋`, 
+        'Benvingut a FocusWork.\n\nComença creant el teu primer encàrrec!',
         '🎉'
       );
       
@@ -1225,31 +910,3 @@ if (!document.getElementById('onboardingStyles')) {
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
-
-/*************************************************
- * NETEJA ÚNICA DE DADES CONTAMINADES
- * Elimina clients acumulats a localStorage de
- * sessions anteriors (fix d'emergència antic).
- * S'executa una sola vegada gràcies a la flag.
- *************************************************/
-(function purgeStaleLocalStorage() {
-  try {
-    if (!localStorage.getItem('fw_localStorage_purged_v1')) {
-      localStorage.removeItem('focuswork_clients');
-      localStorage.setItem('fw_localStorage_purged_v1', '1');
-      console.log('🧹 localStorage de clients purgat (una sola vegada)');
-    }
-  } catch(e) {}
-})();
-
-/*
- * NOTA:
- * El bloc "FIX D'EMERGÈNCIA" que hi havia aquí ha estat eliminat.
- * Causava fins a 238 clients duplicats perquè:
- *   1. Carregava TOTS els clients sense filtrar per user_id
- *   2. Els acumulava a localStorage en cada sessió
- *   3. Sobreescrivia state.clients amb dades barrejades
- *
- * La font de veritat és ÚNICAMENT Supabase (RLS actiu).
- * Flux correcte: loadState() → loadAllClientsSupabase() → state.clients → UI
- */

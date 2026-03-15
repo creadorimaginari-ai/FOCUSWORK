@@ -3,25 +3,6 @@
  * Llicències, Importació i Exportació
  *************************************************/
 
-// Variables globals (declarades aquí per evitar errors TDZ)
-let currentLightboxIndex = 0;
-let _originalUpdateUI = null;
-let photoCanvas = null;
-let photoCtx = null;
-let isDrawingOnPhoto = false;
-let drawingEnabled = false;
-let drawColor = '#ef4444';
-let drawSize = 3;
-let originalPhotoData = null;
-let drawHistory = [];
-let currentTool = 'none';
-let fillModeEnabled = false;
-let _syncInterval = null;
-let totalRotationDeg = 0;
-let isWorkpadInitialized = false;
-let areTasksInitialized = false;
-
-
 /* ─────────────────────────────────────────────
    FUNCIÓ AUXILIAR: obtenir la font d'una foto
    Suporta tant URL Supabase Storage com base64 local.
@@ -617,8 +598,8 @@ function updateFocusScheduleStatus() {
 
 /* ================= CLIENTS OPTIMIZADO ================= */
 async function newClient() {
-  // Comprovar límit només si NO estem en mode offline (en offline sempre ok)
-  if (!isOfflineMode() && typeof canCreateMoreClients === 'function') {
+  // ✅ Comprovar límit per usuari (configurable des de Supabase per cada usuari)
+  if (typeof canCreateMoreClients === 'function') {
     const check = await canCreateMoreClients();
     if (!check.ok) {
       showAlert(t('alert_limit_clients'), 
@@ -635,10 +616,6 @@ async function newClient() {
 async function confirmNewClient() {
   const name = $('newClientInput').value.trim();
   if (!name) return;
-
-  // ✅ Tancar modal i actualitzar UI immediatament
-  closeModal('modalNewClient');
-
   const id = uid();
   const client = {
     id,
@@ -654,23 +631,23 @@ async function confirmNewClient() {
     extraHours: [],
     tasks: { urgent: "", important: "", later: "" }
   };
+  
+  await saveClient(client);
 
-  // Afegir a memòria immediatament (sense esperar IndexedDB)
+  // ✅ BUGFIX: afegir a state.clients en memòria immediatament
+  // Sense això, el client nou no apareixia a la llista fins a recarregar
   if (!state.clients) state.clients = {};
   state.clients[id] = client;
+
   state.currentClientId = id;
   state.currentActivity = ACTIVITIES.WORK;
   state.sessionElapsed = 0;
   state.lastTick = Date.now();
   isWorkpadInitialized = false;
   areTasksInitialized = false;
-
-  // Actualitzar UI immediatament
+  await save();
   await updateUI();
-
-  // Guardar en segon pla (no bloqueja la UI)
-  saveClient(client).catch(e => console.warn('Error guardant client:', e));
-  save().catch(e => console.warn('Error guardant state:', e));
+  closeModal('modalNewClient');
 }
 
 async function changeClient() {
@@ -1291,6 +1268,7 @@ console.log('✅ handleFileInputiPad carregada');
 
 /* ================= WORKPAD OPTIMIZADO ================= */
 let workpadTimeout = null;
+let isWorkpadInitialized = false;
 
 async function updateWorkpad(preloadedClient = null) {
   const workpadArea = $('clientWorkpad');
@@ -1337,6 +1315,7 @@ async function handleWorkpadInput(e) {
 
 /* ================= TASQUES OPTIMIZADO ================= */
 let taskTimeouts = { urgent: null, important: null, later: null };
+let areTasksInitialized = false;
 
 async function updateTasks(preloadedClient = null) {
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
@@ -2086,6 +2065,7 @@ window.deleteExtraHour = deleteExtraHour;
 window.exitClient = exitClient;  // ⬅️ AFEGIT
 
 /* ================= LIGHTBOX PER GALERIA ================= */
+let currentLightboxIndex = 0;
 
 function openLightbox(photos, index) {
   window.currentClientPhotos = photos;
@@ -2400,17 +2380,6 @@ async function deleteCurrentPhoto() {
   try {
     await dbDelete('photos', photo.id);
     
-    // ✅ FIX: Eliminar també de client.photos[] i client.files[] i fer saveClient
-    // perquè renderFileGallery() recarrega el client des de BD i la foto reapareixia
-    if (state.currentClientId) {
-      const client = await loadClient(state.currentClientId);
-      if (client) {
-        client.photos = (client.photos || []).filter(p => p.id !== photo.id);
-        client.files  = (client.files  || []).filter(f => f.id !== photo.id);
-        await saveClient(client);
-      }
-    }
-    
     window.currentClientPhotos.splice(currentLightboxIndex, 1);
     
     if (window.currentClientPhotos.length === 0) {
@@ -2425,7 +2394,7 @@ async function deleteCurrentPhoto() {
     }
     
     updateLightboxDisplay();
-    await renderPhotoGallery();
+    renderPhotoGallery();
     
     showAlert(t('alert_foto_eliminada'), t('foto_eliminada_msg'), '✅');
   } catch (e) {
@@ -2507,6 +2476,14 @@ function handleLightboxSwipe() {
   }
 }
 /* ================= EDITOR DE DIBUIX PER FOTOS ================= */
+let photoCanvas = null;
+let photoCtx = null;
+let isDrawingOnPhoto = false;
+let drawingEnabled = false;
+let drawColor = '#ef4444';
+let drawSize = 3;
+let drawHistory = [];
+let originalPhotoData = null;
 
 // Variables de zoom i pan
 let currentZoom = 1;
@@ -2525,6 +2502,7 @@ let accumulatedRotation = 0;
 //  L'angle s'acumula a `totalRotationDeg` i s'aplica com a CSS.
 //  Quan es guarda la foto, es fusionen foto+dibuix+rotació en un canvas.
 // ══════════════════════════════════════════════════════════════════════
+let totalRotationDeg = 0;   // angle total acumulat (graus)
 let isRotating       = false;
 
 function applyRotationTransform() {
@@ -2922,15 +2900,9 @@ async function saveEditedPhoto() {
     photoCanvas.classList.remove('drawing-mode');
   }
   
-  // Mostrar modal en lloc del confirm() natiu
-  openModal('modalSavePhoto');
-}
-
-async function confirmSavePhoto(mode) {
-  // mode: 'replace' → substituir original | 'keep' → conservar ambdues
-  closeModal('modalSavePhoto');
-  if (!photoCanvas || !window.currentClientPhotos) return;
-
+  const confirmed = confirm('💾 Vols guardar els canvis a aquesta foto?\n\nLa foto original serà substituïda.');
+  if (!confirmed) return;
+  
   try {
     // Fusionar foto + dibuix + rotació CSS en un sol canvas
     const rad  = totalRotationDeg * Math.PI / 180;
@@ -2956,111 +2928,69 @@ async function confirmSavePhoto(mode) {
     // Mostrar progrés
     showAlert(t('guardant'), t('pujant_foto'), '⏳');
 
+    // ✅ FIX SYNC: usar un ID únic amb timestamp per la versió editada
+    // Supabase Storage retorna sempre la mateixa URL per al mateix path
+    // → altres dispositius carreguen la versió antiga del cache
+    // Solució: guardar amb un path nou (photoId_timestamp) → URL nova → cache buit
     const editedPhotoId = photo.id + '_v' + Date.now();
     let newUrl = null;
     if (typeof uploadPhotoToStorage === 'function') {
       newUrl = await uploadPhotoToStorage(editedData, editedPhotoId, clientId);
     }
 
-    if (mode === 'keep') {
-      // ── MODE: CONSERVAR AMBDUES ──────────────────────────────────────────
-      // Afegir la versió anotada com a foto nova, sense tocar l'original
-      const newPhotoObj = {
-        id:      editedPhotoId,
-        date:    new Date().toISOString(),
-        type:    'image',
-        name:    'Imatge',
-        mimeType: 'image/jpeg',
-        comment: photo.comment || '',
-        url:     newUrl || null,
-        data:    newUrl ? null : editedData
-      };
-
-      // IndexedDB: nova entrada
-      await dbPut('photos', {
-        id:       editedPhotoId,
-        clientId: clientId,
-        url:      newUrl || null,
-        data:     editedData,
-        date:     newPhotoObj.date,
-        comment:  newPhotoObj.comment
-      });
-
-      // Supabase BD: afegir a files[] sense tocar l'original
-      const client = await loadClient(clientId);
-      if (client) {
-        if (!client.files) client.files = [];
-        client.files.push(newPhotoObj);
-        await saveClient(client);
-      }
-
-      // Actualitzar galeria i tornar a la foto original (no canviar el canvas)
-      await renderFileGallery();
-      showAlert('✅ Foto anotada afegida', "S'ha guardat com a nova foto. L'original es conserva.", '🗂️');
-
-    } else {
-      // ── MODE: SUBSTITUIR ORIGINAL ────────────────────────────────────────
-      // Esborrar versió antiga de Storage si tenia URL (cleanup)
-      if (photo.url && typeof deletePhotoFromStorage === 'function') {
-        try { await deletePhotoFromStorage(photo.id, clientId); } catch(e) {}
-      }
-
-      // Actualitzar referència en memòria
-      photo.data = editedData;
-      photo.url  = newUrl || null;
-      originalPhotoData = editedData;
-
-      // IndexedDB: actualitzar entrada existent
-      await dbPut('photos', {
-        id:       photo.id,
-        clientId: clientId,
-        url:      photo.url,
-        data:     editedData,
-        date:     photo.date,
-        comment:  photo.comment || ""
-      });
-
-      // Supabase BD: actualitzar files[] o photos[] amb nova URL
-      const client = await loadClient(clientId);
-      if (client) {
-        let updated = false;
-        (client.files || []).forEach(f => {
-          if (f.id === photo.id) { f.url = photo.url; f.data = editedData; updated = true; }
-        });
-        if (!updated) {
-          (client.photos || []).forEach(p => {
-            if (p.id === photo.id) { p.url = photo.url; p.data = editedData; }
-          });
-        }
-        // ✅ FIX DUPLICATS: Si la foto existeix a photos[] I a files[], eliminar de photos[]
-        const inFiles  = (client.files  || []).some(f => f.id === photo.id);
-        const inPhotos = (client.photos || []).some(p => p.id === photo.id);
-        if (inFiles && inPhotos) {
-          client.photos = client.photos.filter(p => p.id !== photo.id);
-        }
-        await saveClient(client);
-      }
-
-      // Re-dibuixar canvas des del base64 local (instantani, sense esperar xarxa)
-      const refreshImg = new Image();
-      refreshImg.onload = () => {
-        if (!photoCanvas || !photoCtx) return;
-        photoCanvas.width  = refreshImg.width;
-        photoCanvas.height = refreshImg.height;
-        photoCtx.drawImage(refreshImg, 0, 0);
-        drawHistory = [];
-        saveDrawState();
-      };
-      refreshImg.src = editedData;
-
-      showAlert(t('alert_foto_guardada'), t('foto_guardada_msg'), '✅');
+    // Esborrar versió antiga de Storage si tenia URL (cleanup)
+    if (photo.url && typeof deletePhotoFromStorage === 'function') {
+      try { await deletePhotoFromStorage(photo.id, clientId); } catch(e) {}
     }
+
+    // Actualitzar referència en memòria
+    photo.data = editedData;
+    photo.url  = newUrl || null;
+    originalPhotoData = editedData;
+
+    // IndexedDB: guardar base64 + nova URL
+    await dbPut('photos', {
+      id:       photo.id,
+      clientId: clientId,
+      url:      photo.url,
+      data:     editedData,
+      date:     photo.date,
+      comment:  photo.comment || ""
+    });
+
+    // Supabase BD: actualitzar files[] o photos[] amb nova URL
+    const client = await loadClient(clientId);
+    if (client) {
+      let updated = false;
+      (client.files || []).forEach(f => {
+        if (f.id === photo.id) { f.url = photo.url; f.data = editedData; updated = true; }
+      });
+      if (!updated) {
+        (client.photos || []).forEach(p => {
+          if (p.id === photo.id) { p.url = photo.url; p.data = editedData; }
+        });
+      }
+      await saveClient(client);
+    }
+
+    // Re-dibuixar canvas des del base64 local (instantani, sense esperar xarxa)
+    const refreshImg = new Image();
+    refreshImg.onload = () => {
+      if (!photoCanvas || !photoCtx) return;
+      photoCanvas.width  = refreshImg.width;
+      photoCanvas.height = refreshImg.height;
+      photoCtx.drawImage(refreshImg, 0, 0);
+      drawHistory = [];
+      saveDrawState();
+    };
+    refreshImg.src = editedData;
+
+    showAlert(t('alert_foto_guardada'), t('foto_guardada_msg'), '✅');
   } catch (e) {
     console.error('Error guardant foto editada:', e);
     showAlert(t('alert_error'), `${t('error_llegir_arxiu')}: ${e.message}`, '❌');
   }
 }
-window.confirmSavePhoto = confirmSavePhoto;
 
 // Funció global per obtenir coordenades del canvas
 function getCanvasPoint(e) {
@@ -3086,6 +3016,8 @@ function getCanvasPoint(e) {
 //  SISTEMA D'EINES UNIFICAT
 //  Eines: pencil | eraser | fill | rect | circle | line
 // ═══════════════════════════════════════════════════════
+let currentTool   = 'none';  // eina activa
+let fillModeEnabled = false; // compat. backward
 
 const TOOL_IDS = {
   pencil: 'drawToggle',
@@ -3706,6 +3638,7 @@ window.saveEditedPhoto = saveEditedPhoto;
 // ── SYNC ENTRE DISPOSITIUS ──────────────────────────────────────────────────
 // Quan el lightbox és obert, comprova cada 15s si la foto ha canviat a Supabase.
 // Si la URL ha canviat (un altre dispositiu ha guardat), recarrega silenciosament.
+let _syncInterval = null;
 
 function startPhotoSync() {
   stopPhotoSync();
@@ -4805,7 +4738,7 @@ async function selectClient(clientId) {
 
 // Guardar referència a la updateUI original CORRECTA (la de la línia ~338)
 // per evitar que futures sobrescriptures la trenquin
-_originalUpdateUI = updateUI;
+const _originalUpdateUI = updateUI;
 
 // Exposar al window
 window.updateProjectList = updateProjectList;

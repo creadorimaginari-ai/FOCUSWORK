@@ -3,81 +3,6 @@
  * Sistema d'autenticació amb Supabase
  *************************************************/
 
-/* ================= initAuth ================= */
-// Funció que espera app-core.js. Gestiona online i offline.
-async function initAuth() {
-  const offline = !navigator.onLine || typeof window.supabase === 'undefined';
-
-  if (offline) {
-    console.log('📴 initAuth: mode offline — bypass Supabase');
-    // Intentar recuperar sessió guardada
-    try {
-      const saved = localStorage.getItem('focuswork_offline_session');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const user = parsed?.user || null;
-        if (user) {
-          console.log('✅ Sessió offline restaurada:', user.email);
-          window.getCurrentUser = () => user;
-          return user;
-        }
-      }
-    } catch(e) { /* res */ }
-
-    // Sense sessió guardada → bypass igualment (IndexedDB pot estar buit o tenir dades)
-    console.log('📴 Sense sessió guardada — entrant en mode offline pur');
-    window.getCurrentUser = () => ({ email: 'offline', id: 'offline' });
-    return { email: 'offline', id: 'offline' };
-  }
-
-  // ── MODE ONLINE ──
-  return new Promise((resolve) => {
-    let resolved = false;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (resolved) return;
-      if (session?.user) {
-        resolved = true;
-        subscription.unsubscribe();
-        // Guardar sessió per ús offline futur
-        try {
-          localStorage.setItem('focuswork_offline_session', JSON.stringify({ user: { email: session.user.email, id: session.user.id } }));
-        } catch(e) { /* localStorage ple */ }
-        resolve(session.user);
-      }
-    });
-
-    // Comprovar sessió existent
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (resolved) return;
-      if (session?.user) {
-        resolved = true;
-        subscription.unsubscribe();
-        try {
-          localStorage.setItem('focuswork_offline_session', JSON.stringify({ user: { email: session.user.email, id: session.user.id } }));
-        } catch(e) { /* localStorage ple */ }
-        resolve(session.user);
-      } else {
-        // No hi ha sessió → retornar null perquè app-core mostri login
-        resolved = true;
-        subscription.unsubscribe();
-        resolve(null);
-      }
-    });
-
-    // Safety timeout per Safari/iPad (3s)
-    setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        subscription.unsubscribe();
-        resolve(null);
-      }
-    }, 3000);
-  });
-}
-
-window.initAuth = initAuth;
-
 /* ================= FUNCIONS D'AUTENTICACIÓ ================= */
 
 // Registrar nou usuari
@@ -179,13 +104,11 @@ function showLoginScreen() {
   // Ocultar app principal
   const app = document.querySelector('.app');
   if (app) app.style.display = 'none';
-
+  
   // Eliminar pantalla login anterior si existeix
   const oldLogin = document.getElementById('loginScreen');
   if (oldLogin) oldLogin.remove();
-
-  const isOffline = !navigator.onLine || typeof window.supabase === 'undefined';
-
+  
   // Crear pantalla de login
   const loginScreen = document.createElement('div');
   loginScreen.id = 'loginScreen';
@@ -198,7 +121,7 @@ function showLoginScreen() {
     justify-content: center;
     z-index: 10000;
   `;
-
+  
   loginScreen.innerHTML = `
     <div style="
       background: rgba(30, 41, 59, 0.95);
@@ -224,25 +147,7 @@ function showLoginScreen() {
           margin: 0;
         ">Gestiona els teus projectes</p>
       </div>
-
-      ${isOffline ? `
-      <!-- Banner offline -->
-      <div style="
-        margin-bottom: 20px;
-        padding: 12px 16px;
-        background: rgba(251, 146, 60, 0.15);
-        border: 1px solid rgba(251, 146, 60, 0.4);
-        border-radius: 10px;
-        color: #fdba74;
-        font-size: 13px;
-        text-align: center;
-        line-height: 1.5;
-      ">
-        📴 <strong>Mode offline</strong><br>
-        Sense connexió a internet. Pots entrar igualment per accedir a les teves dades locals o restaurar una còpia de seguretat.
-      </div>
-      ` : ''}
-
+      
       <!-- Pestanyes -->
       <div style="
         display: flex;
@@ -275,7 +180,7 @@ function showLoginScreen() {
           transition: all 0.2s;
         ">Registrar-se</button>
       </div>
-
+      
       <!-- Formulari Login -->
       <div id="loginForm" style="display: block;">
         <div style="margin-bottom: 16px;">
@@ -298,7 +203,7 @@ function showLoginScreen() {
             transition: all 0.2s;
           ">
         </div>
-
+        
         <div style="margin-bottom: 24px;">
           <label style="
             display: block;
@@ -319,7 +224,7 @@ function showLoginScreen() {
             transition: all 0.2s;
           ">
         </div>
-
+        
         <button onclick="handleLogin()" style="
           width: 100%;
           padding: 14px;
@@ -332,9 +237,8 @@ function showLoginScreen() {
           cursor: pointer;
           transition: all 0.2s;
           margin-bottom: 12px;
-        ">${isOffline ? '📴 Entrar (mode offline)' : 'Entrar'}</button>
-
-        ${!isOffline ? `
+        ">Entrar</button>
+        
         <button onclick="showResetPassword()" style="
           width: 100%;
           padding: 12px;
@@ -344,9 +248,8 @@ function showLoginScreen() {
           font-size: 14px;
           cursor: pointer;
         ">He oblidat la contrasenya</button>
-        ` : ''}
       </div>
-
+      
       <!-- Formulari Registre -->
       <div id="registerForm" style="display: none;">
         <div style="margin-bottom: 16px;">
@@ -368,7 +271,7 @@ function showLoginScreen() {
             outline: none;
           ">
         </div>
-
+        
         <div style="margin-bottom: 16px;">
           <label style="
             display: block;
@@ -388,7 +291,7 @@ function showLoginScreen() {
             outline: none;
           ">
         </div>
-
+        
         <div style="margin-bottom: 24px;">
           <label style="
             display: block;
@@ -408,7 +311,7 @@ function showLoginScreen() {
             outline: none;
           ">
         </div>
-
+        
         <button onclick="handleRegister()" style="
           width: 100%;
           padding: 14px;
@@ -422,7 +325,7 @@ function showLoginScreen() {
           transition: all 0.2s;
         ">Crear compte</button>
       </div>
-
+      
       <!-- Missatge d'error -->
       <div id="authError" style="
         display: none;
@@ -435,7 +338,7 @@ function showLoginScreen() {
         font-size: 14px;
         text-align: center;
       "></div>
-
+      
       <!-- Missatge d'èxit -->
       <div id="authSuccess" style="
         display: none;
@@ -450,7 +353,7 @@ function showLoginScreen() {
       "></div>
     </div>
   `;
-
+  
   document.body.appendChild(loginScreen);
 }
 
@@ -509,42 +412,28 @@ async function handleLogin() {
   const password = document.getElementById('loginPassword').value;
   const authError = document.getElementById('authError');
   const authSuccess = document.getElementById('authSuccess');
-
+  
   if (!email || !password) {
     authError.textContent = 'Si us plau, emplena tots els camps';
     authError.style.display = 'block';
     return;
   }
-
-  // ── MODE OFFLINE: bypass directe ──
-  const offline = !navigator.onLine || typeof window.supabase === 'undefined';
-  if (offline) {
-    authSuccess.textContent = '📴 Mode offline — entrant sense verificació...';
-    authSuccess.style.display = 'block';
-    // Guardar sessió mínima per no tornar a demanar login offline
-    try {
-      localStorage.setItem('focuswork_offline_session', JSON.stringify({ user: { email: email, id: 'offline' } }));
-    } catch(e) { /* res */ }
-    setTimeout(() => {
-      hideLoginScreen();
-      if (typeof initApp === 'function') initApp();
-    }, 800);
-    return;
-  }
-
+  
   try {
     authError.style.display = 'none';
     authSuccess.textContent = 'Entrant...';
     authSuccess.style.display = 'block';
-
+    
     await signIn(email, password);
-
+    
     authSuccess.textContent = '✅ Login correcte!';
-
+    
     setTimeout(() => {
       hideLoginScreen();
+      // La migració es farà automàticament des de initApp()
+      // NO cridar checkMigration() aquí per evitar duplicats
     }, 1000);
-
+    
   } catch (error) {
     authSuccess.style.display = 'none';
     authError.textContent = 'Email o contrasenya incorrectes';
@@ -617,18 +506,14 @@ window.signUp = signUp;
 // Per defecte: 5 clients. Admin pot canviar via Supabase Dashboard → Auth → Users
 // Format: user_metadata.max_clients = 10 (o -1 per il·limitat)
 async function getUserClientLimit() {
-  // ✅ MODE OFFLINE: sense límit (no podem consultar Supabase)
-  if (typeof window.isOfflineMode === 'function' && window.isOfflineMode()) return Infinity;
-  if (window._offlineOverrideClientLimit) return Infinity;
-
   try {
     const { data } = await supabase.auth.getUser();
     const meta = data?.user?.user_metadata || {};
+    // Si max_clients és -1 = il·limitat
     if (meta.max_clients === -1 || meta.plan === 'full') return Infinity;
-    return meta.max_clients || 5;
+    return meta.max_clients || 5; // per defecte 5
   } catch(e) {
-    // Si Supabase no respon (quota exhaurida, etc.) → no bloquejar
-    return Infinity;
+    return 5;
   }
 }
 
@@ -636,18 +521,6 @@ async function getUserClientLimit() {
 async function canCreateMoreClients() {
   const limit = await getUserClientLimit();
   if (limit === Infinity) return { ok: true };
-
-  // ✅ En mode offline: comptar clients directament de IndexedDB sense carregar fotos
-  if (typeof window.isOfflineMode === 'function' && window.isOfflineMode()) {
-    try {
-      const clients = await dbGetAll('clients');
-      const active = clients.filter(c => c.active !== false).length;
-      if (active >= limit) return { ok: false, current: active, limit };
-      return { ok: true, current: active, limit };
-    } catch(e) {
-      return { ok: true }; // Si falla, deixar crear
-    }
-  }
 
   const allClients = await loadAllClients();
   const active = Object.values(allClients).filter(c => c.active).length;
