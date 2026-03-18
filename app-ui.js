@@ -685,11 +685,29 @@ async function confirmCloseClient() {
   const clientId = window.clientToClose || state.currentClientId;
   const client = await loadClient(clientId);
   if (!client) return;
-  
+
+  // Si no s'ha confirmat via facturació, obrir modal de dades primer
+  if (!window._billingConfirmed) {
+    window.clientToClose = clientId;
+    closeModal('modalCloseClient');
+    closeModal('modalExportBeforeClose');
+    if (typeof openBillingModal === 'function') {
+      openBillingModal(clientId);
+      return;
+    }
+  }
+  window._billingConfirmed = false;
+
   client.active = false;
   client.closedAt = Date.now();
   await saveClient(client);
-  
+
+  // Actualitzar state.clients en memòria immediatament
+  if (state.clients && state.clients[clientId]) {
+    state.clients[clientId].active = false;
+    state.clients[clientId].closedAt = client.closedAt;
+  }
+
   state.currentClientId = null;
   state.currentActivity = null;
   state.lastTick = null;
@@ -1995,29 +2013,39 @@ if (photoCanvas && photoCtx) {
     photoCanvas.width = img.width;
     photoCanvas.height = img.height;
     photoCtx.drawImage(img, 0, 0);
-    
+
+    // Inicialitzar drawingCanvas (capa de dibuix separada)
+    const dc = document.getElementById('drawingCanvas');
+    if (dc) {
+      dc.width  = img.width;
+      dc.height = img.height;
+      window.drawingCanvas = dc;
+      window.drawingCtx    = dc.getContext('2d');
+      dc.style.pointerEvents = 'none'; // inactiu per defecte
+    }
+
     // Guardar foto original
-    originalPhotoData = photo.data;
-    
+    originalPhotoData = photo.data || photo.url;
+
     // Iniciar historial
     drawHistory = [];
     saveDrawState();
-    
-    // Inicialitzar sistema de dibuix (només una vegada)
-    if (!photoCanvas._drawingInitialized) {
-      setupCanvasDrawing();
-      photoCanvas._drawingInitialized = true;
-    }
-    
-    // Reset mode dibuix
+
+    // Inicialitzar sistema de dibuix (sempre re-inicialitzar per netejar handlers antics)
+    setupCanvasDrawing();
+    delete photoCanvas._drawingInitialized;
+
+    // Reset eina activa
+    currentTool = 'none';
     drawingEnabled = false;
-    const btn = $('drawToggle');
-    const text = $('drawToggleText');
-    if (btn) btn.classList.remove('active');
-    if (text) text.textContent = 'Dibuixar';
-    photoCanvas.classList.remove('drawing-mode');
+    fillModeEnabled = false;
+    totalRotationDeg = 0;
+    Object.values(TOOL_IDS).forEach(id => document.getElementById(id)?.classList.remove('active'));
+
+    // Inicialitzar knob de rotació
+    initRotateKnob();
   };
-  img.src = photo.data;
+  img.src = photo.data || photo.url;
 }
   const commentInput = $('lightboxComment');
 
@@ -2282,6 +2310,9 @@ let drawColor = '#ef4444';
 let drawSize = 3;
 let drawHistory = [];
 let originalPhotoData = null;
+let currentTool = 'none';
+let fillModeEnabled = false;
+let totalRotationDeg = 0;
 
 // Variables de zoom i pan
 let currentZoom = 1;
@@ -2319,8 +2350,18 @@ function resetZoom() {
 
 function applyZoomTransform() {
   if (!photoCanvas) return;
-  photoCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
-  photoCanvas.style.transformOrigin = 'center center';
+  const stack = document.getElementById('canvasStack');
+  const target = stack || photoCanvas;
+  const rotation = totalRotationDeg ? `rotate(${totalRotationDeg}deg) ` : '';
+  target.style.transform = `${rotation}translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+  target.style.transformOrigin = 'center center';
+
+  // Mostrar indicador de zoom
+  const ind = document.getElementById('zoomIndicator');
+  if (ind) {
+    ind.textContent = currentZoom !== 1 ? currentZoom.toFixed(1) + '×' : '';
+    ind.style.opacity = currentZoom !== 1 ? '1' : '0';
+  }
 }
 
 // Sistema d'inicialització de zoom
@@ -2490,98 +2531,290 @@ function initPhotoCanvas() {
   console.log('✅ Canvas OK');
 }
 
-function toggleDrawing() {
-  drawingEnabled = !drawingEnabled;
-  const btn = $('drawToggle');
-  const text = $('drawToggleText');
-  const canvas = $('photoCanvas');
-  
-  if (drawingEnabled) {
-    btn.classList.add('active');
-    text.textContent = 'Activat';
-    canvas.classList.add('drawing-mode');
-  } else {
-    btn.classList.remove('active');
-    text.textContent = 'Dibuixar';
-    canvas.classList.remove('drawing-mode');
+// ── SISTEMA D'EINES DE DIBUIX (versió millorada) ──────────────────────────
+
+const TOOL_IDS = {
+  pencil: 'drawToggle',
+  eraser: 'eraserToggle',
+  fill:   'fillToggle',
+  rect:   'rectToggle',
+  circle: 'circleToggle',
+  line:   'lineToggle',
+  text:   'textToggle',
+};
+
+function setDrawTool(tool) {
+  if (currentTool === tool) tool = 'none';
+  currentTool = tool;
+  drawingEnabled  = (tool === 'pencil' || tool === 'eraser');
+  fillModeEnabled = (tool === 'fill');
+
+  const dc = window.drawingCanvas;
+  if (dc) {
+    const active = tool !== 'none';
+    dc.classList.toggle('tool-active', active);
+    dc.style.pointerEvents = active ? 'auto' : 'none';
+    dc.style.cursor = active ? 'crosshair' : 'default';
   }
+
+  Object.entries(TOOL_IDS).forEach(([t, id]) => {
+    document.getElementById(id)?.classList.toggle('active', t === tool);
+  });
 }
+window.setDrawTool = setDrawTool;
+
+function toggleDrawing() { setDrawTool(drawingEnabled ? 'none' : 'pencil'); }
+function toggleFillMode() { setDrawTool(fillModeEnabled ? 'none' : 'fill'); }
+window.toggleFillMode = toggleFillMode;
 
 function setDrawColor(color) {
   drawColor = color;
-  document.querySelectorAll('.color-picker-mini').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.color === color) {
-      btn.classList.add('active');
-    }
-  });
+  const picker = document.getElementById('rgbColorPicker');
+  if (picker) picker.value = color;
 }
+
+function setDrawColorFromPicker(hex) {
+  setDrawColor(hex);
+}
+window.setDrawColorFromPicker = setDrawColorFromPicker;
 
 function updateDrawSize(size) {
   drawSize = parseInt(size);
 }
 
 function saveDrawState() {
-  if (!photoCanvas) return;
-  drawHistory.push(photoCanvas.toDataURL());
-  if (drawHistory.length > 20) {
-    drawHistory.shift();
-  }
+  const dc = window.drawingCanvas || photoCanvas;
+  if (!dc) return;
+  drawHistory.push(dc.toDataURL());
+  if (drawHistory.length > 20) drawHistory.shift();
 }
 
 function undoDraw() {
+  const dc = window.drawingCanvas || photoCanvas;
+  const dx = window.drawingCtx || photoCtx;
+  if (!dc || !dx) return;
   if (drawHistory.length > 1) {
     drawHistory.pop();
-    const previousState = drawHistory[drawHistory.length - 1];
     const img = new Image();
     img.onload = () => {
-      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
-      photoCtx.drawImage(img, 0, 0);
+      dx.clearRect(0, 0, dc.width, dc.height);
+      dx.drawImage(img, 0, 0);
     };
-    img.src = previousState;
+    img.src = drawHistory[drawHistory.length - 1];
   }
 }
 
-function clearDrawing() {
-  if (!confirm('🗑️ Vols esborrar tots els dibuixos i tornar a la foto original?')) return;
-  
-  if (originalPhotoData) {
-    const img = new Image();
-    img.onload = () => {
-      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
-      photoCtx.drawImage(img, 0, 0);
-      drawHistory = [];
+function clearDrawingLayer() {
+  const dc = window.drawingCanvas;
+  const dx = window.drawingCtx;
+  if (!dc || !dx) return;
+  if (!confirm('Netejar tots els dibuixos d\'aquesta capa?\n\nLa foto original no es veurà afectada.')) return;
+  dx.clearRect(0, 0, dc.width, dc.height);
+  drawHistory = [];
+  saveDrawState();
+}
+window.clearDrawingLayer = clearDrawingLayer;
+
+function clearDrawing() { clearDrawingLayer(); }
+
+function toggleLayerVisibility() {
+  const dc = window.drawingCanvas;
+  if (!dc) return;
+  const hidden = dc.style.opacity === '0';
+  dc.style.opacity = hidden ? '1' : '0';
+  document.getElementById('layerVisBtn')?.classList.toggle('layer-hidden', !hidden);
+}
+window.toggleLayerVisibility = toggleLayerVisibility;
+
+// Flood fill sobre la capa de dibuix
+function floodFillLayer(ctx, canvas, startX, startY, fillColor) {
+  const w = canvas.width, h = canvas.height;
+  const composite = document.createElement('canvas');
+  composite.width = w; composite.height = h;
+  const cx = composite.getContext('2d');
+  if (photoCanvas) cx.drawImage(photoCanvas, 0, 0);
+  cx.drawImage(canvas, 0, 0);
+  const imgData = cx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const idx = (startY * w + startX) * 4;
+  const tR = data[idx], tG = data[idx+1], tB = data[idx+2], tA = data[idx+3];
+  const tmp = document.createElement('canvas');
+  tmp.width = tmp.height = 1;
+  const tc = tmp.getContext('2d');
+  tc.fillStyle = fillColor; tc.fillRect(0,0,1,1);
+  const fc = tc.getImageData(0,0,1,1).data;
+  const fR = fc[0], fG = fc[1], fB = fc[2];
+  const TOL = 15;
+  const match = i => Math.abs(data[i]-tR)<=TOL && Math.abs(data[i+1]-tG)<=TOL &&
+                     Math.abs(data[i+2]-tB)<=TOL && Math.abs(data[i+3]-tA)<=TOL;
+  const filled = new Uint8Array(w * h);
+  const stack  = [[startX, startY]];
+  const visited = new Uint8Array(w * h);
+  visited[startY*w+startX] = 1;
+  while (stack.length) {
+    const [x, y] = stack.pop();
+    const i = (y*w+x)*4;
+    if (!match(i)) continue;
+    filled[y*w+x] = 1;
+    if (x>0   && !visited[y*w+x-1])   { visited[y*w+x-1]=1;   stack.push([x-1,y]); }
+    if (x<w-1 && !visited[y*w+x+1])   { visited[y*w+x+1]=1;   stack.push([x+1,y]); }
+    if (y>0   && !visited[(y-1)*w+x]) { visited[(y-1)*w+x]=1; stack.push([x,y-1]); }
+    if (y<h-1 && !visited[(y+1)*w+x]) { visited[(y+1)*w+x]=1; stack.push([x,y+1]); }
+  }
+  const drawData = ctx.getImageData(0, 0, w, h);
+  const dd = drawData.data;
+  for (let i = 0; i < w*h; i++) {
+    if (!filled[i]) continue;
+    dd[i*4]=fR; dd[i*4+1]=fG; dd[i*4+2]=fB; dd[i*4+3]=255;
+  }
+  ctx.putImageData(drawData, 0, 0);
+  saveDrawState();
+}
+window.floodFillLayer = floodFillLayer;
+
+// Eina de text flotant
+function showTextInput(screenX, screenY, canvasX, canvasY, ctx, canvas) {
+  const old = document.getElementById('floatingTextInput');
+  if (old) old.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'floatingTextInput';
+  wrap.style.cssText = `position:fixed;left:${screenX}px;top:${screenY}px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(15,23,42,0.95);border:1px solid rgba(255,255,255,0.2);border-radius:10px;padding:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5);min-width:220px;`;
+  const input = document.createElement('input');
+  input.type = 'text'; input.placeholder = 'Escriu aquí...';
+  input.style.cssText = `background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#f1f5f9;padding:6px 10px;font-size:14px;outline:none;width:100%;box-sizing:border-box;`;
+  const sizeRow = document.createElement('div');
+  sizeRow.style.cssText = 'display:flex;align-items:center;gap:6px;';
+  const sizeLabel = document.createElement('span');
+  sizeLabel.textContent = 'Mida:';
+  sizeLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.5);white-space:nowrap;';
+  const sizeSlider = document.createElement('input');
+  sizeSlider.type='range'; sizeSlider.min=10; sizeSlider.max=120; sizeSlider.value=28;
+  sizeSlider.style.cssText = 'flex:1;accent-color:#f97316;';
+  sizeRow.appendChild(sizeLabel); sizeRow.appendChild(sizeSlider);
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:6px;';
+  const okBtn = document.createElement('button');
+  okBtn.textContent = 'Afegir';
+  okBtn.style.cssText = `flex:1;padding:6px;border-radius:6px;border:none;cursor:pointer;background:#f97316;color:#fff;font-size:13px;font-weight:600;`;
+  okBtn.onclick = () => {
+    const text = input.value.trim();
+    if (text) {
+      ctx.globalCompositeOperation = 'source-over';
+      const fontSize = parseInt(sizeSlider.value);
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.fillStyle = drawColor;
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.lineWidth = fontSize / 12;
+      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4;
+      ctx.strokeText(text, canvasX, canvasY);
+      ctx.fillText(text, canvasX, canvasY);
+      ctx.shadowBlur = 0;
       saveDrawState();
-    };
-    img.src = originalPhotoData;
-  }
+    }
+    wrap.remove();
+  };
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = '✕';
+  cancelBtn.style.cssText = `padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#f1f5f9;cursor:pointer;font-size:13px;`;
+  cancelBtn.onclick = () => wrap.remove();
+  btnRow.appendChild(okBtn); btnRow.appendChild(cancelBtn);
+  wrap.appendChild(input); wrap.appendChild(sizeRow); wrap.appendChild(btnRow);
+  document.body.appendChild(wrap);
+  requestAnimationFrame(() => {
+    const r = wrap.getBoundingClientRect();
+    if (r.right > window.innerWidth)  wrap.style.left = (window.innerWidth  - r.width  - 10) + 'px';
+    if (r.bottom > window.innerHeight) wrap.style.top  = (window.innerHeight - r.height - 10) + 'px';
+    input.focus();
+  });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') okBtn.click(); if (e.key === 'Escape') wrap.remove(); });
 }
+window.showTextInput = showTextInput;
 
+// Knob de rotació (arrossegar esquerra/dreta)
+function initRotateKnob() {
+  const knob = document.getElementById('rotateKnob');
+  if (!knob) return;
+  if (knob._knobHandlers) {
+    knob.removeEventListener('mousedown',  knob._knobHandlers.down);
+    knob.removeEventListener('touchstart', knob._knobHandlers.down);
+    if (knob._knobHandlers.move) { document.removeEventListener('mousemove', knob._knobHandlers.move); document.removeEventListener('touchmove', knob._knobHandlers.move); }
+    if (knob._knobHandlers.up)   { document.removeEventListener('mouseup',   knob._knobHandlers.up);   document.removeEventListener('touchend',  knob._knobHandlers.up); }
+  }
+  let isDragging = false, startX = 0, totalDeg = 0;
+  const showAngle = (deg) => {
+    let badge = knob.querySelector('.rotate-angle-badge');
+    if (!badge) { badge = document.createElement('span'); badge.className = 'rotate-angle-badge'; knob.appendChild(badge); }
+    badge.textContent = (deg % 360 !== 0) ? Math.round(deg % 360) + '°' : '';
+  };
+  const onDown = (e) => {
+    isDragging = true; knob.classList.add('rotating');
+    startX = e.touches ? e.touches[0].clientX : e.clientX;
+    e.preventDefault();
+  };
+  const onMove = (e) => {
+    if (!isDragging) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const delta = (cx - startX) * 0.5;
+    totalDeg += delta; startX = cx;
+    totalRotationDeg = totalDeg;
+    showAngle(totalDeg);
+    applyZoomTransform();
+    e.preventDefault();
+  };
+  const onUp = () => { isDragging = false; knob.classList.remove('rotating'); };
+  knob._knobHandlers = { down: onDown, move: onMove, up: onUp };
+  knob.addEventListener('mousedown', onDown);
+  knob.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+}
+window.initRotateKnob = initRotateKnob;
+
+// Rotar foto en increments de 90°
+function rotatePhoto(degrees) {
+  totalRotationDeg = (totalRotationDeg + degrees) % 360;
+  applyZoomTransform();
+}
+window.rotatePhoto = rotatePhoto;
 
 async function saveEditedPhoto() {
   if (!photoCanvas || !window.currentClientPhotos) return;
-  
-  // Desactivar mode dibuix abans de guardar
-  if (drawingEnabled) {
-    drawingEnabled = false;
-    const btn = $('drawToggle');
-    const text = $('drawToggleText');
-    if (btn) btn.classList.remove('active');
-    if (text) text.textContent = 'Dibuixar';
-    photoCanvas.classList.remove('drawing-mode');
-  }
-  
+
+  // Desactivar eines
+  setDrawTool('none');
+
   const confirmed = confirm('💾 Vols guardar els canvis a aquesta foto?\n\nLa foto original serà substituïda.');
   if (!confirmed) return;
-  
+
   try {
-    const editedData = photoCanvas.toDataURL('image/jpeg', 0.85);
+    // Fusionar foto base + capa de dibuix en un canvas de sortida
+    const out = document.createElement('canvas');
+    out.width  = photoCanvas.width;
+    out.height = photoCanvas.height;
+    const octx = out.getContext('2d');
+
+    // Aplicar rotació si n'hi ha
+    if (totalRotationDeg && totalRotationDeg % 360 !== 0) {
+      const rad = totalRotationDeg * Math.PI / 180;
+      const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+      out.width  = Math.round(photoCanvas.height * sin + photoCanvas.width  * cos);
+      out.height = Math.round(photoCanvas.height * cos + photoCanvas.width  * sin);
+      octx.translate(out.width / 2, out.height / 2);
+      octx.rotate(rad);
+      octx.drawImage(photoCanvas, -photoCanvas.width / 2, -photoCanvas.height / 2);
+      if (window.drawingCanvas) octx.drawImage(window.drawingCanvas, -photoCanvas.width / 2, -photoCanvas.height / 2);
+    } else {
+      octx.drawImage(photoCanvas, 0, 0);
+      if (window.drawingCanvas) octx.drawImage(window.drawingCanvas, 0, 0);
+    }
+
+    const editedData = out.toDataURL('image/jpeg', 0.85);
     const photo = window.currentClientPhotos[currentLightboxIndex];
-    
-    // Actualitzar dades
     photo.data = editedData;
     originalPhotoData = editedData;
-    
+
     // Guardar a IndexedDB
     await dbPut('photos', {
       id: photo.id,
@@ -2590,11 +2823,24 @@ async function saveEditedPhoto() {
       date: photo.date,
       comment: photo.comment || ""
     });
-    
-    // Re-generar historial
-    drawHistory = [];
-    saveDrawState();
-    
+
+    // Recarregar la foto al canvas
+    const img = new Image();
+    img.onload = () => {
+      photoCanvas.width  = img.width;
+      photoCanvas.height = img.height;
+      photoCtx.drawImage(img, 0, 0);
+      if (window.drawingCanvas) {
+        window.drawingCanvas.width  = img.width;
+        window.drawingCanvas.height = img.height;
+        window.drawingCtx?.clearRect(0, 0, img.width, img.height);
+      }
+      totalRotationDeg = 0;
+      applyZoomTransform();
+      drawHistory = []; saveDrawState();
+    };
+    img.src = editedData;
+
     showAlert('Foto guardada', 'Els canvis s\'han guardat correctament', '✅');
   } catch (e) {
     console.error('Error guardant foto editada:', e);
@@ -2602,73 +2848,147 @@ async function saveEditedPhoto() {
   }
 }
 
-// Funció global per obtenir coordenades del canvas
 function getCanvasPoint(e) {
-  const rect = photoCanvas.getBoundingClientRect();
-
+  const dc = window.drawingCanvas || photoCanvas;
+  const rect = dc.getBoundingClientRect();
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-  const scaleX = photoCanvas.width / rect.width;
-  const scaleY = photoCanvas.height / rect.height;
-
+  const scaleX = dc.width / rect.width;
+  const scaleY = dc.height / rect.height;
   return {
     x: (clientX - rect.left) * scaleX,
-    y: (clientY - rect.top) * scaleY
+    y: (clientY - rect.top)  * scaleY
   };
 }
 
-// Event listeners per dibuixar - VERSIÓ FINAL CORRECTA
+// Event listeners per dibuixar — suport dual-canvas + totes les eines
 function setupCanvasDrawing() {
   if (!photoCanvas || !photoCtx) return;
 
-  let isDrawing = false;
+  const dc = window.drawingCanvas || photoCanvas;
+  const dx = window.drawingCtx    || photoCtx;
 
-  function startDraw(e) {
-    if (!drawingEnabled) return;
-    e.preventDefault();
+  if (dc._drawHandlers) {
+    const h = dc._drawHandlers;
+    ['mousedown','mousemove','mouseup','mouseleave'].forEach(ev => dc.removeEventListener(ev, h[ev]));
+    dc.removeEventListener('touchstart', h.touchstart);
+    dc.removeEventListener('touchmove',  h.touchmove);
+    dc.removeEventListener('touchend',   h.touchend);
+    dc.removeEventListener('click',      h.click);
+    dc.removeEventListener('touchend',   h.fillTouch);
+  }
 
+  let isDrawing = false, shapeStart = null, snapShot = null;
+
+  function getPoint(e) {
+    const src = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : null);
+    const clientX = src ? src.clientX : e.clientX;
+    const clientY = src ? src.clientY : e.clientY;
+    const rect = dc.getBoundingClientRect();
+    const cx = rect.left + rect.width  / 2;
+    const cy = rect.top  + rect.height / 2;
+    const ddx = clientX - cx, ddy = clientY - cy;
+    const rad = -(totalRotationDeg || 0) * Math.PI / 180;
+    const ux = ddx * Math.cos(rad) - ddy * Math.sin(rad);
+    const uy = ddx * Math.sin(rad) + ddy * Math.cos(rad);
+    const stack  = document.getElementById('canvasStack');
+    const dispW  = (parseFloat(stack && stack.style.width)  || photoCanvas.width)  * currentZoom;
+    const dispH  = (parseFloat(stack && stack.style.height) || photoCanvas.height) * currentZoom;
+    return {
+      x: (ux / dispW  + 0.5) * photoCanvas.width,
+      y: (uy / dispH  + 0.5) * photoCanvas.height
+    };
+  }
+
+  function onStart(e) {
+    if (e.touches && e.touches.length >= 2) return;
+    const tool = currentTool;
+    if (tool === 'none' || tool === 'fill' || tool === 'text') return;
+    e.preventDefault(); e.stopPropagation();
     isDrawing = true;
-    const { x, y } = getCanvasPoint(e);
-    
-    // Aplicar color i gruix ABANS de dibuixar
-    photoCtx.strokeStyle = drawColor;
-    photoCtx.lineWidth = drawSize;
-    photoCtx.lineCap = 'round';
-    photoCtx.lineJoin = 'round';
-    
-    photoCtx.beginPath();
-    photoCtx.moveTo(x, y);
+    const { x, y } = getPoint(e);
+    shapeStart = { x, y };
+    dx.globalCompositeOperation = (tool === 'eraser') ? 'destination-out' : 'source-over';
+    if (tool === 'pencil' || tool === 'eraser') {
+      dx.strokeStyle = drawColor;
+      dx.lineWidth   = (tool === 'eraser') ? drawSize * 3 : drawSize;
+      dx.lineCap = 'round'; dx.lineJoin = 'round';
+      dx.beginPath(); dx.moveTo(x, y);
+    } else {
+      snapShot = dx.getImageData(0, 0, dc.width, dc.height);
+    }
   }
 
-  function draw(e) {
-    if (!isDrawing || !drawingEnabled) return;
-    e.preventDefault();
-
-    const { x, y } = getCanvasPoint(e);
-    photoCtx.lineTo(x, y);
-    photoCtx.stroke();
-  }
-
-  function endDraw(e) {
+  function onMove(e) {
+    if (e.touches && e.touches.length >= 2) { if (isDrawing) { isDrawing = false; shapeStart = null; snapShot = null; } return; }
     if (!isDrawing) return;
-    if (e) e.preventDefault();
+    const tool = currentTool;
+    if (tool === 'none' || tool === 'fill' || tool === 'text') return;
+    e.preventDefault(); e.stopPropagation();
+    const { x, y } = getPoint(e);
+    if (tool === 'pencil' || tool === 'eraser') {
+      dx.lineTo(x, y); dx.stroke();
+    } else if (shapeStart && snapShot) {
+      dx.putImageData(snapShot, 0, 0);
+      dx.globalCompositeOperation = 'source-over';
+      dx.strokeStyle = drawColor; dx.lineWidth = drawSize;
+      if (tool === 'rect') {
+        dx.lineCap = 'square';
+        dx.strokeRect(shapeStart.x, shapeStart.y, x - shapeStart.x, y - shapeStart.y);
+      } else if (tool === 'circle') {
+        const rx = (x - shapeStart.x) / 2, ry = (y - shapeStart.y) / 2;
+        dx.beginPath();
+        dx.ellipse(shapeStart.x + rx, shapeStart.y + ry, Math.abs(rx), Math.abs(ry), 0, 0, Math.PI*2);
+        dx.stroke();
+      } else if (tool === 'line') {
+        dx.lineCap = 'round';
+        dx.beginPath(); dx.moveTo(shapeStart.x, shapeStart.y); dx.lineTo(x, y); dx.stroke();
+      }
+    }
+  }
 
-    isDrawing = false;
-    photoCtx.closePath();
+  function onEnd(e) {
+    if (e && e.touches && e.touches.length >= 2) return;
+    if (!isDrawing) return;
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    isDrawing = false; shapeStart = null; snapShot = null;
+    dx.globalCompositeOperation = 'source-over';
+    dx.closePath();
     saveDrawState();
   }
 
-  // Mouse
-  photoCanvas.addEventListener('mousedown', startDraw);
-  photoCanvas.addEventListener('mousemove', draw);
-  photoCanvas.addEventListener('mouseup', endDraw);
-  photoCanvas.addEventListener('mouseleave', endDraw);
+  function onClickFill(e) {
+    const tool = currentTool;
+    if (tool !== 'fill' && tool !== 'text') return;
+    e.preventDefault(); e.stopPropagation();
+    const { x, y } = getPoint(e);
+    const cx = Math.round(x), cy = Math.round(y);
+    if (tool === 'fill') {
+      if (cx >= 0 && cy >= 0 && cx < dc.width && cy < dc.height) floodFillLayer(dx, dc, cx, cy, drawColor);
+    } else if (tool === 'text') {
+      showTextInput(e.clientX, e.clientY, x, y, dx, dc);
+    }
+  }
 
-  // Touch
-  photoCanvas.addEventListener('touchstart', startDraw, { passive: false });
-  photoCanvas.addEventListener('touchmove', draw, { passive: false });
-  photoCanvas.addEventListener('touchend', endDraw);
+  const fillTouchH = (e) => {
+    if (currentTool !== 'fill' && currentTool !== 'text') return;
+    if (e.changedTouches?.length !== 1) return;
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    onClickFill({ clientX: t.clientX, clientY: t.clientY, preventDefault:()=>{}, stopPropagation:()=>{} });
+  };
+
+  dc._drawHandlers = { mousedown: onStart, mousemove: onMove, mouseup: onEnd, mouseleave: onEnd,
+    touchstart: onStart, touchmove: onMove, touchend: onEnd, click: onClickFill, fillTouch: fillTouchH };
+  dc.addEventListener('mousedown',  onStart);
+  dc.addEventListener('mousemove',  onMove);
+  dc.addEventListener('mouseup',    onEnd);
+  dc.addEventListener('mouseleave', onEnd);
+  dc.addEventListener('touchstart', onStart,    { passive: false });
+  dc.addEventListener('touchmove',  onMove,     { passive: false });
+  dc.addEventListener('touchend',   onEnd,      { passive: false });
+  dc.addEventListener('click',      onClickFill);
+  dc.addEventListener('touchend',   fillTouchH, { passive: false });
 }
 
 // Exportar funcions

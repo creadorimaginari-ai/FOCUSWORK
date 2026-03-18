@@ -426,6 +426,58 @@
     </div>
   </div>
 
+  <!-- MODAL: Dades de Facturació (s'obre en tancar client) -->
+  <div id="modalBillingDetails" class="modal-overlay hidden" style="display:none;">
+    <div class="modal" style="max-width: 480px; width: 95%;">
+      <div class="modal-header">
+        <span class="modal-icon">📋</span>
+        <h2 class="modal-title">Dades per a facturació</h2>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
+        <p style="font-size:13px; opacity:0.7; margin:0;">Omple les dades del treball per enviar-les automàticament a facturació.</p>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+            ⏱️ Hores disseny
+            <input id="billingHoresDisseny" type="text" placeholder="ex: 3h 30m"
+              style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
+          </label>
+          <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+            🔧 Hores col·locació
+            <input id="billingHoresCollocacio" type="text" placeholder="ex: 5h"
+              style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
+          </label>
+        </div>
+
+        <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+          🏗️ Material i mides <span style="color:#f87171;">*</span>
+          <textarea id="billingMaterial" placeholder="ex: Vinil mat negre 3x1.2m, xapa alumini 2mm..."
+            rows="3"
+            style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px; resize:vertical; font-family:inherit;"></textarea>
+        </label>
+
+        <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+          🚗 Desplaçament
+          <input id="billingDesplacament" type="text" placeholder="ex: 45 km / 2 viatges"
+            style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
+        </label>
+
+        <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
+          💬 Notes addicionals <span style="opacity:0.5;">(opcional)</span>
+          <textarea id="billingNotes" placeholder="Observacions, incidències, extras..."
+            rows="2"
+            style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px; resize:vertical; font-family:inherit;"></textarea>
+        </label>
+
+        <p style="font-size:11px; opacity:0.5; margin:0;">* Camp obligatori. S'enviarà un email automàtic a facturació.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeBillingModal()">Cancel·lar</button>
+        <button class="btn-primary" onclick="confirmBillingAndClose()">📧 Enviar i tancar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: Informe/Report -->
   <div id="modalReport" class="modal-overlay hidden">
     <div class="modal">
@@ -732,18 +784,11 @@
   </div>
 
     <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
-<!-- Llibreria Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<!-- Scripts de Supabase (els nous arxius) -->
-<script src="supabase-config.js"></script>
-<script src="supabase-db.js"></script>
-<script src="supabase-auth.js"></script>
-
-<!-- Scripts originals de FocusWork -->
+<!-- Scripts de FocusWork -->
 <script src="app-core.js"></script>
 <script src="app-project-states-CORREGIT.js"></script>
 <script src="app-ui.js"></script>
+<script src="facturacio.js"></script>
 <script src="estats-listeners-SENSE-PROMPT.js"></script>
 <!-- app-client-view.js només si existeix -->
 <script>
@@ -1111,42 +1156,59 @@ function setupProgressListeners() {
   </div>
   
  <div class="lightbox-canvas-container">
+  <!-- Overlay transparent: captura TOTS els events de 2 dits per al zoom -->
+  <div id="pinchOverlay" style="
+    position:absolute;inset:0;z-index:50;
+    touch-action:none;pointer-events:none;
+  "></div>
+  <!-- Indicador del nivell de zoom actual -->
+  <div id="zoomIndicator">1×</div>
   <button class="lightbox-nav lightbox-nav-prev" onclick="prevPhoto()">‹</button>
-  <canvas id="photoCanvas"></canvas>
+  <div class="canvas-stack" id="canvasStack">
+    <!-- Capa base: la foto original (mai es toca excepte al guardar) -->
+    <canvas id="photoCanvas"></canvas>
+    <!-- Capa de dibuix: tot el que dibuixes va aquí -->
+    <canvas id="drawingCanvas"></canvas>
+  </div>
   <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
 </div>
 
-<!-- Toolbar d'edició (just després del canvas) -->
-<div class="editor-toolbar">
-  <button class="color-picker-mini active" style="background: #ef4444;" onclick="setDrawColor('#ef4444')" data-color="#ef4444"></button>
-  <button class="color-picker-mini" style="background: #f59e0b;" onclick="setDrawColor('#f59e0b')" data-color="#f59e0b"></button>
-  <button class="color-picker-mini" style="background: #10b981;" onclick="setDrawColor('#10b981')" data-color="#10b981"></button>
-  <button class="color-picker-mini" style="background: #3b82f6;" onclick="setDrawColor('#3b82f6')" data-color="#3b82f6"></button>
-  <button class="color-picker-mini" style="background: white;" onclick="setDrawColor('#ffffff')" data-color="#ffffff"></button>
-  
-  <div style="width: 2px; height: 25px; background: rgba(255,255,255,0.2);"></div>
-  
-  <input type="range" class="size-slider-mini" min="2" max="8" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
-  
-  <button class="editor-btn-small" onclick="toggleDrawing()" id="drawToggle">
-    <span>✏️</span>
-    <span id="drawToggleText">Dibuixar</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="undoDraw()">
-    <span>↶</span>
-    <span>Desfer</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="clearDrawing()">
-    <span>🗑️</span>
-    <span>Netejar</span>
-  </button>
-  
-  <button class="editor-btn-small" onclick="saveEditedPhoto()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
-    <span>💾</span>
-    <span>Guardar canvis</span>
-  </button>
+<!-- Toolbar compacte — 2 files, 6 columnes -->
+<div class="editor-toolbar-grid">
+
+  <!-- FILA 1: Color + Mida + Eines dibuix -->
+  <div class="etb-colorpicker-wrap" title="Color">
+    <input type="color" id="rgbColorPicker" value="#ef4444"
+           oninput="setDrawColorFromPicker(this.value)">
+    </div>
+  <div class="etb-slider-wrap" style="grid-column: span 2;">
+   <input type="range" class="etb-slider" min="2" max="60" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
+  </div>
+  <button class="etb-btn" onclick="setDrawTool('pencil')" id="drawToggle">✏️</button>
+  <button class="etb-btn" onclick="setDrawTool('eraser')" id="eraserToggle">🧹</button>
+  <button class="etb-btn" onclick="undoDraw()">↶</button>
+
+  <!-- FILA 2: Formes + Text + Capes -->
+  <button class="etb-btn" onclick="setDrawTool('fill')" id="fillToggle" title="Omplir">🪣</button>
+  <button class="etb-btn" onclick="setDrawTool('rect')" id="rectToggle" title="Rectangle">⬜</button>
+  <button class="etb-btn" onclick="setDrawTool('circle')" id="circleToggle" title="Cercle">⭕</button>
+  <button class="etb-btn" onclick="setDrawTool('line')" id="lineToggle" title="Línia">╱</button>
+  <button class="etb-btn" onclick="setDrawTool('text')" id="textToggle" title="Text">𝐓</button>
+  <button class="etb-btn" onclick="toggleLayerVisibility()" id="layerVisBtn" title="Mostrar/ocultar dibuixos">👁</button>
+
+  <!-- FILA 3: Zoom + Rotació PC + Guardar + Gestió -->
+  <button class="etb-btn etb-zoom-btn" id="zoomInBtn"  onclick="zoomIn()"    title="Ampliar">🔍+</button>
+  <button class="etb-btn etb-zoom-btn" id="zoomOutBtn" onclick="zoomOut()"   title="Reduir">🔍−</button>
+  <button class="etb-btn etb-zoom-btn" id="zoomResetBtn" onclick="resetZoom()" title="Zoom 1:1">⊡</button>
+  <div class="etb-rotate-knob" id="rotateKnob" title="Arrossega esquerra/dreta per rotar">
+    <span class="etb-rotate-icon">↻</span>
+    <span class="etb-rotate-label">Rotar</span>
+  </div>
+  <button class="etb-btn" onclick="rotatePhoto(-90)" title="Rotar 90° esquerra">↺ 90°</button>
+  <button class="etb-btn etb-save" onclick="saveEditedPhoto()" style="grid-column: span 2;">💾 Guardar</button>
+  <button class="etb-btn etb-danger" onclick="deleteCurrentPhoto()">🗑️</button>
+  <button class="etb-btn" onclick="downloadCurrentPhoto()">⬇️</button>
+
 </div>
   
 <div class="lightbox-footer">
