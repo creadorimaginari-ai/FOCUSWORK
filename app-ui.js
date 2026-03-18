@@ -3,18 +3,6 @@
  * Llicències, Importació i Exportació
  *************************************************/
 
-/* ─────────────────────────────────────────────
-   FUNCIÓ AUXILIAR: obtenir la font d'una foto
-   Suporta tant URL Supabase Storage com base64 local.
-   photos-storage.js guarda  data: null  quan té URL,
-   per això cal mirar photo.url com a primer candidat.
-───────────────────────────────────────────── */
-function getPhotoSrc(photo) {
-  // ✅ Preferir base64 local si existeix — evita cache del navegador amb URL de Supabase
-  // Quan es guarda una foto editada, sempre guardem photo.data = base64
-  return photo?.data || photo?.url || null;
-}
-
 /*
  * CSS NECESSARI PER AL CORRECTE FUNCIONAMENT:
  * 
@@ -61,13 +49,13 @@ async function loadLicenseFile() {
       const text = await file.text();
       const license = JSON.parse(text);
       if (!license.signature || !license.clientId) {
-        showAlert(t('alert_error'), t('llicencia_invalid'), '❌');
+        showAlert('Arxiu invàlid', 'Aquest no és un arxiu de llicència vàlid', '❌');
         return;
       }
       if (license.expiryDate) {
         const expiry = new Date(license.expiryDate);
         if (expiry < new Date()) {
-          showAlert(t('alert_estat'), t('llicencia_caducada_msg'), '⏰');
+          showAlert('Llicència caducada', 'Aquesta llicència ha caducat', '⏰');
           return;
         }
       }
@@ -79,9 +67,9 @@ async function loadLicenseFile() {
       const expiryText = license.expiryDate
         ? `Vàlida fins: ${new Date(license.expiryDate).toLocaleDateString()}`
         : 'Sense límit de temps';
-      showAlert(t('alert_estat'), `${t('llicencia_activada_msg')}\n\n${t('label_client')} ${license.clientName}\n${expiryText}`, '🎉');
+      showAlert('Llicència activada!', `FocusWork complet activat\n\nClient: ${license.clientName}\n${expiryText}\n\nGaudeix de clients il·limitats!`, '🎉');
     } catch (err) {
-      showAlert(t('alert_error'), t('error_llegir_llicencia'), '❌');
+      showAlert('Error', 'No s\'ha pogut llegir l\'arxiu de llicència', '❌');
     }
   };
   input.click();
@@ -108,7 +96,7 @@ function requestLicense() {
 async function exportCurrentWork() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
   const workData = {
@@ -125,7 +113,7 @@ async function exportCurrentWork() {
   a.download = `treball_${client.name.replace(/[^a-z0-9]/gi, '_')}_${todayKey()}.focowork`;
   a.click();
   URL.revokeObjectURL(url);
-  showAlert(t('alert_guardat'), t('arxiu_descarregat'), '💾');
+  showAlert('Treball desat', 'L\'arxiu s\'ha descarregat correctament.', '💾');
 }
 
 async function importWork() {
@@ -143,7 +131,7 @@ async function importWork() {
         return;
       }
       if (!fileData.client || !fileData.version) {
-        showAlert(t('alert_error'), t('arxiu_invalid'), '❌');
+        showAlert('Arxiu invàlid', 'Aquest arxiu no és vàlid', '❌');
         return;
       }
       $('importClientName').textContent = fileData.client.name;
@@ -153,7 +141,7 @@ async function importWork() {
       window.pendingImport = fileData;
       openModal('modalImportWork');
     } catch (err) {
-      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+      showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
     }
   };
   input.click();
@@ -184,13 +172,13 @@ async function confirmImport() {
   
   await updateUI();
   closeModal('modalImportWork');
-  showAlert(t('alert_importat'), `${workData.client.name} ${t('treball_importat_msg')}`, '✅');
+  showAlert('Treball importat', `Client "${workData.client.name}" importat correctament`, '✅');
   window.pendingImport = null;
 }
 
 function handleBackupFile(backupData) {
   if (!backupData.state || !backupData.version) {
-    showAlert(t('alert_error'), t('arxiu_corromput'), '❌');
+    showAlert('Arxiu invàlid', 'Aquest arxiu està corromput', '❌');
     return;
   }
   const clientCount = Object.keys(backupData.clients || {}).length;
@@ -228,7 +216,7 @@ async function confirmImportBackup() {
   closeModal('modalImportBackup');
   
   const clientCount = Object.keys(backupData.clients || {}).length;
-  showAlert(t('alert_restaurat'), `✅ ${clientCount} ${t('backup_restaurat_msg')}`, '🎉');
+  showAlert('Backup restaurat', `✅ ${clientCount} clients recuperats`, '🎉');
   window.pendingBackup = null;
   setTimeout(() => location.reload(), 2000);
 }
@@ -258,7 +246,7 @@ async function exportAllData() {
   markBackupDone();
   
   const sizeMB = (blob.size / (1024 * 1024)).toFixed(2);
-  showAlert(t('alert_backup'), `Dades exportades: ${sizeMB}MB`, '💾');
+  showAlert('Backup complet', `Dades exportades: ${sizeMB}MB`, '💾');
 }
 /*************************************************
  * FOCUSWORK – app-ui.js (V4.0 FIXED) - PART 2/5
@@ -269,48 +257,38 @@ async function savePhotoComment(text) {
   if (!clientId) return;
 
   const client = await loadClient(clientId);
-  if (!client) return;
+  if (!client || !client.photos) return;
 
-  const currentId = window.currentClientPhotos?.[currentLightboxIndex]?.id;
-  if (!currentId) return;
-
-  // ✅ BUGFIX: buscar tant a photos[] (antic) com a files[] (Supabase)
-  // Abans només buscava a photos[] i perdia els comentaris de fotos noves
-  let photo = (client.photos || []).find(p => p.id === currentId);
-  let inFiles = false;
-  if (!photo) {
-    photo = (client.files || []).find(f => f.id === currentId);
-    inFiles = true;
-  }
+  const photo = client.photos.find(
+    p => p.id === window.currentClientPhotos[currentLightboxIndex]?.id
+  );
   if (!photo) return;
 
   photo.comment = text;
 
-  // Actualitzar còpia en memòria
-  window.currentClientPhotos[currentLightboxIndex].comment = text;
-
-  // Guardar client complet a Supabase + IndexedDB
+  // Guardar el client complet (inclou les fotos)
   await saveClient(client);
 
-  // Si era una foto de l'array antic (photos[]), actualitzar IndexedDB per seguretat
-  if (!inFiles) {
-    try {
-      await dbPut('photos', {
-        id:       photo.id,
-        clientId: clientId,
-        url:      photo.url  || null,
-        data:     getPhotoSrc(photo),
-        date:     photo.date,
-        comment:  text
-      });
-    } catch (e) {
-      console.error('Error guardant comentari a IndexedDB:', e);
-    }
+  // Actualitzar còpia en memòria perquè UI i dades coincideixin
+  window.currentClientPhotos[currentLightboxIndex].comment = text;
+  
+  // AFEGIT: Guardar també la foto directament a IndexedDB per seguretat
+  try {
+    await dbPut('photos', {
+      id: photo.id,
+      clientId: clientId,
+      data: photo.data,
+      date: photo.date,
+      comment: photo.comment || ""
+    });
+    console.log('💬 Comentari guardat correctament');
+    
+    // ✅ AFEGIT: Actualitzar badge 💬 de la miniatura
+    updatePhotoBadge(photo.id, text);
+    
+  } catch (e) {
+    console.error('Error guardant comentari a IndexedDB:', e);
   }
-
-  // Actualitzar badge visual a la galeria
-  updatePhotoBadge(photo.id, text);
-  console.log('💬 Comentari guardat correctament');
 }
 
 // Funció auxiliar per actualitzar el badge d'una foto específica
@@ -318,14 +296,16 @@ function updatePhotoBadge(photoId, comment) {
   const gallery = $("photoGallery");
   if (!gallery) return;
   
-  // Buscar el contenidor per data-id o per índex
-  const items = gallery.querySelectorAll('.file-item'); // ✅ FIX: era '.file-item, .photo-thumb' que barrejava contenidors i imatges
-  const photos = window.currentClientPhotos || window.currentClientFiles;
-  if (!photos) return;
+  // Buscar la miniatura corresponent
+  const thumbnails = gallery.querySelectorAll('.photo-thumb');
+  const photos = window.currentClientPhotos;
   
   photos.forEach((p, index) => {
     if (p.id === photoId) {
-      const container = items[index];
+      const img = thumbnails[index];
+      if (!img) return;
+      
+      const container = img.parentElement;
       if (!container) return;
       
       // Eliminar badge anterior si existeix
@@ -357,14 +337,7 @@ function updatePhotoBadge(photoId, comment) {
 /* ================= UI OPTIMIZADO ================= */
 async function updateUI(preloadedClient = null) {
   const activitiesPanel = $('activitiesPanel');
-
-  // ✅ FIX: si no hi ha client seleccionat, sempre mostrar activitiesPanel
-  if (!state.currentClientId && activitiesPanel) {
-    activitiesPanel.style.display = 'block';
-    const overviewPanel = document.getElementById('clientsOverviewPanel');
-    // No amagar overview si s'està mostrant intencionalment
-  }
-
+  
   const client = preloadedClient || (state.currentClientId ? await loadClient(state.currentClientId) : null);
   
   const updates = [];
@@ -376,7 +349,7 @@ async function updateUI(preloadedClient = null) {
   }
 
   updates.push(() => {
-    $("clientName").textContent = client ? `${t('client_prefix')}${client.name}${client.active ? "" : t('client_tancat_sufix')}` : t('no_client');
+    $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Cap encàrrec actiu";
     $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
     $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
     const headerTitle = $("clientHeaderTitle");
@@ -385,7 +358,7 @@ async function updateUI(preloadedClient = null) {
 
   if ($("clientTotal")) {
     updates.push(() => {
-      $("clientTotal").textContent = client ? `${t('total_client_prefix')}${formatTime(client.total)}` : "";
+      $("clientTotal").textContent = client ? `Total client: ${formatTime(client.total)}` : "";
     });
   }
   
@@ -394,7 +367,7 @@ async function updateUI(preloadedClient = null) {
     if (billableBox) {
       updates.push(() => {
         const billableTime = client.billableTime || 0;
-        billableBox.textContent = `${t('facturable_prefix')}${formatTime(billableTime)}`;
+        billableBox.textContent = `💰 Facturable: ${formatTime(billableTime)}`;
         billableBox.style.display = "block";
       });
     }
@@ -433,7 +406,6 @@ async function updateUI(preloadedClient = null) {
   }
   
   updates.push(() => updateFocusScheduleStatus());
-  updates.push(() => updateLicenseUI());
   
   const exitContainer = $("exitClientContainer");
   const deletePanel = $("deleteClientPanel");
@@ -443,7 +415,6 @@ async function updateUI(preloadedClient = null) {
   updates.push(() => {
 if (clientInfoPanel) {
   clientInfoPanel.style.display = client ? 'block' : 'none';
-  document.body.classList.toggle('client-view', !!client);
 }
 
 const fixedBtns = $("clientFixedButtons");
@@ -505,13 +476,6 @@ if (fixedBtns) {
   
   // Ejecutar inmediatamente pero sin bloquear
   asyncUpdate().catch(err => console.error('asyncUpdate failed:', err));
-
-  // ✅ BUGFIX: refrescar la llista de clients SEMPRE que la UI s'actualitza
-  // Sense això, tancar/esborrar un client no desapareix de la llista
-  // perquè updateProjectList() mai era cridat per updateUI()
-  if (typeof updateProjectList === 'function') {
-    updateProjectList();
-  }
 }
 
 function updateDeliveryDateDisplay(client) {
@@ -529,31 +493,22 @@ function updateDeliveryDateDisplay(client) {
   delivery.setHours(0, 0, 0, 0);
   const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
   
-  const _tD = typeof t === 'function' ? t : k => k;
-  // Textos multiidioma per a la data d'entrega
-  const _lliur = {
-    venut:   (n) => `⚠️ ${_tD('venut')} ${n} ${_tD('dies')}`,
-    avui:    ()  => `🔴 ${_tD('data_lliurament_avui')}`,
-    dema:    ()  => `🟡 ${_tD('data_lliurament_dema')}`,
-    propers: (n) => `🟡 ${_tD('data_lliurament_en')} ${n} ${_tD('dies')}`,
-    normal:  (d) => `📅 ${_tD('data_lliurament_prefix')} ${d.toLocaleDateString()}`,
-  };
   let message = "";
   let className = "delivery-info";
   if (diffDays < 0) {
-    message = _lliur.venut(Math.abs(diffDays));
+    message = `⚠️ Lliurament vençut (${Math.abs(diffDays)} dies)`;
     className = "delivery-overdue";
   } else if (diffDays === 0) {
-    message = _lliur.avui();
+    message = "🔴 Lliurament AVUI!";
     className = "delivery-today";
   } else if (diffDays === 1) {
-    message = _lliur.dema();
+    message = "🟡 Lliurament DEMÀ";
     className = "delivery-tomorrow";
   } else if (diffDays <= 3) {
-    message = _lliur.propers(diffDays);
+    message = `🟡 Lliurament en ${diffDays} dies`;
     className = "delivery-soon";
   } else {
-    message = _lliur.normal(deliveryDate);
+    message = `📅 Lliurament: ${deliveryDate.toLocaleDateString("ca-ES")}`;
     className = "delivery-normal";
   }
   deliveryBox.textContent = message;
@@ -564,32 +519,17 @@ function updateDeliveryDateDisplay(client) {
 
 function updateLicenseInfo() {
   const infoEl = $("licenseInfo");
-  if (infoEl) infoEl.style.display = "none";
+  if (!infoEl || !state.license) return;
+  const expiryText = state.license.expiryDate ? `Vàlida fins: ${new Date(state.license.expiryDate).toLocaleDateString()}` : "Sense límit";
+  infoEl.textContent = `✓ Llicència activa - ${state.license.clientName} - ${expiryText}`;
+  infoEl.style.display = "block";
 }
-
-function updateLicenseUI() {
-  // ✅ Amagar botons de llicència si l'usuari ja la té activa
-  const licBtns  = document.querySelector('.footer-license-btns');
-  const licText  = document.querySelector('.footer-license-text');
-  const licDivider = document.querySelector('.footer-divider');
-
-  if (state.isFull) {
-    if (licBtns)    licBtns.style.display    = 'none';
-    if (licText)    licText.style.display    = 'none';
-    if (licDivider) licDivider.style.display = 'none';
-  } else {
-    if (licBtns)    licBtns.style.display    = '';
-    if (licText)    licText.style.display    = '';
-    if (licDivider) licDivider.style.display = '';
-  }
-}
-window.updateLicenseUI = updateLicenseUI;
 
 function updateFocusScheduleStatus() {
   const statusEl = $("focusScheduleStatus");
   if (!statusEl) return;
   if (state.focusSchedule.enabled && !isWithinFocusSchedule()) {
-    statusEl.textContent = t('fora_horari');
+    statusEl.textContent = "⏳ Fora d'horari d'enfocament";
     statusEl.style.display = "block";
   } else {
     statusEl.style.display = "none";
@@ -598,15 +538,11 @@ function updateFocusScheduleStatus() {
 
 /* ================= CLIENTS OPTIMIZADO ================= */
 async function newClient() {
-  // ✅ Comprovar límit per usuari (configurable des de Supabase per cada usuari)
-  if (typeof canCreateMoreClients === 'function') {
-    const check = await canCreateMoreClients();
-    if (!check.ok) {
-      showAlert(t('alert_limit_clients'), 
-        `Has arribat al màxim de ${check.limit} clients actius per al teu compte.\n\nContacta amb nosaltres per ampliar el límit.`, 
-        '🔒');
-      return;
-    }
+  const allClients = await loadAllClients();
+  const activeClients = Object.values(allClients).filter(c => c.active);
+  if (!state.isFull && activeClients.length >= 2) {
+    showAlert('Versió demo', 'Màxim 2 clients actius.\n\nActiva la versió completa per clients il·limitats.', '🔒');
+    return;
   }
   $('newClientInput').value = '';
   openModal('modalNewClient');
@@ -633,12 +569,6 @@ async function confirmNewClient() {
   };
   
   await saveClient(client);
-
-  // ✅ BUGFIX: afegir a state.clients en memòria immediatament
-  // Sense això, el client nou no apareixia a la llista fins a recarregar
-  if (!state.clients) state.clients = {};
-  state.clients[id] = client;
-
   state.currentClientId = id;
   state.currentActivity = ACTIVITIES.WORK;
   state.sessionElapsed = 0;
@@ -666,7 +596,7 @@ async function changeClient() {
     });
     
   if (!actives.length) {
-    showAlert(t('alert_error'), t('no_clients_actius'), '⚠️');
+    showAlert('Sense clients', 'No hi ha clients actius', '⚠️');
     return;
   }
   const list = $('activeClientsList');
@@ -746,7 +676,7 @@ async function closeClient() {
     return;
   }
   
-  $('closeClientText').textContent = `${t('label_client')} ${client.name}\n${t('label_temps')} ${formatTime(client.total)}`;
+  $('closeClientText').textContent = `Client: ${client.name}\nTemps total: ${formatTime(client.total)}`;
   window.clientToClose = client.id;
   openModal('modalCloseClient');
 }
@@ -755,30 +685,11 @@ async function confirmCloseClient() {
   const clientId = window.clientToClose || state.currentClientId;
   const client = await loadClient(clientId);
   if (!client) return;
-
-  // ✅ Si s'ha cridat directament (no des de facturació), obrir modal de dades
-  if (!window._billingConfirmed) {
-    window.clientToClose = clientId;
-    closeModal('modalCloseClient');
-    closeModal('modalExportBeforeClose');
-    if (typeof openBillingModal === 'function') {
-      openBillingModal(clientId);
-      return;
-    }
-  }
-  window._billingConfirmed = false;
-
+  
   client.active = false;
   client.closedAt = Date.now();
   await saveClient(client);
-
-  // ✅ BUGFIX: actualitzar state.clients en memòria immediatament
-  // Sense això el client continuava apareixent com a actiu a la llista
-  if (state.clients && state.clients[clientId]) {
-    state.clients[clientId].active = false;
-    state.clients[clientId].closedAt = client.closedAt;
-  }
-
+  
   state.currentClientId = null;
   state.currentActivity = null;
   state.lastTick = null;
@@ -788,7 +699,7 @@ async function confirmCloseClient() {
   await updateUI();
   closeModal('modalCloseClient');
   closeModal('modalExportBeforeClose');
-  showAlert(t('alert_client_tancat'), `${client.name}\n${t('label_temps')} ${formatTime(client.total)}`, '✅');
+  showAlert('Client tancat', `${client.name}\nTemps total: ${formatTime(client.total)}`, '✅');
   window.clientToClose = null;
 }
 
@@ -802,16 +713,6 @@ function exitClient() {
   state.currentActivity = null;
   state.lastTick = null;
   save();
-
-  // ✅ FIX: assegurar que activitiesPanel és visible en tornar a l'inici
-  const activitiesPanel = document.getElementById('activitiesPanel');
-  const overviewPanel   = document.getElementById('clientsOverviewPanel');
-  const clientInfoPanel = document.getElementById('clientInfoPanel');
-  if (activitiesPanel) activitiesPanel.style.display = 'block';
-  if (overviewPanel)   overviewPanel.style.display   = 'none';
-  if (clientInfoPanel) clientInfoPanel.style.display  = 'none';
-  document.body.classList.remove('client-view');
-
   updateUI();
 }
 /*************************************************
@@ -824,7 +725,7 @@ async function showHistory() {
   const allClients = await loadAllClients();
   const closed = Object.values(allClients).filter(c => !c.active);
   if (!closed.length) {
-    showAlert(t('alert_error'), t('sense_clients_esborrar'), 'ℹ️');
+    showAlert('Sense històric', 'No hi ha clients tancats', 'ℹ️');
     return;
   }
   renderHistoryList(closed);
@@ -835,7 +736,7 @@ function renderHistoryList(clients) {
   const list = $('historyClientsList');
   list.innerHTML = '';
   if (!clients.length) {
-    list.innerHTML = `<p class="modal-text" style="opacity: 0.6;">${t('sense_resultats')}</p>`;
+    list.innerHTML = '<p class="modal-text" style="opacity: 0.6;">Sense resultats</p>';
     return;
   }
   
@@ -904,24 +805,13 @@ async function deleteCurrentClient() {
 }
 
 async function confirmDeleteClient() {
-  const confirmVal = $('inputDeleteConfirm').value.trim().toUpperCase();
-  const validWords = ['ESBORRAR', 'BORRAR', 'DELETE'];
-  if (!validWords.includes(confirmVal)) {
-    const word = (typeof t === 'function') ? t('ph_esborrar') : 'ESBORRAR';
-    showAlert(t ? t('alert_error') : 'Error', `Has d'escriure ${word} per confirmar`, '⚠️');
+  const confirm = $('inputDeleteConfirm').value.trim().toUpperCase();
+  if (confirm !== 'ESBORRAR') {
+    showAlert('Error', 'Has d\'escriure ESBORRAR per confirmar', '⚠️');
     return;
   }
-
-  const clientId = state.currentClientId;
-
-  await deleteClient(clientId);
-
-  // ✅ BUGFIX: eliminar de state.clients en memòria immediatament
-  // Sense això el client continuava apareixent a la llista fins a recarregar
-  if (state.clients && state.clients[clientId]) {
-    delete state.clients[clientId];
-  }
-
+  
+  await deleteClient(state.currentClientId);
   state.currentClientId = null;
   state.currentActivity = null;
   state.lastTick = null;
@@ -930,7 +820,7 @@ async function confirmDeleteClient() {
   await save();
   await updateUI();
   closeModal('modalDeleteClient');
-  showAlert(t('alert_client_eliminat'), t('client_eliminat_msg'), '🗑️');
+  showAlert('Client eliminat', 'El client ha estat eliminat definitivament', '🗑️');
 }
 
 /* ================= FOTOS OPTIMIZADO Y CORREGIDO - VERSIÓ FINAL ================= */
@@ -938,13 +828,13 @@ let photoToDelete = null;
 
 async function addPhotoToClient() {
   if (!state.currentClientId) {
-    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
+    showAlert('Error', 'Selecciona un client primer', '⚠️');
     return;
   }
   
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert(t('alert_error'), t('error_no_client'), '⚠️');
+    showAlert('Error', 'Client no trobat', '⚠️');
     return;
   }
   
@@ -969,7 +859,7 @@ async function addPhotoToClient() {
     if (!file) return;
     
     if (!file.type.startsWith('image/')) {
-      showAlert(t('alert_error'), t('error_selecciona_imatge'), '⚠️');
+      showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
       return;
     }
     
@@ -1007,7 +897,7 @@ async function addPhotoToClient() {
         
         const currentClient = await loadClient(state.currentClientId);
         if (!currentClient) {
-          showAlert(t('alert_error'), t('error_no_client'), '⚠️');
+          showAlert('Error', 'S\'ha perdut la referència al client', '⚠️');
           return;
         }
         
@@ -1016,21 +906,21 @@ async function addPhotoToClient() {
         try {
           await saveClient(currentClient);
           renderPhotoGallery(currentClient);
-          showAlert(t('alert_foto_afegida'), t('foto_afegida_msg'), '✅');
+          showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
         } catch (e) {
-          showAlert(t('alert_error'), `${t('error_llegir_arxiu')}: ${e.message}`, '❌');
+          showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
         }
       };
       
       img.onerror = () => {
-        showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+        showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
       };
       
       img.src = reader.result;
     };
     
     reader.onerror = () => {
-      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+      showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
     };
     
     reader.readAsDataURL(file);
@@ -1058,17 +948,15 @@ async function confirmDeletePhoto() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
     closeModal('modalDeletePhoto');
-    showAlert(t('alert_error'), t('error_no_client'), '⚠️');
+    showAlert('Error', 'Client no trobat', '⚠️');
     return;
   }
   
   try {
     await dbDelete('photos', photoToDelete);
     
-    // ✅ BUGFIX: eliminar tant de photos[] com de files[]
-    client.photos = (client.photos || []).filter(f => f.id !== photoToDelete);
-    client.files  = (client.files  || []).filter(f => f.id !== photoToDelete);
-
+    client.photos = client.photos.filter(f => f.id !== photoToDelete);
+    
     await saveClient(client);
     
     closeModal('modalDeletePhoto');
@@ -1077,10 +965,10 @@ async function confirmDeletePhoto() {
     
     await renderFileGallery(client);
     
-    showAlert(t('alert_foto_eliminada'), t('foto_eliminada_msg'), '✅');
+    showAlert('Foto eliminada', 'La foto s\'ha eliminat correctament', '✅');
   } catch (e) {
     console.error('Error esborrant foto:', e);
-    showAlert(t('alert_error'), t('error_esborrar_foto'), '❌');
+    showAlert('Error', 'No s\'ha pogut esborrar la foto: ' + e.message, '❌');
     closeModal('modalDeletePhoto');
   }
 }
@@ -1098,32 +986,18 @@ async function handlePhotoInputiPad(input) {
   console.log('✅ Fitxer rebut:', file.name, file.type);
   
   if (!state.currentClientId) {
-    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
+    showAlert('Error', 'Selecciona un client primer', '⚠️');
     input.value = '';
     return;
   }
   
   if (!file.type.startsWith('image/')) {
-    showAlert(t('alert_error'), t('error_selecciona_imatge'), '⚠️');
+    showAlert('Error', 'Si us plau, selecciona una imatge', '⚠️');
     input.value = '';
-    return;
-  }
-
-  // Si photos-storage.js està carregat, usar-lo per pujar a Supabase Storage
-  if (typeof window.processImageFile === 'function') {
-    const client = await loadClient(state.currentClientId);
-    if (!client) {
-      showAlert(t('alert_error'), t('error_no_client'), '⚠️');
-      input.value = '';
-      return;
-    }
-    input.value = '';
-    await window.processImageFile(file, client);
     return;
   }
   
-  // Fallback: guardar en local si Storage no disponible
-  console.log('🔵 Processant imatge (mode local)...');
+  console.log('🔵 Processant imatge...');
   
   const reader = new FileReader();
   
@@ -1165,7 +1039,7 @@ async function handlePhotoInputiPad(input) {
         
         const client = await loadClient(state.currentClientId);
         if (!client) {
-          showAlert(t('alert_error'), t('error_no_client'), '⚠️');
+          showAlert('Error', 'Client no trobat', '⚠️');
           input.value = '';
           return;
         }
@@ -1178,11 +1052,11 @@ async function handlePhotoInputiPad(input) {
         await renderFileGallery(client);
         console.log('✅ Galeria actualitzada');
         
-        showAlert(t('alert_foto_afegida'), t('foto_afegida_msg'), '✅');
+        showAlert('Foto afegida', 'La foto s\'ha afegit correctament', '✅');
         
       } catch (error) {
         console.error('❌ Error processant:', error);
-        showAlert(t('alert_error'), `${t('error_llegir_arxiu')}: ${error.message}`, '❌');
+        showAlert('Error', 'No s\'ha pogut processar la imatge: ' + error.message, '❌');
       }
       
       input.value = '';
@@ -1190,7 +1064,7 @@ async function handlePhotoInputiPad(input) {
     
     img.onerror = () => {
       console.error('❌ Error carregant imatge');
-      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+      showAlert('Error', 'No s\'ha pogut carregar la imatge', '❌');
       input.value = '';
     };
     
@@ -1199,7 +1073,7 @@ async function handlePhotoInputiPad(input) {
   
   reader.onerror = () => {
     console.error('❌ Error llegint fitxer');
-    showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+    showAlert('Error', 'No s\'ha pogut llegir el fitxer', '❌');
     input.value = '';
   };
   
@@ -1219,14 +1093,14 @@ async function handleFileInputiPad(input) {
   console.log('✅ Fitxer rebut:', file.name, file.type, formatFileSize(file.size));
   
   if (!state.currentClientId) {
-    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
+    showAlert('Error', 'Selecciona un client primer', '⚠️');
     input.value = '';
     return;
   }
   
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert(t('alert_error'), t('error_no_client'), '⚠️');
+    showAlert('Error', 'Client no trobat', '⚠️');
     input.value = '';
     return;
   }
@@ -1236,7 +1110,7 @@ async function handleFileInputiPad(input) {
   
   // Validar mida
   if (file.size > maxSize) {
-    showAlert(t('alert_error'), `${t('arxiu_massa_gran_msg')} ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
+    showAlert('Arxiu massa gran', `Mida màxima per ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
     input.value = '';
     return;
   }
@@ -1298,17 +1172,12 @@ async function updateWorkpad(preloadedClient = null) {
 }
 
 async function handleWorkpadInput(e) {
-  if (!state.currentClientId) return;
-  // ✅ BUGFIX: capturar el valor IMMEDIATAMENT (no en el timeout)
-  // Si l'usuari escriu ràpid i loadClient tarda, el valor de e.target pot canviar
-  const noteValue = e.target.value;
+  const client = await loadClient(state.currentClientId);
+  if (!client) return;
+  
+  client.notes = e.target.value;
   clearTimeout(workpadTimeout);
   workpadTimeout = setTimeout(async () => {
-    // Recarregar el client just abans de guardar per no sobreescriure
-    // canvis que hagin pogut arribar de Supabase entremig
-    const client = await loadClient(state.currentClientId);
-    if (!client) return;
-    client.notes = noteValue;
     await saveClient(client);
   }, 1000);
 }
@@ -1379,14 +1248,11 @@ async function updateTasks(preloadedClient = null) {
 }
 
 async function handleTaskInput(taskType, e) {
-  if (!state.currentClientId) return;
-  // ✅ BUGFIX: capturar el valor IMMEDIATAMENT igual que handleWorkpadInput
-  const taskValue = e.target.value;
+  const client = await loadClient(state.currentClientId);
+  if (!client || !client.tasks) return;
+  client.tasks[taskType] = e.target.value;
   clearTimeout(taskTimeouts[taskType]);
   taskTimeouts[taskType] = setTimeout(async () => {
-    const client = await loadClient(state.currentClientId);
-    if (!client || !client.tasks) return;
-    client.tasks[taskType] = taskValue;
     await saveClient(client);
   }, 1000);
 }
@@ -1394,7 +1260,7 @@ async function handleTaskInput(taskType, e) {
 async function setDeliveryDate() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
   const currentDate = client.deliveryDate ? new Date(client.deliveryDate).toISOString().split('T')[0] : '';
@@ -1409,10 +1275,10 @@ async function saveDeliveryDate() {
   const dateValue = $('inputDeliveryDate').value;
   if (dateValue) {
     client.deliveryDate = dateValue;
-    showAlert(t('alert_data_desada'), `${t('data_lliurament_msg')} ${new Date(dateValue).toLocaleDateString()}`, '✅');
+    showAlert('Data desada', `Data de lliurament establerta per al ${new Date(dateValue).toLocaleDateString('ca-ES')}`, '✅');
   } else {
     client.deliveryDate = null;
-    showAlert(t('alert_data_eliminada'), t('data_eliminada_msg'), 'ℹ️');
+    showAlert('Data eliminada', 'S\'ha eliminat la data de lliurament', 'ℹ️');
   }
   areTasksInitialized = false;
   await saveClient(client);
@@ -1424,7 +1290,7 @@ async function saveDeliveryDate() {
 async function addExtraHours() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
   $('inputExtraHours').value = '';
@@ -1439,7 +1305,7 @@ async function saveExtraHours() {
   const hours = parseFloat($('inputExtraHours').value);
   const description = $('inputExtraDescription').value.trim();
   if (!hours || hours <= 0) {
-    showAlert(t('alert_error'), t('error_hores_valides'), '⚠️');
+    showAlert('Error', 'Introdueix un nombre d\'hores vàlid', '⚠️');
     return;
   }
   if (!client.extraHours) client.extraHours = [];
@@ -1455,17 +1321,17 @@ async function saveExtraHours() {
   client.billableTime = (client.billableTime || 0) + extraEntry.seconds;
   await saveClient(client);
   closeModal('modalExtraHours');
-  showAlert(t('alert_hores_afegides'), `${hours}h ${t('hores_afegides_msg')}\n\n"${extraEntry.description}"`, '✅');
+  showAlert('Hores afegides', `${hours}h afegides correctament\n\n"${extraEntry.description}"`, '✅');
 }
 
 async function showExtraHours() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
   if (!client.extraHours || !client.extraHours.length) {
-    showAlert(t('alert_error'), t('sense_hores_extres'), 'ℹ️');
+    showAlert('Sense hores extres', 'Aquest client no té hores extres registrades', 'ℹ️');
     return;
   }
   const list = $('extraHoursList');
@@ -1499,14 +1365,14 @@ async function deleteExtraHour(entryId) {
   client.billableTime = (client.billableTime || 0) - entry.seconds;
   await saveClient(client);
   closeModal('modalViewExtraHours');
-  showAlert(t('alert_guardat'), t('hora_eliminada_msg'), '🗑️');
+  showAlert('Hora eliminada', 'L\'entrada d\'hores extres ha estat eliminada', '🗑️');
 }
 
 /* ================= INFORME ================= */
 async function generateReport() {
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
+    showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
   const billableTime = client.billableTime || 0;
@@ -1553,26 +1419,17 @@ async function generateReport() {
 
   let photosSection = '';
 
-// ✅ BUGFIX: llegir tant photos[] (antic) com files[] (Supabase)
-const allPhotosForReport = [
-  ...(client.photos || []),
-  ...(client.files  || []).filter(f => f.type === 'image')
-];
-// Deduplicar per id
-const seenIds = new Set();
-const uniquePhotos = allPhotosForReport.filter(p => {
-  if (seenIds.has(p.id)) return false;
-  seenIds.add(p.id);
-  return true;
-});
-
-if (uniquePhotos.length > 0) {
+if (client.photos && client.photos.length > 0) {
   photosSection += '\n📷 FOTOGRAFIES\n\n';
-  uniquePhotos.forEach((photo, index) => {
+
+  client.photos.forEach((photo, index) => {
     photosSection += `Foto ${index + 1}\n`;
+
+    // només el comentari, no la imatge
     if (photo.comment && photo.comment.trim() !== '') {
       photosSection += photo.comment.trim() + '\n';
     }
+
     photosSection += '\n';
   });
 }
@@ -1604,7 +1461,7 @@ function copyReport() {
   const reportText = $('reportContent').textContent;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(reportText).then(() => {
-      showAlert(t('alert_guardat'), t('copiat_msg'), '✅');
+      showAlert('Copiat', 'Informe copiat al porta-retalls', '✅');
     }).catch(() => fallbackCopy(reportText));
   } else {
     fallbackCopy(reportText);
@@ -1620,9 +1477,9 @@ function fallbackCopy(text) {
   textarea.select();
   try {
     document.execCommand('copy');
-    showAlert(t('alert_guardat'), t('copiat_msg'), '✅');
+    showAlert('Copiat', 'Informe copiat al porta-retalls', '✅');
   } catch (err) {
-    showAlert(t('alert_error'), t('error_copiar'), '⚠️');
+    showAlert('Error', 'No s\'ha pogut copiar', '⚠️');
   }
   document.body.removeChild(textarea);
 }
@@ -1662,7 +1519,7 @@ async function shareReport() {
 function showFocus() {
   const total = Object.values(state.focus).reduce((a, b) => a + b, 0);
   if (!total) {
-    showAlert(t('alert_error'), t('sense_dades_focus'), 'ℹ️');
+    showAlert('Sense dades', 'Encara no hi ha dades d\'enfocament avui', 'ℹ️');
     return;
   }
   const trabajo = state.focus[ACTIVITIES.WORK] || 0;
@@ -1688,13 +1545,13 @@ function showFocus() {
   const focusState = $('modalFocusState');
   if (pct >= 64) {
     focusState.className = 'focus-state enfocado';
-    focusState.innerHTML = t('enfocat');
+    focusState.innerHTML = '🟢 Enfocat';
   } else if (pct >= 40) {
     focusState.className = 'focus-state atencion';
-    focusState.innerHTML = t('atencio_focus');
+    focusState.innerHTML = '🟡 Atenció';
   } else {
     focusState.className = 'focus-state disperso';
-    focusState.innerHTML = t('dispers');
+    focusState.innerHTML = '🔴 Dispers';
   }
   openModal('modalEnfoque');
 }
@@ -1712,7 +1569,7 @@ async function exportTodayCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = `focowork_${todayKey()}.csv`;
   a.click();
-  showAlert(t('alert_guardat'), t('csv_exportat_msg'), '📄');
+  showAlert('CSV exportat', 'L\'arxiu s\'ha descarregat correctament', '📄');
 }
 
 /* ================= CONFIGURACIÓ D'HORARI ================= */
@@ -1761,7 +1618,7 @@ function saveScheduleConfig() {
   const [sh, sm] = start.split(':').map(Number);
   const [eh, em] = end.split(':').map(Number);
   if ((eh * 60 + em) <= (sh * 60 + sm)) {
-    showAlert(t('alert_error'), t('error_hora_fi'), '⚠️');
+    showAlert('Error', 'L\'hora de fi ha de ser posterior a l\'hora d\'inici', '⚠️');
     return;
   }
   state.focusSchedule.enabled = enabled;
@@ -1770,7 +1627,7 @@ function saveScheduleConfig() {
   save();
   closeModal('modalSchedule');
   const message = enabled ? `Horari activat: ${start} - ${end}\n\nL'enfocament només comptabilitzarà temps dins d'aquest horari.` : 'Horari desactivat\n\nL\'enfocament comptabilitzarà tot el temps treballat.';
-  showAlert(t('alert_estat'), message, '✅');
+  showAlert('Configuració desada', message, '✅');
 }
 
 /* ================= ESBORRAT MASSIU ================= */
@@ -1779,7 +1636,7 @@ async function showBulkDeleteModal() {
   const closedClients = Object.values(allClients).filter(c => !c.active);
   
   if (!closedClients.length) {
-    showAlert(t('alert_error'), t('sense_clients_esborrar'), 'ℹ️');
+    showAlert('Sense clients tancats', 'No hi ha clients tancats per esborrar', 'ℹ️');
     return;
   }
   
@@ -1808,7 +1665,7 @@ async function showBulkDeleteModal() {
   
   const list = $('bulkDeleteList');
   list.innerHTML = `
-    <div style="margin-bottom: 20px; padding: 15px; background: rgba(245, 158, 11, 0.15); border-radius: 10px; border-left: 4px solid #f59e0b; color: #fde68a;">
+    <div style="margin-bottom: 20px; padding: 15px; background: #fef3c7; border-radius: 10px; border-left: 4px solid #f59e0b;">
       <strong>⚠️ Atenció:</strong> Aquesta acció NO es pot desfer.<br>
       <strong>Recomanació:</strong> Fes una còpia de seguretat abans d'esborrar.
     </div>
@@ -1885,7 +1742,7 @@ async function confirmBulkDelete(period) {
   }
   
   if (!toDelete.length) {
-    showAlert(t('alert_error'), t('sense_clients_periode'), 'ℹ️');
+    showAlert('Sense clients', 'No hi ha clients per esborrar en aquest període', 'ℹ️');
     return;
   }
   
@@ -1912,21 +1769,17 @@ async function confirmBulkDelete(period) {
   );
   
   if (finalConfirm !== 'ESBORRAR') {
-    showAlert(t('cancellar'), t('cancelat_msg'), 'ℹ️');
+    showAlert('Cancel·lat', 'Operació cancel·lada', 'ℹ️');
     return;
   }
   
   closeModal('modalBulkDelete');
-  showAlert(t('esborrant'), `${t('esborrant_prefix')}${toDelete.length} ${t('esborrant_clients_msg')}`, '⏳');
+  showAlert('Esborrant...', `Esborrant ${toDelete.length} clients...`, '⏳');
   
   let deleted = 0;
   for (const client of toDelete) {
     try {
       await deleteClient(client.id);
-      // ✅ BUGFIX: eliminar de state.clients en memòria
-      if (state.clients && state.clients[client.id]) {
-        delete state.clients[client.id];
-      }
       deleted++;
     } catch (e) {
       console.error('Error esborrant client:', client.name, e);
@@ -2037,7 +1890,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.isFull = false;
       state.license = null;
       save();
-      showAlert(t('alert_estat'), t('llicencia_caducada_msg'), '⏰');
+      showAlert('Llicència caducada', 'La teva llicència ha caducat.', '⏰');
     }
   }
   
@@ -2075,20 +1928,17 @@ function openLightbox(photos, index) {
   if (lightbox) {
     lightbox.classList.add('active');
     
-    // Assegurar scroll vertical al lightbox
-    lightbox.style.overflowY = 'auto';
-    lightbox.style.overflowX = 'hidden';
-    
     // CANVI: Inicialitzar canvas PRIMER
     initPhotoCanvas();
     
     // Després mostrar foto
     updateLightboxDisplay();
     
+    // Zoom al final amb més temps
     setTimeout(() => {
-      if (typeof initZoomSystem === 'function') initZoomSystem();
-      if (typeof initRotateKnob === 'function') initRotateKnob();
-      if (typeof startPhotoSync === 'function') startPhotoSync();
+      if (typeof initZoomSystem === 'function') {
+        initZoomSystem();
+      }
     }, 300);
     
     document.body.style.overflow = 'hidden';
@@ -2113,17 +1963,9 @@ function openLightboxById(photoId) {
 }
 
 function closeLightbox() {
-  if (typeof stopPhotoSync === 'function') stopPhotoSync();
   const lightbox = $('lightbox');
   if (lightbox) {
     lightbox.classList.remove('active');
-    
-    // ✅ FIX: Guardar comentari pendent abans de tancar
-    const commentInput = $('lightboxComment');
-    if (commentInput) {
-      if (commentInput._debounceTimer) clearTimeout(commentInput._debounceTimer);
-      savePhotoComment(commentInput.value);
-    }
     
     // Netejar sistema de zoom
     if (typeof cleanupZoomSystem === 'function') {
@@ -2149,50 +1991,33 @@ function updateLightboxDisplay() {
 initPhotoCanvas();
 if (photoCanvas && photoCtx) {
   const img = new Image();
-  img.crossOrigin = 'anonymous'; // ✅ FIX: evitar canvas "tainted" amb URLs de Supabase Storage
   img.onload = () => {
     photoCanvas.width = img.width;
     photoCanvas.height = img.height;
     photoCtx.drawImage(img, 0, 0);
-
-    // ✅ Ajustar mida del canvas-stack al contenidor (trenca dependència CSS circular)
-    fitPhotoInContainer();
-    // Sincronitzar i netejar capa de dibuix
-    syncDrawingCanvasSize();
-    if (window.drawingCtx) {
-      window.drawingCtx.clearRect(0, 0, window.drawingCanvas.width, window.drawingCanvas.height);
-    }
-
+    
     // Guardar foto original
-    originalPhotoData = getPhotoSrc(photo);
-
-    // Reset rotació i historial per la nova foto
-    totalRotationDeg = 0;
-    window._gestureBaseRot  = 0;
-    window._gestureBaseZoom = 1;
+    originalPhotoData = photo.data;
+    
+    // Iniciar historial
     drawHistory = [];
     saveDrawState();
     
-    // ✅ BUGFIX: sempre reinicialitzar els listeners de dibuix quan s'obre una foto
-    // El flag _drawingInitialized causava que els listeners vells quedessin actius
-    // sobre el canvas incorrecte si es reobria el lightbox amb una foto diferent
-    setupCanvasDrawing();
+    // Inicialitzar sistema de dibuix (només una vegada)
+    if (!photoCanvas._drawingInitialized) {
+      setupCanvasDrawing();
+      photoCanvas._drawingInitialized = true;
+    }
     
     // Reset mode dibuix
     drawingEnabled = false;
     const btn = $('drawToggle');
     const text = $('drawToggleText');
     if (btn) btn.classList.remove('active');
-    if (text) text.textContent = t('dibuixar');
+    if (text) text.textContent = 'Dibuixar';
     photoCanvas.classList.remove('drawing-mode');
   };
-  const src = getPhotoSrc(photo);
-  console.log('📸 Foto src:', src ? src.substring(0, 80) : 'NULL', '| photo keys:', Object.keys(photo));
-  if (!src) {
-    console.error('❌ No hi ha src per aquesta foto:', photo);
-    return;
-  }
-  img.src = src;
+  img.src = photo.data;
 }
   const commentInput = $('lightboxComment');
 
@@ -2216,26 +2041,7 @@ Entrega:
   }
 
   commentInput.value = commentText;
-  
-  // ✅ FIX: Debounce per evitar race conditions (oninput dispara a cada lletra)
-  if (commentInput._debounceTimer) clearTimeout(commentInput._debounceTimer);
-  commentInput.oninput = () => {
-    // Actualitzar en memoria immediament
-    const photos = window.currentClientPhotos;
-    if (photos && photos[currentLightboxIndex]) {
-      photos[currentLightboxIndex].comment = commentInput.value;
-    }
-    // Guardar a DB amb debounce
-    if (commentInput._debounceTimer) clearTimeout(commentInput._debounceTimer);
-    commentInput._debounceTimer = setTimeout(() => {
-      savePhotoComment(commentInput.value);
-    }, 600);
-  };
-  // ✅ FIX: Guardar immediatament quan es perd el focus (usuari surt del camp)
-  commentInput.onblur = () => {
-    if (commentInput._debounceTimer) clearTimeout(commentInput._debounceTimer);
-    savePhotoComment(commentInput.value);
-  };
+  commentInput.oninput = () => savePhotoComment(commentInput.value);
 }
   
   const counter = $('lightboxCounter');
@@ -2292,10 +2098,6 @@ function prevPhoto() {
     if (!confirmed) return;
   }
   
-
-  // ✅ FIX: Guardar comentari pendent
-  const _ci = $('lightboxComment');
-  if (_ci) { if (_ci._debounceTimer) clearTimeout(_ci._debounceTimer); savePhotoComment(_ci.value); }
   if (currentLightboxIndex > 0) {
     currentLightboxIndex--;
     updateLightboxDisplay();
@@ -2308,10 +2110,6 @@ function nextPhoto() {
     if (!confirmed) return;
   }
   
-
-  // ✅ FIX: Guardar comentari pendent
-  const _ci = $('lightboxComment');
-  if (_ci) { if (_ci._debounceTimer) clearTimeout(_ci._debounceTimer); savePhotoComment(_ci.value); }
   const photos = window.currentClientPhotos;
   if (photos && currentLightboxIndex < photos.length - 1) {
     currentLightboxIndex++;
@@ -2324,7 +2122,7 @@ async function downloadCurrentPhoto() {
   
   const photo = photos[currentLightboxIndex];
   const a = document.createElement('a');
-  a.href = getPhotoSrc(photo);   // ✅ suporta URL Supabase i base64 local
+  a.href = photo.data;
   
   const client = await loadClient(state.currentClientId);
   const fileName = client ? 
@@ -2334,7 +2132,7 @@ async function downloadCurrentPhoto() {
   a.download = fileName;
   a.click();
   
-  showAlert(t('alert_guardat'), t('foto_descarregada_msg'), '📥');
+  showAlert('Foto descarregada', 'La foto s\'ha descarregat correctament', '📥');
 }
 
 async function shareCurrentPhoto() {
@@ -2345,7 +2143,7 @@ async function shareCurrentPhoto() {
   
   if (navigator.share && navigator.canShare) {
     try {
-      const res = await fetch(getPhotoSrc(photo));   // ✅ suporta URL Supabase i base64 local
+      const res = await fetch(photo.data);
       const blob = await res.blob();
       const file = new File([blob], `foto_${currentLightboxIndex + 1}.jpg`, { type: 'image/jpeg' });
       
@@ -2355,11 +2153,11 @@ async function shareCurrentPhoto() {
       });
     } catch (e) {
       if (e.name !== 'AbortError') {
-        showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+        showAlert('Error', 'No s\'ha pogut compartir la foto', '❌');
       }
     }
   } else {
-    showAlert(t('alert_error'), t('no_disponible_compartir'), 'ℹ️');
+    showAlert('No disponible', 'La compartició no està disponible en aquest navegador', 'ℹ️');
   }
 }
 
@@ -2385,7 +2183,7 @@ async function deleteCurrentPhoto() {
     if (window.currentClientPhotos.length === 0) {
       closeLightbox();
       await renderPhotoGallery();
-      showAlert(t('alert_foto_eliminada'), t('foto_esborrada_nofotos'), '🗑️');
+      showAlert('Foto esborrada', 'No queden més fotos', '🗑️');
       return;
     }
     
@@ -2396,7 +2194,7 @@ async function deleteCurrentPhoto() {
     updateLightboxDisplay();
     renderPhotoGallery();
     
-    showAlert(t('alert_foto_eliminada'), t('foto_eliminada_msg'), '✅');
+    showAlert('Foto esborrada', 'La foto s\'ha eliminat correctament', '✅');
   } catch (e) {
     console.error('Error esborrant foto:', e);
     showAlert('Error', 'No s\'ha pogut esborrar la foto', '❌');
@@ -2493,37 +2291,6 @@ let isPanning = false;
 let startPanX = 0;
 let startPanY = 0;
 let lastTouchDistance = 0;
-let lastTouchAngle    = null;
-let accumulatedRotation = 0;
-
-// ══════════════════════════════════════════════════════════════════════
-//  ROTACIÓ — sistema senzill basat ÚNICAMENT en CSS transform
-//  Mai es toquen els píxels del canvas durant la rotació.
-//  L'angle s'acumula a `totalRotationDeg` i s'aplica com a CSS.
-//  Quan es guarda la foto, es fusionen foto+dibuix+rotació en un canvas.
-// ══════════════════════════════════════════════════════════════════════
-let totalRotationDeg = 0;   // angle total acumulat (graus)
-let isRotating       = false;
-
-function applyRotationTransform() {
-  const stack = document.getElementById('canvasStack');
-  if (!stack) return;
-  stack.style.transform = `translate(${panX}px,${panY}px) scale(${currentZoom}) rotate(${totalRotationDeg}deg)`;
-  stack.style.transformOrigin = 'center center';
-}
-
-// Girar 90° (botó) o angle lliure (knob/pinça)
-function rotatePhoto(degrees) {
-  totalRotationDeg = (totalRotationDeg + degrees) % 360;
-  applyRotationTransform();
-}
-window.rotatePhoto = rotatePhoto;
-
-// Compat: funcions que s'usaven per rotar CSS temporalment
-function applyCSSSmoothRotation(angle) {
-  totalRotationDeg = angle;
-  applyRotationTransform();
-}
 
 // Funcions de zoom
 function zoomIn() {
@@ -2552,45 +2319,28 @@ function resetZoom() {
 
 function applyZoomTransform() {
   if (!photoCanvas) return;
-  const stack = document.getElementById('canvasStack') || photoCanvas;
-  stack.style.transform = `translate(${panX}px,${panY}px) scale(${currentZoom}) rotate(${totalRotationDeg}deg)`;
-  stack.style.transformOrigin = 'center center';
-  if (stack !== photoCanvas) photoCanvas.style.transform = '';
-  // Mostrar indicador de zoom
-  const ind = document.getElementById('zoomIndicator');
-  if (ind) {
-    ind.textContent = currentZoom > 1 ? `${currentZoom.toFixed(1)}×` : '1×';
-    ind.classList.toggle('visible', currentZoom > 1);
-  }
+  photoCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+  photoCanvas.style.transformOrigin = 'center center';
 }
 
 // Sistema d'inicialització de zoom
 function initZoomSystem() {
   if (!photoCanvas) return;
-
-  // ─── Solució definitiva: capture phase al contenidor ─────────────────────
-  // stopPropagation en capture fase IMPEDEIX que l'event arribi al drawingCanvas
-  // Resultats:
-  //   2 dits dins zona canvas → zoom/rotació, drawingCanvas no veu res
-  //   1 dit dins zona canvas  → dibuix normal (no interceptem)
-  //   1 dit fora zona canvas  → navegació normal
-  const container = document.querySelector('.lightbox-canvas-container');
-  const zoomTarget = document.getElementById('canvasStack')
-                     || photoCanvas.parentElement || photoCanvas;
-
-  if (container) container.style.touchAction = 'none';
-  if (zoomTarget) zoomTarget.style.touchAction = 'none';
-
-  // ── Mouse wheel ────────────────────────────────────────────────────────
+  
+  // Mouse wheel zoom
   const wheelHandler = (e) => {
+    if (drawingEnabled) return;
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     currentZoom = Math.max(1, Math.min(5, currentZoom * delta));
-    if (currentZoom === 1) { panX = 0; panY = 0; }
+    if (currentZoom === 1) {
+      panX = 0;
+      panY = 0;
+    }
     applyZoomTransform();
   };
-
-  // ── Mouse pan ──────────────────────────────────────────────────────────
+  
+  // Mouse pan
   const mouseDownHandler = (e) => {
     if (drawingEnabled || currentZoom <= 1) return;
     isPanning = true;
@@ -2598,165 +2348,112 @@ function initZoomSystem() {
     startPanY = e.clientY - panY;
     e.preventDefault();
   };
+  
   const mouseMoveHandler = (e) => {
-    if (!isPanning) return;
+    if (!isPanning || drawingEnabled) return;
     panX = e.clientX - startPanX;
     panY = e.clientY - startPanY;
     applyZoomTransform();
   };
-  const mouseUpHandler = () => { isPanning = false; };
-
-  // ── Touch pinch: capture al contenidor ────────────────────────────────
-  // Clau de la fluïdesa: guardem la distància INICIAL del gest (_startDist)
-  // i sempre calculem zoom = zoomBase * (distActual / distInicial)
-  // Això elimina l'acumulació d'errors frame a frame
-  let _startDist  = 0;
-  let _startAngle = 0;
-  let _rafId      = null;
-  let _pendingZoom = null;
-  let _pendingRot  = null;
-
-  const captureStart = (e) => {
-    if (e.touches.length < 2) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const t1 = e.touches[0], t2 = e.touches[1];
-    _startDist  = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-    _startAngle = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
-    lastTouchAngle      = _startAngle;
-    window._gestureBaseRot  = totalRotationDeg;
-    window._gestureBaseZoom = currentZoom;
-    accumulatedRotation     = 0;
-    lastTouchDistance   = _startDist;
+  
+  const mouseUpHandler = () => {
+    if (drawingEnabled) return;
+    isPanning = false;
   };
-
-  const captureMove = (e) => {
-    if (e.touches.length < 2) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const t1 = e.touches[0], t2 = e.touches[1];
-    const dist = Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY);
-
-    // Zoom relatiu a la distància INICIAL — estable i sense drift
-    if (_startDist > 0) {
-      const targetZoom = (window._gestureBaseZoom || 1) * (dist / _startDist);
-      _pendingZoom = Math.max(1, Math.min(5, targetZoom));
-      if (_pendingZoom === 1) { panX = 0; panY = 0; }
-    }
-
-    // Rotació incremental suau
-    if (lastTouchAngle !== null) {
-      const ang   = Math.atan2(t2.clientY-t1.clientY, t2.clientX-t1.clientX);
-      const delta = (ang - lastTouchAngle) * (180 / Math.PI);
-      accumulatedRotation += delta;
-      lastTouchAngle       = ang;
-      _pendingRot = (window._gestureBaseRot || 0) + accumulatedRotation;
-    }
-
-    // requestAnimationFrame per render fluid (una actualització per frame)
-    if (!_rafId) {
-      _rafId = requestAnimationFrame(() => {
-        _rafId = null;
-        if (_pendingZoom !== null) { currentZoom = _pendingZoom; _pendingZoom = null; }
-        if (_pendingRot  !== null) { totalRotationDeg = _pendingRot; _pendingRot = null; }
-        applyZoomTransform();
-      });
-    }
-  };
-
-  const captureEnd = (e) => {
-    if (e.touches.length >= 2) return;
-    if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
-    if (_pendingZoom !== null) { currentZoom = _pendingZoom; _pendingZoom = null; }
-    if (_pendingRot  !== null) { totalRotationDeg = _pendingRot; _pendingRot = null; }
-    isPanning           = false;
-    lastTouchDistance   = 0;
-    lastTouchAngle      = null;
-    accumulatedRotation = 0;
-    _startDist          = 0;
-    window._gestureBaseRot  = totalRotationDeg;
-    window._gestureBaseZoom = currentZoom;
-    applyZoomTransform();
-  };
-
-  // ── Pan amb 1 dit quan zoom > 1 (no dibuix) ───────────────────────────
+  
+  // Touch pinch zoom
   const touchStartHandler = (e) => {
-    if (e.touches.length !== 1 || drawingEnabled || currentZoom <= 1) return;
-    isPanning = true;
-    startPanX = e.touches[0].clientX - panX;
-    startPanY = e.touches[0].clientY - panY;
+    if (drawingEnabled) return;
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      lastTouchDistance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+    } else if (e.touches.length === 1 && currentZoom > 1) {
+      isPanning = true;
+      startPanX = e.touches[0].clientX - panX;
+      startPanY = e.touches[0].clientY - panY;
+    }
   };
+  
   const touchMoveHandler = (e) => {
-    if (!isPanning || e.touches.length !== 1 || drawingEnabled) return;
-    e.preventDefault();
-    panX = e.touches[0].clientX - startPanX;
-    panY = e.touches[0].clientY - startPanY;
-    applyZoomTransform();
+    if (drawingEnabled) return;
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const newDistance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+      
+      if (lastTouchDistance > 0) {
+        const zoomDelta = newDistance / lastTouchDistance;
+        currentZoom = Math.max(1, Math.min(5, currentZoom * zoomDelta));
+        if (currentZoom === 1) {
+          panX = 0;
+          panY = 0;
+        }
+        applyZoomTransform();
+      }
+      lastTouchDistance = newDistance;
+    } else if (isPanning && e.touches.length === 1) {
+      e.preventDefault();
+      panX = e.touches[0].clientX - startPanX;
+      panY = e.touches[0].clientY - startPanY;
+      applyZoomTransform();
+    }
   };
-  const touchEndHandler = () => { isPanning = false; };
-
-  // ── Registrar listeners ────────────────────────────────────────────────
-  // Wheel i mouse al canvasStack
-  zoomTarget.addEventListener('wheel',      wheelHandler,     { passive: false });
-  zoomTarget.addEventListener('mousedown',  mouseDownHandler);
-  zoomTarget.addEventListener('mousemove',  mouseMoveHandler);
-  zoomTarget.addEventListener('mouseup',    mouseUpHandler);
-  zoomTarget.addEventListener('mouseleave', mouseUpHandler);
-  // Touch 1 dit (pan) al canvasStack, sense capture
-  zoomTarget.addEventListener('touchstart',  touchStartHandler, { passive: true });
-  zoomTarget.addEventListener('touchmove',   touchMoveHandler,  { passive: false });
-  zoomTarget.addEventListener('touchend',    touchEndHandler);
-
-  // Touch 2 dits (pinch/zoom) al CONTENIDOR, amb CAPTURE
-  // stopPropagation en capture phase evita que arribi al drawingCanvas
-  const captureEl = container || zoomTarget;
-  captureEl.addEventListener('touchstart',  captureStart, { capture: true, passive: false });
-  captureEl.addEventListener('touchmove',   captureMove,  { capture: true, passive: false });
-  captureEl.addEventListener('touchend',    captureEnd,   { capture: true });
-  captureEl.addEventListener('touchcancel', captureEnd,   { capture: true });
-
-  // Guardar refs per cleanup
-  photoCanvas._zoomTarget   = zoomTarget;
-  photoCanvas._zoomCapture  = captureEl;
+  
+  const touchEndHandler = () => {
+    if (drawingEnabled) return;
+    isPanning = false;
+    lastTouchDistance = 0;
+  };
+  
+  // Afegir event listeners
+  photoCanvas.addEventListener('wheel', wheelHandler, { passive: false });
+  photoCanvas.addEventListener('mousedown', mouseDownHandler);
+  photoCanvas.addEventListener('mousemove', mouseMoveHandler);
+  photoCanvas.addEventListener('mouseup', mouseUpHandler);
+  photoCanvas.addEventListener('mouseleave', mouseUpHandler);
+  photoCanvas.addEventListener('touchstart', touchStartHandler, { passive: false });
+  photoCanvas.addEventListener('touchmove', touchMoveHandler, { passive: false });
+  photoCanvas.addEventListener('touchend', touchEndHandler);
+  photoCanvas.addEventListener('touchcancel', touchEndHandler);
+  
+  // Guardar referències per poder eliminar-les després
   photoCanvas._zoomHandlers = {
-    wheel: wheelHandler, mousedown: mouseDownHandler,
-    mousemove: mouseMoveHandler, mouseup: mouseUpHandler, mouseleave: mouseUpHandler,
-    touchstart: touchStartHandler, touchmove: touchMoveHandler, touchend: touchEndHandler,
-    captureStart, captureMove, captureEnd
+    wheel: wheelHandler,
+    mousedown: mouseDownHandler,
+    mousemove: mouseMoveHandler,
+    mouseup: mouseUpHandler,
+    mouseleave: mouseUpHandler,
+    touchstart: touchStartHandler,
+    touchmove: touchMoveHandler,
+    touchend: touchEndHandler,
+    touchcancel: touchEndHandler
   };
 }
 
 function cleanupZoomSystem() {
   if (!photoCanvas || !photoCanvas._zoomHandlers) return;
-
-  const t  = photoCanvas._zoomTarget  || document.getElementById('canvasStack') || photoCanvas;
-  const ce = photoCanvas._zoomCapture || t;
-  const h  = photoCanvas._zoomHandlers;
-
-  // Mouse + wheel
-  t.removeEventListener('wheel',      h.wheel);
-  t.removeEventListener('mousedown',  h.mousedown);
-  t.removeEventListener('mousemove',  h.mousemove);
-  t.removeEventListener('mouseup',    h.mouseup);
-  t.removeEventListener('mouseleave', h.mouseleave);
-  t.removeEventListener('touchstart', h.touchstart);
-  t.removeEventListener('touchmove',  h.touchmove);
-  t.removeEventListener('touchend',   h.touchend);
-  t.style.touchAction = '';
-
-  // Capture (2 dits)
-  ce.removeEventListener('touchstart',  h.captureStart, { capture: true });
-  ce.removeEventListener('touchmove',   h.captureMove,  { capture: true });
-  ce.removeEventListener('touchend',    h.captureEnd,   { capture: true });
-  ce.removeEventListener('touchcancel', h.captureEnd,   { capture: true });
-
+  
+  const h = photoCanvas._zoomHandlers;
+  photoCanvas.removeEventListener('wheel', h.wheel);
+  photoCanvas.removeEventListener('mousedown', h.mousedown);
+  photoCanvas.removeEventListener('mousemove', h.mousemove);
+  photoCanvas.removeEventListener('mouseup', h.mouseup);
+  photoCanvas.removeEventListener('mouseleave', h.mouseleave);
+  photoCanvas.removeEventListener('touchstart', h.touchstart);
+  photoCanvas.removeEventListener('touchmove', h.touchmove);
+  photoCanvas.removeEventListener('touchend', h.touchend);
+  photoCanvas.removeEventListener('touchcancel', h.touchcancel);
+  
   delete photoCanvas._zoomHandlers;
-  delete photoCanvas._zoomTarget;
-  delete photoCanvas._zoomCapture;
   
   // Reset valors
   currentZoom = 1;
@@ -2772,45 +2469,25 @@ window.resetZoom = resetZoom;
 
 function initPhotoCanvas() {
   photoCanvas = document.getElementById('photoCanvas');
-  if (!photoCanvas) { console.error('❌ photoCanvas not found!'); return; }
+  
+  if (!photoCanvas) {
+    console.error('❌ photoCanvas not found!');
+    return;
+  }
+  
+  // Assegurar visibilitat
+  photoCanvas.style.display = 'block';
+  photoCanvas.style.visibility = 'visible';
+  photoCanvas.style.opacity = '1';
+  
   photoCtx = photoCanvas.getContext('2d');
-  if (!photoCtx) { console.error('❌ No canvas context!'); return; }
-  window.drawingCanvas = document.getElementById('drawingCanvas');
-  if (window.drawingCanvas) window.drawingCtx = window.drawingCanvas.getContext('2d');
-  console.log('✅ Canvas + DrawingLayer OK');
-}
-
-// ── MIDES I LAYOUT ──────────────────────────────────────────────────────────
-
-// Fa que la foto càpiga en el contenidor i assigna mides explícites al canvas-stack.
-// Trenca la dependència circular de CSS (canvas-stack inline-block vs max-height:100%).
-function fitPhotoInContainer() {
-  if (!photoCanvas) return;
-  const container = document.querySelector('.lightbox-canvas-container');
-  const stack     = document.getElementById('canvasStack');
-  if (!container || !stack) return;
-
-  const maxW = container.clientWidth  - 16;
-  const maxH = container.clientHeight - 16;
-  const nW   = photoCanvas.width;
-  const nH   = photoCanvas.height;
-  if (!nW || !nH) return;
-
-  const scale = Math.min(maxW / nW, maxH / nH);  // sempre omple l'espai disponible
-  const dispW = Math.round(nW * scale);
-  const dispH = Math.round(nH * scale);
-
-  stack.style.width  = dispW + 'px';
-  stack.style.height = dispH + 'px';
-}
-window.fitPhotoInContainer = fitPhotoInContainer;
-
-// Sincronitza els PÍXELS interns del drawingCanvas amb photoCanvas.
-// El CSS (width:100%;height:100%) fa que ocupi visualment el canvas-stack.
-function syncDrawingCanvasSize() {
-  if (!window.drawingCanvas || !photoCanvas) return;
-  window.drawingCanvas.width  = photoCanvas.width;
-  window.drawingCanvas.height = photoCanvas.height;
+  
+  if (!photoCtx) {
+    console.error('❌ No canvas context!');
+    return;
+  }
+  
+  console.log('✅ Canvas OK');
 }
 
 function toggleDrawing() {
@@ -2818,29 +2495,25 @@ function toggleDrawing() {
   const btn = $('drawToggle');
   const text = $('drawToggleText');
   const canvas = $('photoCanvas');
-  if (!canvas) return;
   
   if (drawingEnabled) {
-    btn?.classList.add('active');
-    if (text) text.textContent = t('activat');
+    btn.classList.add('active');
+    text.textContent = 'Activat';
     canvas.classList.add('drawing-mode');
-    canvas.style.pointerEvents = 'auto';
-    canvas.style.cursor = 'crosshair';
-    if (fillModeEnabled) toggleFillMode();
   } else {
-    btn?.classList.remove('active');
-    if (text) text.textContent = t('llapis');
+    btn.classList.remove('active');
+    text.textContent = 'Dibuixar';
     canvas.classList.remove('drawing-mode');
-    canvas.style.pointerEvents = 'auto';
-    canvas.style.cursor = 'default';
   }
 }
 
 function setDrawColor(color) {
   drawColor = color;
-  document.querySelectorAll('.etb-color, .color-picker-mini').forEach(btn => {
+  document.querySelectorAll('.color-picker-mini').forEach(btn => {
     btn.classList.remove('active');
-    if (btn.dataset.color === color) btn.classList.add('active');
+    if (btn.dataset.color === color) {
+      btn.classList.add('active');
+    }
   });
 }
 
@@ -2849,11 +2522,11 @@ function updateDrawSize(size) {
 }
 
 function saveDrawState() {
-  // ✅ CAPA: guardar estat del drawingCanvas (no de la foto)
-  const dc = window.drawingCanvas || photoCanvas;
-  if (!dc) return;
-  drawHistory.push(dc.toDataURL());
-  if (drawHistory.length > 20) drawHistory.shift();
+  if (!photoCanvas) return;
+  drawHistory.push(photoCanvas.toDataURL());
+  if (drawHistory.length > 20) {
+    drawHistory.shift();
+  }
 }
 
 function undoDraw() {
@@ -2862,10 +2535,8 @@ function undoDraw() {
     const previousState = drawHistory[drawHistory.length - 1];
     const img = new Image();
     img.onload = () => {
-      const dc = window.drawingCanvas || photoCanvas;
-      const dx = window.drawingCtx    || photoCtx;
-      dx.clearRect(0, 0, dc.width, dc.height);
-      dx.drawImage(img, 0, 0);
+      photoCtx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
+      photoCtx.drawImage(img, 0, 0);
     };
     img.src = previousState;
   }
@@ -2896,7 +2567,7 @@ async function saveEditedPhoto() {
     const btn = $('drawToggle');
     const text = $('drawToggleText');
     if (btn) btn.classList.remove('active');
-    if (text) text.textContent = t('dibuixar');
+    if (text) text.textContent = 'Dibuixar';
     photoCanvas.classList.remove('drawing-mode');
   }
   
@@ -2904,91 +2575,30 @@ async function saveEditedPhoto() {
   if (!confirmed) return;
   
   try {
-    // Fusionar foto + dibuix + rotació CSS en un sol canvas
-    const rad  = totalRotationDeg * Math.PI / 180;
-    const sw   = photoCanvas.width;
-    const sh   = photoCanvas.height;
-    // Mida del canvas final tenint en compte la rotació
-    const mw   = Math.round(Math.abs(sw * Math.cos(rad)) + Math.abs(sh * Math.sin(rad)));
-    const mh   = Math.round(Math.abs(sw * Math.sin(rad)) + Math.abs(sh * Math.cos(rad)));
-    const mergedCanvas = document.createElement('canvas');
-    mergedCanvas.width  = mw;
-    mergedCanvas.height = mh;
-    const mergedCtx = mergedCanvas.getContext('2d');
-    mergedCtx.save();
-    mergedCtx.translate(mw / 2, mh / 2);
-    mergedCtx.rotate(rad);
-    mergedCtx.drawImage(photoCanvas, -sw / 2, -sh / 2);
-    if (window.drawingCanvas) mergedCtx.drawImage(window.drawingCanvas, -sw / 2, -sh / 2);
-    mergedCtx.restore();
-    const editedData = mergedCanvas.toDataURL('image/jpeg', 0.85);
+    const editedData = photoCanvas.toDataURL('image/jpeg', 0.85);
     const photo = window.currentClientPhotos[currentLightboxIndex];
-    const clientId = state.currentClientId;
-
-    // Mostrar progrés
-    showAlert(t('guardant'), t('pujant_foto'), '⏳');
-
-    // ✅ FIX SYNC: usar un ID únic amb timestamp per la versió editada
-    // Supabase Storage retorna sempre la mateixa URL per al mateix path
-    // → altres dispositius carreguen la versió antiga del cache
-    // Solució: guardar amb un path nou (photoId_timestamp) → URL nova → cache buit
-    const editedPhotoId = photo.id + '_v' + Date.now();
-    let newUrl = null;
-    if (typeof uploadPhotoToStorage === 'function') {
-      newUrl = await uploadPhotoToStorage(editedData, editedPhotoId, clientId);
-    }
-
-    // Esborrar versió antiga de Storage si tenia URL (cleanup)
-    if (photo.url && typeof deletePhotoFromStorage === 'function') {
-      try { await deletePhotoFromStorage(photo.id, clientId); } catch(e) {}
-    }
-
-    // Actualitzar referència en memòria
+    
+    // Actualitzar dades
     photo.data = editedData;
-    photo.url  = newUrl || null;
     originalPhotoData = editedData;
-
-    // IndexedDB: guardar base64 + nova URL
+    
+    // Guardar a IndexedDB
     await dbPut('photos', {
-      id:       photo.id,
-      clientId: clientId,
-      url:      photo.url,
-      data:     editedData,
-      date:     photo.date,
-      comment:  photo.comment || ""
+      id: photo.id,
+      clientId: state.currentClientId,
+      data: photo.data,
+      date: photo.date,
+      comment: photo.comment || ""
     });
-
-    // Supabase BD: actualitzar files[] o photos[] amb nova URL
-    const client = await loadClient(clientId);
-    if (client) {
-      let updated = false;
-      (client.files || []).forEach(f => {
-        if (f.id === photo.id) { f.url = photo.url; f.data = editedData; updated = true; }
-      });
-      if (!updated) {
-        (client.photos || []).forEach(p => {
-          if (p.id === photo.id) { p.url = photo.url; p.data = editedData; }
-        });
-      }
-      await saveClient(client);
-    }
-
-    // Re-dibuixar canvas des del base64 local (instantani, sense esperar xarxa)
-    const refreshImg = new Image();
-    refreshImg.onload = () => {
-      if (!photoCanvas || !photoCtx) return;
-      photoCanvas.width  = refreshImg.width;
-      photoCanvas.height = refreshImg.height;
-      photoCtx.drawImage(refreshImg, 0, 0);
-      drawHistory = [];
-      saveDrawState();
-    };
-    refreshImg.src = editedData;
-
-    showAlert(t('alert_foto_guardada'), t('foto_guardada_msg'), '✅');
+    
+    // Re-generar historial
+    drawHistory = [];
+    saveDrawState();
+    
+    showAlert('Foto guardada', 'Els canvis s\'han guardat correctament', '✅');
   } catch (e) {
     console.error('Error guardant foto editada:', e);
-    showAlert(t('alert_error'), `${t('error_llegir_arxiu')}: ${e.message}`, '❌');
+    showAlert('Error', 'No s\'ha pogut guardar: ' + e.message, '❌');
   }
 }
 
@@ -2999,730 +2609,75 @@ function getCanvasPoint(e) {
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-  // ✅ BUGFIX: getBoundingClientRect() retorna la mida visual (afectada pel
-  // transform CSS scale/translate del zoom). Cal usar les mides internes del
-  // canvas (photoCanvas.width/height) per convertir coordenades correctament.
-  // Amb zoom = 1 el resultat és idèntic a l'anterior; amb zoom > 1 era erroni.
-  const scaleX = photoCanvas.width  / rect.width;
+  const scaleX = photoCanvas.width / rect.width;
   const scaleY = photoCanvas.height / rect.height;
 
   return {
-    x: (clientX - rect.left)  * scaleX,
-    y: (clientY - rect.top)   * scaleY
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
   };
 }
-
-// ═══════════════════════════════════════════════════════
-//  SISTEMA D'EINES UNIFICAT
-//  Eines: pencil | eraser | fill | rect | circle | line
-// ═══════════════════════════════════════════════════════
-let currentTool   = 'none';  // eina activa
-let fillModeEnabled = false; // compat. backward
-
-const TOOL_IDS = {
-  pencil: 'drawToggle',
-  eraser: 'eraserToggle',
-  fill:   'fillToggle',
-  rect:   'rectToggle',
-  circle: 'circleToggle',
-  line:   'lineToggle',
-  text:   'textToggle',
-};
-
-function setDrawTool(tool) {
-  if (currentTool === tool) tool = 'none';
-  currentTool = tool;
-  drawingEnabled  = (tool === 'pencil' || tool === 'eraser');
-  fillModeEnabled = (tool === 'fill');
-
-  // ✅ CAPA: activar/desactivar drawingCanvas per als events
-  const dc = window.drawingCanvas;
-  if (dc) {
-    const active = tool !== 'none';
-    dc.classList.toggle('tool-active', active);
-    dc.style.pointerEvents = active ? 'auto' : 'none';
-    dc.style.cursor = active ? 'crosshair' : 'default';
-  }
-
-  // Highlight botons
-  Object.entries(TOOL_IDS).forEach(([t, id]) => {
-    document.getElementById(id)?.classList.toggle('active', t === tool);
-  });
-}
-window.setDrawTool = setDrawTool;
-
-// Compat: toggleDrawing crida setDrawTool
-function toggleDrawing() { setDrawTool(drawingEnabled ? 'none' : 'pencil'); }
-function toggleFillMode() { setDrawTool(fillModeEnabled ? 'none' : 'fill'); }
-window.toggleFillMode = toggleFillMode;
-
-// Selector RGB complet
-function setDrawColorFromPicker(hex) {
-  setDrawColor(hex);
-  // Actualitzar el picker visualment
-  const picker = document.getElementById('rgbColorPicker');
-  if (picker) picker.value = hex;
-}
-window.setDrawColorFromPicker = setDrawColorFromPicker;
-
-function floodFill(startX, startY, fillColor) {
-  if (!photoCanvas || !photoCtx) return;
-
-  const imgData = photoCtx.getImageData(0, 0, photoCanvas.width, photoCanvas.height);
-  const data    = imgData.data;
-  const w       = photoCanvas.width;
-  const h       = photoCanvas.height;
-
-  // Color del punt inicial
-  const idx = (startY * w + startX) * 4;
-  const targetR = data[idx];
-  const targetG = data[idx + 1];
-  const targetB = data[idx + 2];
-  const targetA = data[idx + 3];
-
-  // Parse fill color hex → rgba
-  const tmp = document.createElement('canvas');
-  tmp.width = tmp.height = 1;
-  const tc = tmp.getContext('2d');
-  tc.fillStyle = fillColor;
-  tc.fillRect(0, 0, 1, 1);
-  const fc = tc.getImageData(0, 0, 1, 1).data;
-  const fillR = fc[0], fillG = fc[1], fillB = fc[2], fillA = 255;
-
-  // Si el color ja és igual, no fer res
-  if (targetR === fillR && targetG === fillG && targetB === fillB && targetA === fillA) return;
-
-  // Tolerància de color (per no ser massa precís)
-  const TOLERANCE = 30;
-  function colorMatch(i) {
-    return Math.abs(data[i]   - targetR) <= TOLERANCE &&
-           Math.abs(data[i+1] - targetG) <= TOLERANCE &&
-           Math.abs(data[i+2] - targetB) <= TOLERANCE &&
-           Math.abs(data[i+3] - targetA) <= TOLERANCE;
-  }
-
-  // Stack-based flood fill (iteratiu, no recursiu per evitar overflow)
-  const stack = [[startX, startY]];
-  const visited = new Uint8Array(w * h);
-  visited[startY * w + startX] = 1;
-
-  while (stack.length > 0) {
-    const [x, y] = stack.pop();
-    const i = (y * w + x) * 4;
-
-    if (!colorMatch(i)) continue;
-
-    data[i]   = fillR;
-    data[i+1] = fillG;
-    data[i+2] = fillB;
-    data[i+3] = fillA;
-
-    if (x > 0   && !visited[y*w + x-1])     { visited[y*w+x-1] = 1;     stack.push([x-1, y]); }
-    if (x < w-1 && !visited[y*w + x+1])     { visited[y*w+x+1] = 1;     stack.push([x+1, y]); }
-    if (y > 0   && !visited[(y-1)*w + x])   { visited[(y-1)*w+x] = 1;   stack.push([x, y-1]); }
-    if (y < h-1 && !visited[(y+1)*w + x])   { visited[(y+1)*w+x] = 1;   stack.push([x, y+1]); }
-  }
-
-  photoCtx.putImageData(imgData, 0, 0);
-  saveDrawState();
-}
-
-// Event listener per al fill — s'activa en setupCanvasDrawing
-function handleFillClick(e) {
-  if (!fillModeEnabled) return;
-  e.preventDefault();
-  e.stopPropagation();
-
-  const { x, y } = getCanvasPoint(e);
-  const cx = Math.round(x);
-  const cy = Math.round(y);
-
-  if (cx >= 0 && cy >= 0 && cx < photoCanvas.width && cy < photoCanvas.height) {
-    floodFill(cx, cy, drawColor);
-  }
-}
-// ─────────────────────────────────────────────────────────────────────────────
 
 // Event listeners per dibuixar - VERSIÓ FINAL CORRECTA
 function setupCanvasDrawing() {
   if (!photoCanvas || !photoCtx) return;
 
-  // ✅ CAPA: els events van al drawingCanvas, no al photoCanvas
-  const dc = window.drawingCanvas || photoCanvas;
-  const dx = window.drawingCtx    || photoCtx;
+  let isDrawing = false;
 
-  // Netejar listeners anteriors
-  if (dc._drawHandlers) {
-    const h = dc._drawHandlers;
-    ['mousedown','mousemove','mouseup','mouseleave'].forEach(ev => dc.removeEventListener(ev, h[ev]));
-    dc.removeEventListener('touchstart', h.touchstart);
-    dc.removeEventListener('touchmove',  h.touchmove);
-    dc.removeEventListener('touchend',   h.touchend);
-    dc.removeEventListener('click',      h.click);
-    dc.removeEventListener('touchend',   h.fillTouch);
-  }
+  function startDraw(e) {
+    if (!drawingEnabled) return;
+    e.preventDefault();
 
-  let isDrawing  = false;
-  let shapeStart = null;
-  let snapShot   = null; // snapshot de la CAPA DE DIBUIX per formes
-
-  function getPoint(e) {
-    const src = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : null);
-    const clientX = src ? src.clientX : e.clientX;
-    const clientY = src ? src.clientY : e.clientY;
-
-    // canvas-stack té: translate + scale + rotate
-    // getBoundingClientRect() del drawingCanvas retorna el bounding box ROTAT.
-    // El centre del bounding box = centre del canvas a pantalla (sempre, independentment de la rotació).
-    const dc   = window.drawingCanvas || photoCanvas;
-    const rect = dc.getBoundingClientRect();
-    const cx   = rect.left + rect.width  / 2;   // centre pantalla
-    const cy   = rect.top  + rect.height / 2;
-
-    // Punt relatiu al centre
-    const dx = clientX - cx;
-    const dy = clientY - cy;
-
-    // Des-rotar: aplicar -totalRotationDeg per obtenir coordenades en l'espai del canvas
-    const rad = -(totalRotationDeg || 0) * Math.PI / 180;
-    const ux  = dx * Math.cos(rad) - dy * Math.sin(rad);
-    const uy  = dx * Math.sin(rad) + dy * Math.cos(rad);
-
-    // Mida de display del canvas-stack (sense rotació, però amb zoom)
-    const stack  = document.getElementById('canvasStack');
-    const dispW  = (parseFloat(stack && stack.style.width)  || photoCanvas.width)  * currentZoom;
-    const dispH  = (parseFloat(stack && stack.style.height) || photoCanvas.height) * currentZoom;
-
-    // Convertir de coordenades de display a píxels interns del canvas
-    return {
-      x: (ux / dispW  + 0.5) * photoCanvas.width,
-      y: (uy / dispH  + 0.5) * photoCanvas.height
-    };
-  }
-
-  function onStart(e) {
-    // 2 dits = zoom/rotació, no dibuix — deixar pujar l'event al zoom handler
-    if (e.touches && e.touches.length >= 2) return;
-    const tool = currentTool;
-    if (tool === 'none' || tool === 'fill') return;
-    e.preventDefault(); e.stopPropagation();
     isDrawing = true;
-    const { x, y } = getPoint(e);
-    shapeStart = { x, y };
-
-    dx.globalCompositeOperation = (tool === 'eraser') ? 'destination-out' : 'source-over';
-    if (tool === 'pencil' || tool === 'eraser') {
-      dx.strokeStyle = drawColor;
-      dx.lineWidth   = (tool === 'eraser') ? drawSize * 3 : drawSize;
-      dx.lineCap     = 'round';
-      dx.lineJoin    = 'round';
-      dx.beginPath();
-      dx.moveTo(x, y);
-    } else {
-      // Formes: guardar snapshot de la capa de dibuix
-      snapShot = dx.getImageData(0, 0, dc.width, dc.height);
-    }
+    const { x, y } = getCanvasPoint(e);
+    
+    // Aplicar color i gruix ABANS de dibuixar
+    photoCtx.strokeStyle = drawColor;
+    photoCtx.lineWidth = drawSize;
+    photoCtx.lineCap = 'round';
+    photoCtx.lineJoin = 'round';
+    
+    photoCtx.beginPath();
+    photoCtx.moveTo(x, y);
   }
 
-  function onMove(e) {
-    // 2 dits = zoom/rotació, aturar dibuix i deixar pujar l'event
-    if (e.touches && e.touches.length >= 2) {
-      if (isDrawing) { isDrawing = false; shapeStart = null; snapShot = null; }
-      return;
-    }
-    if (!isDrawing) return;
-    const tool = currentTool;
-    if (tool === 'none' || tool === 'fill') return;
-    e.preventDefault(); e.stopPropagation();
-    const { x, y } = getPoint(e);
+  function draw(e) {
+    if (!isDrawing || !drawingEnabled) return;
+    e.preventDefault();
 
-    if (tool === 'pencil' || tool === 'eraser') {
-      dx.lineTo(x, y);
-      dx.stroke();
-    } else if (shapeStart && snapShot) {
-      dx.putImageData(snapShot, 0, 0);
-      dx.globalCompositeOperation = 'source-over';
-      dx.strokeStyle = drawColor;
-      dx.lineWidth   = drawSize;
-      if (tool === 'rect') {
-        dx.lineCap = 'square';
-        dx.strokeRect(shapeStart.x, shapeStart.y, x - shapeStart.x, y - shapeStart.y);
-      } else if (tool === 'circle') {
-        const rx = (x - shapeStart.x) / 2, ry = (y - shapeStart.y) / 2;
-        dx.beginPath();
-        dx.ellipse(shapeStart.x + rx, shapeStart.y + ry, Math.abs(rx), Math.abs(ry), 0, 0, Math.PI*2);
-        dx.stroke();
-      } else if (tool === 'line') {
-        dx.lineCap = 'round';
-        dx.beginPath();
-        dx.moveTo(shapeStart.x, shapeStart.y);
-        dx.lineTo(x, y);
-        dx.stroke();
-      }
-    }
+    const { x, y } = getCanvasPoint(e);
+    photoCtx.lineTo(x, y);
+    photoCtx.stroke();
   }
 
-  function onEnd(e) {
-    if (e && e.touches && e.touches.length >= 2) return;
+  function endDraw(e) {
     if (!isDrawing) return;
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    isDrawing = false; shapeStart = null; snapShot = null;
-    dx.globalCompositeOperation = 'source-over';
-    dx.closePath();
+    if (e) e.preventDefault();
+
+    isDrawing = false;
+    photoCtx.closePath();
     saveDrawState();
   }
 
-  // Click: Fill o Text (eines no de traç)
-  function onClickFill(e) {
-    const tool = currentTool;
-    if (tool !== 'fill' && tool !== 'text') return;
-    e.preventDefault(); e.stopPropagation();
-    const { x, y } = getPoint(e);
-    const cx = Math.round(x), cy = Math.round(y);
+  // Mouse
+  photoCanvas.addEventListener('mousedown', startDraw);
+  photoCanvas.addEventListener('mousemove', draw);
+  photoCanvas.addEventListener('mouseup', endDraw);
+  photoCanvas.addEventListener('mouseleave', endDraw);
 
-    if (tool === 'fill') {
-      if (cx >= 0 && cy >= 0 && cx < dc.width && cy < dc.height) {
-        floodFillLayer(dx, dc, cx, cy, drawColor);
-      }
-    } else if (tool === 'text') {
-      showTextInput(e.clientX, e.clientY, x, y, dx, dc);
-    }
-  }
-
-  const fillTouchH = (e) => {
-    if (currentTool !== 'fill' && currentTool !== 'text') return;
-    if (e.changedTouches?.length !== 1) return;
-    // Evitar que dispari si ha estat un gest llarg (rotació/zoom)
-    e.preventDefault();
-    const t = e.changedTouches[0];
-    onClickFill({ clientX: t.clientX, clientY: t.clientY, preventDefault:()=>{}, stopPropagation:()=>{} });
-  };
-
-  dc._drawHandlers = {
-    mousedown: onStart, mousemove: onMove, mouseup: onEnd, mouseleave: onEnd,
-    touchstart: onStart, touchmove: onMove, touchend: onEnd, click: onClickFill, fillTouch: fillTouchH
-  };
-  dc.addEventListener('mousedown',  onStart);
-  dc.addEventListener('mousemove',  onMove);
-  dc.addEventListener('mouseup',    onEnd);
-  dc.addEventListener('mouseleave', onEnd);
-  dc.addEventListener('touchstart', onStart,    { passive: false });
-  dc.addEventListener('touchmove',  onMove,     { passive: false });
-  dc.addEventListener('touchend',   onEnd,      { passive: false });
-  dc.addEventListener('click',      onClickFill);
-  dc.addEventListener('touchend',   fillTouchH, { passive: false });
+  // Touch
+  photoCanvas.addEventListener('touchstart', startDraw, { passive: false });
+  photoCanvas.addEventListener('touchmove', draw, { passive: false });
+  photoCanvas.addEventListener('touchend', endDraw);
 }
-
-
-// ── ACCIONS FOTO ACTUAL ────────────────────────────────────────────────────
-async function deleteCurrentPhoto() {
-  if (!window.currentClientPhotos) return;
-  const photo = window.currentClientPhotos[currentLightboxIndex];
-  if (!photo) return;
-  closeLightbox();
-  await confirmDeleteFile(photo);
-}
-window.deleteCurrentPhoto = deleteCurrentPhoto;
-
-function downloadCurrentPhoto() {
-  if (!photoCanvas) return;
-  const a = document.createElement('a');
-  a.href = photoCanvas.toDataURL('image/jpeg', 0.95);
-  a.download = 'foto_' + Date.now() + '.jpg';
-  a.click();
-}
-window.downloadCurrentPhoto = downloadCurrentPhoto;
-
-function shareCurrentPhoto() {
-  if (!photoCanvas) return;
-  photoCanvas.toBlob(async (blob) => {
-    const file = new File([blob], 'foto.jpg', { type: 'image/jpeg' });
-    if (navigator.share && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'Foto FocusWork' }); }
-      catch(e) { if (e.name !== 'AbortError') console.error(e); }
-    } else {
-      // Fallback: descarregar
-      downloadCurrentPhoto();
-    }
-  }, 'image/jpeg', 0.95);
-}
-window.shareCurrentPhoto = shareCurrentPhoto;
-// ──────────────────────────────────────────────────────────────────────────
 
 // Exportar funcions
 window.toggleDrawing = toggleDrawing;
 window.setDrawColor = setDrawColor;
 window.updateDrawSize = updateDrawSize;
 window.undoDraw = undoDraw;
-
-// Netejar NOMÉS la capa de dibuix (la foto queda intacta)
-function clearDrawingLayer() {
-  const dc = window.drawingCanvas;
-  const dx = window.drawingCtx;
-  if (!dc || !dx) return;
-  if (!confirm('Netejar tots els dibuixos d\'aquesta capa?\n\nLa foto original no es veurà afectada.')) return;
-  dx.clearRect(0, 0, dc.width, dc.height);
-  drawHistory = [];
-  saveDrawState();
-}
-window.clearDrawingLayer = clearDrawingLayer;
-
-// Mostrar/ocultar capa de dibuix
-function toggleLayerVisibility() {
-  const dc = window.drawingCanvas;
-  if (!dc) return;
-  const hidden = dc.style.opacity === '0';
-  dc.style.opacity = hidden ? '1' : '0';
-  document.getElementById('layerVisBtn')?.classList.toggle('layer-hidden', !hidden);
-}
-window.toggleLayerVisibility = toggleLayerVisibility;
-
-// Flood fill sobre la capa de dibuix
-function floodFillLayer(ctx, canvas, startX, startY, fillColor) {
-  const w = canvas.width, h = canvas.height;
-
-  // ✅ FIX FILL: composar foto + capa de dibuix en un canvas temporal
-  // Així el fill veu les línies de la foto original com a límits
-  const composite = document.createElement('canvas');
-  composite.width = w; composite.height = h;
-  const cx = composite.getContext('2d');
-  if (photoCanvas) cx.drawImage(photoCanvas, 0, 0);   // foto base (línies límit)
-  cx.drawImage(canvas, 0, 0);                          // capa de dibuix actual
-
-  const imgData = cx.getImageData(0, 0, w, h);
-  const data = imgData.data;
-  const idx = (startY * w + startX) * 4;
-  const tR = data[idx], tG = data[idx+1], tB = data[idx+2], tA = data[idx+3];
-
-  const tmp = document.createElement('canvas');
-  tmp.width = tmp.height = 1;
-  const tc = tmp.getContext('2d');
-  tc.fillStyle = fillColor; tc.fillRect(0,0,1,1);
-  const fc = tc.getImageData(0,0,1,1).data;
-  const fR = fc[0], fG = fc[1], fB = fc[2];
-
-  // Tolerància baixa per respectar línies de la foto
-  const TOL = 15;
-  const match = i => Math.abs(data[i]-tR)<=TOL && Math.abs(data[i+1]-tG)<=TOL &&
-                     Math.abs(data[i+2]-tB)<=TOL && Math.abs(data[i+3]-tA)<=TOL;
-
-  // Flood fill sobre el composite (per detectar límits)
-  const filled = new Uint8Array(w * h); // píxels a pintar
-  const stack  = [[startX, startY]];
-  const visited = new Uint8Array(w * h);
-  visited[startY*w+startX] = 1;
-
-  while (stack.length) {
-    const [x, y] = stack.pop();
-    const i = (y*w+x)*4;
-    if (!match(i)) continue;
-    filled[y*w+x] = 1;
-    if (x>0   && !visited[y*w+x-1])   { visited[y*w+x-1]=1;   stack.push([x-1,y]); }
-    if (x<w-1 && !visited[y*w+x+1])   { visited[y*w+x+1]=1;   stack.push([x+1,y]); }
-    if (y>0   && !visited[(y-1)*w+x]) { visited[(y-1)*w+x]=1; stack.push([x,y-1]); }
-    if (y<h-1 && !visited[(y+1)*w+x]) { visited[(y+1)*w+x]=1; stack.push([x,y+1]); }
-  }
-
-  // Aplicar el color NOMÉS a la capa de dibuix (foto intacta)
-  const drawData = ctx.getImageData(0, 0, w, h);
-  const dd = drawData.data;
-  for (let i = 0; i < w*h; i++) {
-    if (!filled[i]) continue;
-    dd[i*4]   = fR;
-    dd[i*4+1] = fG;
-    dd[i*4+2] = fB;
-    dd[i*4+3] = 255;
-  }
-  ctx.putImageData(drawData, 0, 0);
-  saveDrawState();
-}
-window.floodFillLayer = floodFillLayer;
-
-// ── EINA TEXT ───────────────────────────────────────────────────────────────
-function showTextInput(screenX, screenY, canvasX, canvasY, ctx, canvas) {
-  // Eliminar input anterior si existia
-  const old = document.getElementById('floatingTextInput');
-  if (old) old.remove();
-
-  const wrap = document.createElement('div');
-  wrap.id = 'floatingTextInput';
-  wrap.style.cssText = `
-    position: fixed;
-    left: ${screenX}px;
-    top:  ${screenY}px;
-    z-index: 99999;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    background: rgba(15,23,42,0.95);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    min-width: 220px;
-  `;
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.placeholder = 'Escriu aquí...';
-  input.style.cssText = `
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 6px;
-    color: #f1f5f9;
-    padding: 6px 10px;
-    font-size: 14px;
-    outline: none;
-    width: 100%;
-    box-sizing: border-box;
-  `;
-
-  // Slider mida text
-  const sizeRow = document.createElement('div');
-  sizeRow.style.cssText = 'display:flex; align-items:center; gap:6px;';
-  const sizeLabel = document.createElement('span');
-  sizeLabel.textContent = t('mida_label');
-  sizeLabel.style.cssText = 'font-size:11px; color:rgba(255,255,255,0.5); white-space:nowrap;';
-  const sizeSlider = document.createElement('input');
-  sizeSlider.type = 'range'; sizeSlider.min = 10; sizeSlider.max = 120; sizeSlider.value = 28;
-  sizeSlider.style.cssText = 'flex:1; accent-color:#f97316;';
-  sizeRow.appendChild(sizeLabel); sizeRow.appendChild(sizeSlider);
-
-  const btnRow = document.createElement('div');
-  btnRow.style.cssText = 'display:flex; gap:6px;';
-
-  const okBtn = document.createElement('button');
-  okBtn.textContent = t('afegir_btn');
-  okBtn.style.cssText = `
-    flex:1; padding:6px; border-radius:6px; border:none; cursor:pointer;
-    background:#f97316; color:#fff; font-size:13px; font-weight:600;
-  `;
-  okBtn.onclick = () => {
-    const text = input.value.trim();
-    if (text) {
-      ctx.globalCompositeOperation = 'source-over';
-      const fontSize = parseInt(sizeSlider.value);
-      ctx.font = `bold ${fontSize}px sans-serif`;
-      ctx.fillStyle  = drawColor;
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-      ctx.lineWidth  = fontSize / 12;
-      // Ombra lleugera per llegibilitat
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur  = 4;
-      ctx.strokeText(text, canvasX, canvasY);
-      ctx.fillText(text, canvasX, canvasY);
-      ctx.shadowBlur = 0;
-      saveDrawState();
-    }
-    wrap.remove();
-  };
-
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent = '✕';
-  cancelBtn.style.cssText = `
-    padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.15);
-    background:rgba(255,255,255,0.07); color:#f1f5f9; cursor:pointer; font-size:13px;
-  `;
-  cancelBtn.onclick = () => wrap.remove();
-
-  btnRow.appendChild(okBtn); btnRow.appendChild(cancelBtn);
-  wrap.appendChild(input); wrap.appendChild(sizeRow); wrap.appendChild(btnRow);
-  document.body.appendChild(wrap);
-
-  // Ajustar posició perquè no surti de pantalla
-  requestAnimationFrame(() => {
-    const r = wrap.getBoundingClientRect();
-    if (r.right  > window.innerWidth)  wrap.style.left = (window.innerWidth  - r.width  - 10) + 'px';
-    if (r.bottom > window.innerHeight) wrap.style.top  = (window.innerHeight - r.height - 10) + 'px';
-    input.focus();
-  });
-
-  // Enter per confirmar
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') okBtn.click(); if (e.key === 'Escape') wrap.remove(); });
-}
-window.showTextInput = showTextInput;
-// ────────────────────────────────────────────────────────────────────────────
-
-// ── ROTATE KNOB (PC) ────────────────────────────────────────────────────────
-// Arrossegar esquerra = girar CCW, dreta = CW
-// 1 px de moviment = 0.5 graus (2 px/deg — sensació natural)
-function initRotateKnob() {
-  const knob = document.getElementById('rotateKnob');
-  if (!knob) return;
-
-  // ✅ FIX: Netejar handlers anteriors per evitar acumulació en reobrir fotos
-  if (knob._knobHandlers) {
-    knob.removeEventListener('mousedown',  knob._knobHandlers.down);
-    knob.removeEventListener('touchstart', knob._knobHandlers.down);
-    // Assegurar que no quedin listeners al document de sessions anteriors
-    if (knob._knobHandlers.move) document.removeEventListener('mousemove', knob._knobHandlers.move);
-    if (knob._knobHandlers.move) document.removeEventListener('touchmove',  knob._knobHandlers.move);
-    if (knob._knobHandlers.up)   document.removeEventListener('mouseup',    knob._knobHandlers.up);
-    if (knob._knobHandlers.up)   document.removeEventListener('touchend',   knob._knobHandlers.up);
-  }
-
-  let isDragging = false;
-  let startX     = 0;
-  let totalDeg   = 0;
-
-  const showAngle = (deg) => {
-    let badge = knob.querySelector('.rotate-angle-badge');
-    if (!badge) {
-      badge = document.createElement('span');
-      badge.className = 'rotate-angle-badge';
-      knob.appendChild(badge);
-    }
-    badge.textContent = Math.round(deg) + '°';
-    const icon = knob.querySelector('.etb-rotate-icon');
-    if (icon) icon.style.transform = `rotate(${deg}deg)`;
-  };
-
-  const startRotation = totalRotationDeg; // angle abans de començar el drag
-
-  const onDown = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    isDragging = true;
-    totalDeg   = 0;
-    startX     = (e.touches ? e.touches[0].clientX : e.clientX);
-    knob.classList.add('rotating');
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',   onUp);
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('touchend',  onUp);
-  };
-
-  const onMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    totalDeg = (clientX - startX) * 0.5; // 2px = 1 grau
-    showAngle(totalRotationDeg + totalDeg);
-    // Aplicar rotació acumulada + drag actual
-    const stack = document.getElementById('canvasStack');
-    if (stack) {
-      stack.style.transform = `translate(${panX}px,${panY}px) scale(${currentZoom}) rotate(${totalRotationDeg + totalDeg}deg)`;
-    }
-  };
-
-  const onUp = () => {
-    if (!isDragging) return;
-    isDragging = false;
-    knob.classList.remove('rotating');
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup',   onUp);
-    document.removeEventListener('touchmove', onMove);
-    document.removeEventListener('touchend',  onUp);
-
-    // Consolidar l'angle al total
-    totalRotationDeg = (totalRotationDeg + totalDeg) % 360;
-    applyRotationTransform();
-
-    const icon = knob.querySelector('.etb-rotate-icon');
-    if (icon) icon.style.transform = '';
-    const badge = knob.querySelector('.rotate-angle-badge');
-    if (badge) badge.textContent = '';
-    totalDeg = 0;
-  };
-
-  // Guardar refs per cleanup futur
-  knob._knobHandlers = { down: onDown, move: onMove, up: onUp };
-  knob.addEventListener('mousedown',  onDown);
-  knob.addEventListener('touchstart', onDown, { passive: false });
-}
-window.initRotateKnob = initRotateKnob;
-// ────────────────────────────────────────────────────────────────────────────
-
 window.clearDrawing = clearDrawing;
 window.saveEditedPhoto = saveEditedPhoto;
-
-// ── SYNC ENTRE DISPOSITIUS ──────────────────────────────────────────────────
-// Quan el lightbox és obert, comprova cada 15s si la foto ha canviat a Supabase.
-// Si la URL ha canviat (un altre dispositiu ha guardat), recarrega silenciosament.
-let _syncInterval = null;
-
-function startPhotoSync() {
-  stopPhotoSync();
-  _syncInterval = setInterval(async () => {
-    if (!state.currentClientId || currentLightboxIndex < 0) return;
-    const photo = (window.currentClientPhotos || [])[currentLightboxIndex];
-    if (!photo) return;
-    try {
-      const fresh = await loadClient(state.currentClientId);
-      if (!fresh) return;
-      const allFresh = [
-        ...(fresh.photos || []).map(p => ({ ...p, type: 'image' })),
-        ...(fresh.files  || [])
-      ].sort((a, b) => new Date(b.date) - new Date(a.date));
-      const freshPhoto = allFresh.find(f => f.id === photo.id);
-      if (!freshPhoto) return;
-      const freshUrl = freshPhoto.url || freshPhoto.data;
-      const currUrl  = photo.url      || photo.data;
-      if (freshUrl && freshUrl !== currUrl) {
-        // La foto ha canviat en un altre dispositiu — recarregar
-        photo.url  = freshPhoto.url;
-        photo.data = freshPhoto.data;
-        const img  = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          if (!photoCanvas || !photoCtx) return;
-          photoCanvas.width  = img.width;
-          photoCanvas.height = img.height;
-          photoCtx.drawImage(img, 0, 0);
-          syncDrawingCanvasSize();
-          fitPhotoInContainer();
-          applyZoomTransform();
-        };
-        img.src = freshUrl;
-      }
-    } catch (e) { /* silenciós */ }
-  }, 15000);
-}
-
-function stopPhotoSync() {
-  if (_syncInterval) { clearInterval(_syncInterval); _syncInterval = null; }
-}
-window.startPhotoSync = startPhotoSync;
-window.stopPhotoSync  = stopPhotoSync;
-
-// ── MULTIIDIOMA — refrescar contingut dinàmic quan canvia la llengua ─────────
-window.addEventListener('langchange', () => {
-  // Refrescar clientName
-  const clientNameEl = document.getElementById('clientName');
-  if (clientNameEl && typeof t === 'function') {
-    const defaults = ['Cap encàrrec actiu', 'Sin encargo activo', 'No active project'];
-    if (defaults.some(d => clientNameEl.textContent.trim() === d)) {
-      clientNameEl.textContent = t('no_client');
-    }
-  }
-  // Refrescar llista de clients si la vista és visible
-  if (typeof renderClientsOverview === 'function') {
-    const panel = document.getElementById('clientsOverviewPanel');
-    if (panel && panel.style.display !== 'none') renderClientsOverview();
-  }
-  // Refrescar filtre actiu
-  if (typeof renderFilteredClients === 'function') renderFilteredClients();
-  // Refrescar data d'entrega (textos traduïbles)
-  if (typeof updateDeliveryDateDisplay === 'function' && typeof loadClient === 'function') {
-    const clientId = window.state && window.state.currentClientId;
-    if (clientId) loadClient(clientId).then(c => { if (c) updateDeliveryDateDisplay(c); });
-  }
-  // Refrescar panel estat del projecte (re-renderitza labels traduïts)
-  const stateContainer = document.getElementById('projectStateContainer');
-  const progressContainer = document.getElementById('projectProgressContainer');
-  if (stateContainer && stateContainer.innerHTML && typeof renderStateSelector === 'function') {
-    const clientId = window.state && window.state.currentClientId;
-    if (clientId && typeof loadClient === 'function') {
-      loadClient(clientId).then(client => {
-        if (client) {
-          stateContainer.innerHTML = renderStateSelector(client);
-          progressContainer.innerHTML = renderProgressSelector(client);
-        }
-      });
-    }
-  }
-});
-// ─────────────────────────────────────────────────────────────────────────────
-// ────────────────────────────────────────────────────────────────────────────
 window.savePhotoComment = savePhotoComment;
   
 // Exportar funcions globals
@@ -3818,7 +2773,7 @@ function setupStateListeners() {
       
       // Mostrar confirmació
       const stateName = option.querySelector('.state-option-label').textContent;
-      showAlert(t('alert_estat'), `${t('estat_actualitzat_msg')}${stateName}`, '✅');
+      showAlert('Estat actualitzat', `Projecte marcat com: ${stateName}`, '✅');
     });
   });
 }
@@ -3842,7 +2797,7 @@ function setupProgressListeners() {
       // Mostrar confirmació
       if (typeof PROGRESS_LEVELS !== 'undefined' && PROGRESS_LEVELS[level]) {
         const progressLabel = PROGRESS_LEVELS[level].label;
-        showAlert(t('alert_progres'), `${progressLabel} (${level}/5)`, '⭐');
+        showAlert('Progrés actualitzat', `${progressLabel} (${level}/5)`, '⭐');
       }
     });
   });
@@ -3928,13 +2883,13 @@ async function addFileToClient() {
   console.log('📎 addFileToClient iniciada');
   
   if (!state.currentClientId) {
-    showAlert(t('alert_error'), t('selecciona_client'), '⚠️');
+    showAlert('Error', 'Selecciona un client primer', '⚠️');
     return;
   }
   
   const client = await loadClient(state.currentClientId);
   if (!client) {
-    showAlert(t('alert_error'), t('error_no_client'), '⚠️');
+    showAlert('Error', 'Client no trobat', '⚠️');
     return;
   }
   
@@ -3965,7 +2920,7 @@ async function addFileToClient() {
     
     // Validar mida
     if (file.size > maxSize) {
-      showAlert(t('alert_error'), `${t('arxiu_massa_gran_msg')} ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
+      showAlert('Arxiu massa gran', `Mida màxima per ${fileType}: ${formatFileSize(maxSize)}`, '⚠️');
       return;
     }
     
@@ -4035,22 +2990,22 @@ async function processImageFile(file, client) {
         await saveClient(client);
         await renderFileGallery(client);
         
-        showAlert(t('imatge_afegida'), `${file.name} ${t('arxiu_afegit_msg')}`, '✅');
+        showAlert('Imatge afegida', `${file.name} afegit correctament`, '✅');
       } catch (error) {
         console.error('Error processant imatge:', error);
-        showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+        showAlert('Error', 'No s\'ha pogut processar la imatge', '❌');
       }
     };
     
     img.onerror = () => {
-      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+      showAlert('Error', 'No s\'ha pogut carregar la imatge', '❌');
     };
     
     img.src = reader.result;
   };
   
   reader.onerror = () => {
-    showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+    showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
   };
   
   reader.readAsDataURL(file);
@@ -4098,13 +3053,13 @@ async function processVideoFile(file, client) {
         await saveClient(client);
         await renderFileGallery(client);
         
-        showAlert(t('video_afegit'), `${file.name} ${t('arxiu_afegit_msg')}`, '✅');
+        showAlert('Vídeo afegit', `${file.name} afegit correctament`, '✅');
       };
       
       video.src = reader.result;
     } catch (error) {
       console.error('Error processant vídeo:', error);
-      showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+      showAlert('Error', 'No s\'ha pogut processar el vídeo', '❌');
     }
   };
   
@@ -4136,11 +3091,11 @@ async function processGenericFile(file, client) {
     await renderFileGallery(client);
     
     const icon = getFileIcon(fileType);
-    showAlert(t('alert_arxiu_afegit'), `${icon} ${file.name} ${t('arxiu_afegit_msg')}`, '✅');
+    showAlert('Arxiu afegit', `${icon} ${file.name} afegit correctament`, '✅');
   };
   
   reader.onerror = () => {
-    showAlert(t('alert_error'), t('error_llegir_arxiu'), '❌');
+    showAlert('Error', 'No s\'ha pogut llegir l\'arxiu', '❌');
   };
   
   reader.readAsDataURL(file);
@@ -4166,20 +3121,18 @@ async function renderFileGallery(preloadedClient = null) {
         type: 'image',
         name: 'Imatge',
         mimeType: 'image/jpeg',
-        url:  photo.url  || null,   // ✅ preservar URL Supabase si existeix
-        data: photo.data || null,   // ✅ preservar base64 local si existeix
+        data: photo.data,
         comment: photo.comment || ""
       });
     });
   }
   
-  // Afegir arxius nous (evitar duplicats per ID)
+  // Afegir arxius nous
   if (client && client.files && client.files.length > 0) {
-    const existingIds = new Set(allFiles.map(f => f.id));
-    client.files.forEach(f => { if (!existingIds.has(f.id)) allFiles.push(f); });
+    allFiles.push(...client.files);
   }
-
-  // Ordenar i guardar globalment
+  
+  // ✅ Ordenar y guardar el array ordenado globalmente
   const sortedFiles = allFiles.sort((a, b) => new Date(b.date) - new Date(a.date));
   window.currentClientFiles = sortedFiles;
   
@@ -4190,28 +3143,6 @@ async function renderFileGallery(preloadedClient = null) {
     gap: 12px;
     padding: 12px;
   `;
-
-  // ── Scroll detector: si la galeria fa scroll, bloquejar tots els taps ──
-  // És el mètode més fiable per distingir scroll de tap en mòbil
-  if (!gallery._scrollHandlerAdded) {
-    gallery._scrollHandlerAdded = true;
-    let _scrollTimer = null;
-    gallery.addEventListener('scroll', () => {
-      window._galleryScrolling = true;
-      if (_scrollTimer) clearTimeout(_scrollTimer);
-      _scrollTimer = setTimeout(() => { window._galleryScrolling = false; }, 400);
-    }, { passive: true });
-    // El scroll del parent (clientInfoPanel) també ha de bloquejar
-    const parentPanel = gallery.closest('.client-info-panel, #clientInfoPanel, .client-section');
-    if (parentPanel && !parentPanel._scrollHandlerAdded) {
-      parentPanel._scrollHandlerAdded = true;
-      parentPanel.addEventListener('scroll', () => {
-        window._galleryScrolling = true;
-        if (_scrollTimer) clearTimeout(_scrollTimer);
-        _scrollTimer = setTimeout(() => { window._galleryScrolling = false; }, 400);
-      }, { passive: true });
-    }
-  }
   
   const fragment = document.createDocumentFragment();
   
@@ -4229,88 +3160,55 @@ async function renderFileGallery(preloadedClient = null) {
         background: #1e293b;
       `;
       
-      // ✅ LONG PRESS per esborrar / TAP per obrir
-      // Lògica anti-accidental:
-      //   - Detecta moviment (scroll) i cancel·la si l'usuari es mou
-      //   - Tap ha de ser < 400ms I sense moviment > 12px
-      //   - Long press és 750ms
-      let pressTimer  = null;
-      let pressActive = false;   // true si el long press ja s'ha disparat
-      let startX = 0, startY = 0;
-      let hasMoved = false;
+      // ✅ LONG PRESS per esborrar (PER TOTS ELS ARXIUS incloent imatges)
+      let pressTimer = null;
       let touchStartTime = null;
-      const MOVE_THRESHOLD = 8;    // px — molt poc, scroll activa hasMoved de seguida
-      const TAP_MAX_MS    = 300;   // ms — tap ha de ser ràpid i deliberat
-      const LONG_MS       = 800;   // ms fins a long press (esborrar)
-
-      // ── Touch/click: distinció tap vs scroll vs long-press ──────────────
-      // Estratègia: escoltem scroll al PARE (galeria) per saber si s'està fent
-      // scroll, no al contenidor individual. Això és el mètode més fiable.
+      
       const startPress = (e) => {
-        const touch = e.touches ? e.touches[0] : e;
-        startX = touch.clientX;
-        startY = touch.clientY;
-        hasMoved    = false;
-        pressActive = false;
         touchStartTime = Date.now();
-        // NO fer scale visual per evitar confusió amb scroll
+        container.style.transform = 'scale(0.95)';
+        container.style.transition = 'transform 0.1s';
+        
         pressTimer = setTimeout(() => {
-          if (hasMoved) return;
-          pressActive = true;
-          container.style.outline = '2px solid #ef4444';
-          if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+          // Vibrar si està disponible
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+          
+          // Mostrar confirmació
           confirmDeleteFile(file);
-          container.style.outline = '';
-        }, LONG_MS);
+          
+          // Reset visual
+          container.style.transform = 'scale(1)';
+        }, 800); // 800ms = 0.8 segons de pulsació
       };
-
-      const onMove = (e) => {
-        if (!touchStartTime) return;
-        const touch = e.touches ? e.touches[0] : e;
-        const dx = Math.abs(touch.clientX - startX);
-        const dy = Math.abs(touch.clientY - startY);
-        // Qualsevol moviment > llindar = és scroll, cancel·lar tot
-        if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
-          hasMoved = true;
-          if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      
+      const cancelPress = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
         }
-      };
-
-      const endPress = (e) => {
-        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-        const elapsed = touchStartTime ? Date.now() - touchStartTime : 9999;
-        touchStartTime = null;
-
-        // Obrir NOMÉS si: sense moviment, tap curt, no long-press, i galeria no scrollant
-        if (!hasMoved && !pressActive && elapsed < TAP_MAX_MS && !window._galleryScrolling) {
+        container.style.transform = 'scale(1)';
+        
+        // Si és un click curt (menys de 300ms), obrir arxiu
+        if (touchStartTime && (Date.now() - touchStartTime) < 300) {
           openFileViewer(allFiles, index);
         }
-        pressActive = false;
-        hasMoved    = false;
-      };
-
-      const leavePress = () => {
-        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
         touchStartTime = null;
-        pressActive    = false;
-        hasMoved       = false;
       };
-
-      // Desktop
-      container.addEventListener('mousedown',  startPress);
-      container.addEventListener('mousemove',  onMove);
-      container.addEventListener('mouseup',    endPress);
-      container.addEventListener('mouseleave', leavePress);
-      // Mòbil: passive:false per poder cancel·lar si cal
+      
+      // Event listeners per desktop i mòbil
+      container.addEventListener('mousedown', startPress);
       container.addEventListener('touchstart', startPress, { passive: true });
-      container.addEventListener('touchmove',  onMove,     { passive: true });
-      container.addEventListener('touchend',   endPress);
-      container.addEventListener('touchcancel',leavePress);
+      container.addEventListener('mouseup', cancelPress);
+      container.addEventListener('mouseleave', cancelPress);
+      container.addEventListener('touchend', cancelPress);
+      container.addEventListener('touchcancel', cancelPress);
       
       if (file.type === 'image') {
         // Mostrar thumbnail d'imatge
         const img = document.createElement("img");
-        img.src = file.url || file.data;
+        img.src = file.data;
         img.className = "photo-thumb";
         img.style.cssText = `
           width: 100%;
@@ -4320,35 +3218,6 @@ async function renderFileGallery(preloadedClient = null) {
           pointer-events: none;
         `;
         container.appendChild(img);
-        
-        // Badge: comentari (💬) o editat (✏️)
-        const _hasComment = file.comment && file.comment.trim();
-        const _hasEdit    = file.edited || file.hasDrawing || file.annotated;
-        if (_hasComment || _hasEdit) {
-          const badge = document.createElement('div');
-          badge.className = 'comment-badge';
-          badge.style.cssText = `
-            position: absolute;
-            bottom: 5px;
-            left: 5px;
-            display: flex;
-            gap: 3px;
-            pointer-events: none;
-          `;
-          if (_hasComment) {
-            const b = document.createElement('span');
-            b.style.cssText = 'background:rgba(0,0,0,0.75);color:white;padding:3px 7px;border-radius:10px;font-size:12px;backdrop-filter:blur(4px);';
-            b.textContent = '💬';
-            badge.appendChild(b);
-          }
-          if (_hasEdit) {
-            const b = document.createElement('span');
-            b.style.cssText = 'background:rgba(249,115,22,0.85);color:white;padding:3px 7px;border-radius:10px;font-size:12px;';
-            b.textContent = '✏️';
-            badge.appendChild(b);
-          }
-          container.appendChild(badge);
-        }
       } else if (file.type === 'video' && file.thumbnail) {
         // Mostrar thumbnail de vídeo
         const img = document.createElement("img");
@@ -4449,7 +3318,7 @@ async function confirmDeleteFile(file) {
   try {
     const client = await loadClient(state.currentClientId);
     if (!client) {
-      showAlert(t('alert_error'), t('error_no_client'), '⚠️');
+      showAlert('Error', 'Client no trobat', '⚠️');
       return;
     }
     
@@ -4472,7 +3341,7 @@ async function confirmDeleteFile(file) {
     // Actualitzar galeria - ara sempre usem renderFileGallery
     await renderFileGallery(client);
     
-    showAlert(t('alert_arxiu_eliminat'), `${fileTypeLabel} ${t('arxiu_eliminat_msg')}`, '✅');
+    showAlert('Arxiu eliminat', `La ${fileTypeLabel} s'ha eliminat correctament`, '✅');
   } catch (e) {
     console.error('Error esborrant arxiu:', e);
     showAlert('Error', `No s'ha pogut esborrar l'arxiu: ${e.message}`, '❌');
@@ -4504,113 +3373,69 @@ function openFileViewer(files, index) {
 }
 
 function showVideoModal(file) {
-  const overlay = document.createElement('div');
-  overlay.style.cssText = `
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.92); z-index: 10000;
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 16px; padding: 20px;
+  // Crear modal per vídeo
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
   `;
-
+  
   const video = document.createElement('video');
-  video.src = file.url || file.data;
+  video.src = file.data;
   video.controls = true;
-  video.style.cssText = 'max-width: 100%; max-height: 70vh; border-radius: 10px;';
-  overlay.appendChild(video);
-
-  const btnRow = document.createElement('div');
-  btnRow.style.cssText = 'display:flex; gap:12px;';
-
+  video.style.cssText = 'max-width: 90%; max-height: 80vh;';
+  modal.appendChild(video);
+  
   const closeBtn = document.createElement('button');
-  closeBtn.textContent = t('tancar_btn');
-  closeBtn.style.cssText = `
-    padding: 10px 24px; border-radius: 8px; font-size:14px; cursor:pointer;
-    border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color:#fff;
-  `;
-  closeBtn.onclick = () => { video.pause(); document.body.removeChild(overlay); };
-
-  const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = t('esborrar_btn');
-  deleteBtn.style.cssText = `
-    padding: 10px 24px; border-radius: 8px; font-size:14px; cursor:pointer;
-    border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.15); color:#fca5a5;
-  `;
-  deleteBtn.onclick = async () => {
-    video.pause();
-    document.body.removeChild(overlay);
-    await confirmDeleteFile(file);
-  };
-
-  btnRow.appendChild(closeBtn);
-  btnRow.appendChild(deleteBtn);
-  overlay.appendChild(btnRow);
-
-  document.body.appendChild(overlay);
+  closeBtn.textContent = '✕ Tancar';
+  closeBtn.style.cssText = 'margin-top: 20px; padding: 10px 20px; font-size: 16px;';
+  closeBtn.onclick = () => document.body.removeChild(modal);
+  modal.appendChild(closeBtn);
+  
+  document.body.appendChild(modal);
 }
 
 function showAudioModal(file) {
-  // Overlay fosc
-  const overlay = document.createElement('div');
-  overlay.style.cssText = `
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7); z-index: 9999;
-  `;
-  overlay.onclick = () => document.body.removeChild(overlay);
-
   const modal = document.createElement('div');
   modal.style.cssText = `
-    position: absolute; top: 50%; left: 50%;
+    position: fixed;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
-    background: #1e293b; color: #f1f5f9;
-    padding: 24px; border-radius: 14px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    min-width: 300px; max-width: 90vw;
-    border: 1px solid rgba(255,255,255,0.1);
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 10000;
   `;
-  overlay.appendChild(modal);
-
-  // Nom arxiu
-  const title = document.createElement('div');
-  title.textContent = '🎵 ' + (file.name || 'Àudio');
-  title.style.cssText = 'font-weight:600; font-size:15px; margin-bottom:16px; opacity:0.9;';
+  
+  const title = document.createElement('h3');
+  title.textContent = file.name;
+  title.style.marginBottom = '20px';
   modal.appendChild(title);
-
-  // Player
+  
   const audio = document.createElement('audio');
-  audio.src = file.url || file.data;
+  audio.src = file.data;
   audio.controls = true;
-  audio.style.cssText = 'width:100%; border-radius:8px;';
+  audio.style.width = '100%';
   modal.appendChild(audio);
-
-  // Botons
-  const btnRow = document.createElement('div');
-  btnRow.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;';
-
+  
   const closeBtn = document.createElement('button');
-  closeBtn.textContent = t('tancar_btn');
-  closeBtn.style.cssText = `
-    padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.07); color: #f1f5f9; cursor: pointer; font-size:14px;
-  `;
-  closeBtn.onclick = () => { audio.pause(); document.body.removeChild(overlay); };
-
-  const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = t('esborrar_btn');
-  deleteBtn.style.cssText = `
-    padding: 10px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.4);
-    background: rgba(239,68,68,0.15); color: #fca5a5; cursor: pointer; font-size:14px;
-  `;
-  deleteBtn.onclick = async () => {
-    audio.pause();
-    document.body.removeChild(overlay);
-    await confirmDeleteFile(file);
-  };
-
-  btnRow.appendChild(closeBtn);
-  btnRow.appendChild(deleteBtn);
-  modal.appendChild(btnRow);
-
-  document.body.appendChild(overlay);
+  closeBtn.textContent = 'Tancar';
+  closeBtn.style.cssText = 'margin-top: 20px; padding: 10px 20px; width: 100%;';
+  closeBtn.onclick = () => document.body.removeChild(modal);
+  modal.appendChild(closeBtn);
+  
+  document.body.appendChild(modal);
 }
 
 function downloadFile(file) {
@@ -4626,122 +3451,3 @@ window.renderFileGallery = renderFileGallery;
 window.openFileViewer = openFileViewer;
 
 console.log('✅ Sistema d\'arxius universal carregat correctament');
-
-/* ================= RENDERITZAT DE CLIENTS ================= */
-
-/**
- * Renderitza la llista de clients al #projectList.
- * Utilitza state.clients que ja ha estat carregat per initApp/loadState.
- */
-function updateProjectList() {
-  const container = document.querySelector('#projectList');
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  const allClients = state.clients ? Object.values(state.clients) : [];
-  const clients = allClients
-    .filter(c => {
-      const s = (c.status || '').toLowerCase();
-      return s !== 'archived' && s !== 'deleted' && c.active !== false;
-    })
-    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-
-  if (!clients.length) {
-    container.innerHTML = `
-      <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.4)">
-        <div style="font-size:48px;margin-bottom:16px">📋</div>
-        <div style="font-size:16px;font-weight:600;margin-bottom:8px">No hi ha clients</div>
-        <div style="font-size:13px">Crea el teu primer client amb el botó +</div>
-      </div>`;
-    return;
-  }
-
-  clients.forEach(function(client) {
-    const card = document.createElement('div');
-    card.className = 'project-card';
-    card.style.cssText = `
-      padding:15px;margin-bottom:10px;
-      background:rgba(255,255,255,0.05);border-radius:8px;
-      cursor:pointer;transition:all 0.2s;
-      border-left:3px solid #4CAF50;
-    `;
-    card.onmouseover = () => { card.style.background = 'rgba(255,255,255,0.1)'; card.style.transform = 'translateX(4px)'; };
-    card.onmouseout  = () => { card.style.background = 'rgba(255,255,255,0.05)'; card.style.transform = 'translateX(0)'; };
-
-    const timeStr = client.total > 0 ? `<div style="font-size:11px;color:#4CAF50;margin-top:5px;">⏱️ ${formatTime(client.total)}</div>` : '';
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:start;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:16px;font-weight:600;color:white;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            ${client.name || 'Sense nom'}
-          </div>
-          <div style="font-size:12px;color:#888;">
-            ${[client.email, client.phone].filter(Boolean).join(' • ')}
-          </div>
-          ${client.company ? `<div style="font-size:12px;color:#666;margin-top:2px;">${client.company}</div>` : ''}
-          ${timeStr}
-        </div>
-        <div style="font-size:20px;opacity:0.5;margin-left:10px;">✓</div>
-      </div>`;
-
-    card.onclick = () => selectClient(client.id);
-    container.appendChild(card);
-  });
-
-  console.log(`✅ ${clients.length} clients renderitzats`);
-}
-
-/**
- * Selecciona un client: actualitza state, guarda a IndexedDB i mostra la vista.
- * NO fa location.reload() — mostra la vista directament.
- */
-async function selectClient(clientId) {
-  console.log('📌 Seleccionant client:', clientId);
-
-  if (state.currentClientId === clientId) {
-    closeModal('modalChangeClient');
-    return;
-  }
-
-  state.currentClientId = clientId;
-  state.currentActivity = ACTIVITIES.WORK;
-  state.sessionElapsed = 0;
-  state.lastTick = Date.now();
-  isWorkpadInitialized = false;
-  areTasksInitialized = false;
-
-  // Guardar a IndexedDB ABANS de qualsevol altra cosa
-  await save();
-
-  // Carregar client i actualitzar tota la UI
-  const client = await loadClient(clientId);
-  if (!client) {
-    console.error('❌ No s\'ha pogut carregar el client:', clientId);
-    return;
-  }
-
-  // Mostrar panells del client
-  const clientInfoPanel = document.getElementById('clientInfoPanel');
-  if (clientInfoPanel) clientInfoPanel.style.display = 'block';
-
-  const fixedBtns = document.getElementById('clientFixedButtons');
-  if (fixedBtns) { fixedBtns.style.display = 'grid'; fixedBtns.classList.remove('hidden'); }
-
-  closeModal('modalChangeClient');
-
-  // Cridar updateUI original (la completa, async, definida a l'inici del fitxer)
-  await _originalUpdateUI(client);
-
-  console.log('✅ Client seleccionat:', client.name);
-}
-
-// Guardar referència a la updateUI original CORRECTA (la de la línia ~338)
-// per evitar que futures sobrescriptures la trenquin
-const _originalUpdateUI = updateUI;
-
-// Exposar al window
-window.updateProjectList = updateProjectList;
-window.selectClient = selectClient;
-
-console.log('✅ Sistema de clients definitiu carregat');

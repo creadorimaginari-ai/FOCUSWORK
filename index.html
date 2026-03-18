@@ -18,11 +18,10 @@
   <link rel="apple-touch-icon" href="/FOCUSWORK/icons/icon-192.png">
 
   <!-- Styles -->
-  <script src="i18n.js"></script>
-  <script src="alarm.js" defer></script>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-client-view.css">
   <link rel="stylesheet" href="styles-project-states-CORREGIT.css">
+  <link rel="stylesheet" href="buttons-only.css?v=3">
   <link rel="stylesheet" href="buttons-premium.css?v=4">
 </head>
 
@@ -31,7 +30,7 @@
 
     <!-- HEADER -->
     <header class="header">
-      <div id="clientName" class="client-name" data-i18n-default="no_client">Cap encàrrec actiu</div>
+      <div id="clientName" class="client-name">Cap encàrrec actiu</div>
       <div id="activityName" class="activity-name">—</div>
       <div id="timer" class="timer">00:00:00</div>
       <div id="clientTotal" class="client-total"></div>
@@ -52,7 +51,7 @@
 <button id="newClientBtn" title="Nou encàrrec">➕</button>
  <!-- <button id="changeClient">🔄 Canviar d'encàrrec</button> -->
      <button id="focusPriorityBtn" class="primary full-width">
-      <span data-i18n="revisar_encarrecs">👁️ Revisar encàrrecs</span>
+      👁️ Revisar encàrrecs
     </button>
       </div>
   <!-- GRID D'ACTIVITATS (si n'hi ha) -->
@@ -73,49 +72,40 @@
         <path d="M15 18l-6-6 6-6"/>
       </svg>
     </button>
-    <h2 class="overview-title" data-i18n="els_meus_projectes">📊 Els meus projectes</h2>
+    <h2 class="overview-title">📊 Els meus projectes</h2>
   </div>
   
   <!-- Filtres -->
   <div class="clients-filters" id="clientsFilters">
     <button class="filter-btn active" data-filter="all">
-      <span data-i18n="tots">Tots</span> <span class="filter-badge" id="filterAllCount">0</span>
+      Tots <span class="filter-badge" id="filterAllCount">0</span>
     </button>
     <button class="filter-btn" data-filter="in_progress">
-      <span data-i18n="en_progres_filter">🔵 En progrés</span> <span class="filter-badge" id="filterProgressCount">0</span>
+      🔵 En progrés <span class="filter-badge" id="filterProgressCount">0</span>
     </button>
     <button class="filter-btn" data-filter="waiting_feedback">
-      <span data-i18n="prova_enviada_filter">✉️ Prova enviada</span> <span class="filter-badge" id="filterFeedbackCount">0</span>
+      ✉️ Prova enviada <span class="filter-badge" id="filterFeedbackCount">0</span>
     </button>
     <button class="filter-btn" data-filter="waiting_material">
-      <span data-i18n="esperant_filter">🟡 Esperant</span> <span class="filter-badge" id="filterWaitingCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="waiting_budget">
-      <span data-i18n="state_waiting_budget">💰 Esperant pressupost</span> <span class="filter-badge" id="filterBudgetCount">0</span>
+      🟡 Esperant <span class="filter-badge" id="filterWaitingCount">0</span>
     </button>
     <button class="filter-btn" data-filter="paused">
-      <span data-i18n="pausats_filter">⸚️ Pausats</span> <span class="filter-badge" id="filterPausedCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="ready_to_deliver">
-      <span data-i18n="state_ready">✅ Llest</span> <span class="filter-badge" id="filterReadyCount">0</span>
-    </button>
-    <button class="filter-btn" data-filter="blocked">
-      <span data-i18n="state_blocked">🔴 Bloquejat</span> <span class="filter-badge" id="filterBlockedCount">0</span>
+      ⸚️ Pausats <span class="filter-badge" id="filterPausedCount">0</span>
     </button>
     <button class="filter-btn" data-filter="urgent">
-      <span data-i18n="urgents_filter">🔴 Urgents</span> <span class="filter-badge" id="filterUrgentCount">0</span>
+      🔴 Urgents <span class="filter-badge" id="filterUrgentCount">0</span>
     </button>
   </div>
   
   <!-- Ordenació -->
   <div class="clients-sorting">
-    <label class="sorting-label" data-i18n="ordenar_per">Ordenar per:</label>
+    <label class="sorting-label">Ordenar per:</label>
     <select class="sorting-select" id="clientsSorting">
-      <option value="urgency" data-i18n="urgencia">Urgència (entrega propera)</option>
-      <option value="progress" data-i18n="progres">Progrés (menys avançats)</option>
-      <option value="time" data-i18n="temps_treballat">Temps treballat (més hores)</option>
-      <option value="name" data-i18n="nom_az">Nom (A-Z)</option>
-      <option value="state" data-i18n="estat">Estat</option>
+      <option value="urgency">Urgència (entrega propera)</option>
+      <option value="progress">Progrés (menys avançats)</option>
+      <option value="time">Temps treballat (més hores)</option>
+      <option value="name">Nom (A-Z)</option>
+      <option value="state">Estat</option>
     </select>
   </div>
   
@@ -152,8 +142,8 @@
       <!-- FECHA DE ENTREGA -->
       <div id="deliveryDateBox" class="delivery-info hidden"></div>
 <div id="clientFixedButtons" class="grid centered" style="margin-top: 12px;">
-  <button id="historyBtn" data-i18n="clients_tancats">📂 Clients tancats</button>
-  <button id="closeClient" class="danger" data-i18n="tancar_client">✅ Tancar client</button>
+  <button id="historyBtn">📂 Clients tancats</button>
+  <button id="closeClient" class="danger">✅ Tancar client</button>
 </div>
     
 
@@ -161,37 +151,59 @@
       <div class="workpad-container">
         <div class="workpad-header">
           <span class="workpad-icon">📝</span>
-          <span class="workpad-title" data-i18n="notes_client">Notes del client</span>
+          <span class="workpad-title">Notes del client</span>
         </div>
         <textarea 
           id="clientWorkpad" 
           class="workpad-area" 
-          rows="5"
-          style="min-height:120px;"
-          data-i18n-ph="ph_notes" placeholder="Apunts, tasques pendents, detalls del projecte…"
+          placeholder="Apunts, tasques pendents, detalls del projecte…"
         ></textarea>
       </div>
 
-      <!-- PANEL D'ACCIONS DEL CLIENT -->
+      <!-- FEINES PER URGÈNCIA -->
+      <div class="workpad-container">
+        <div class="workpad-header">
+        </div>
+
+        <textarea
+          id="taskUrgent"
+          class="workpad-area urgent"
+          placeholder="🔴 Urgent (avui, bloquejant...)"
+        ></textarea>
+
+         <!-- <textarea
+          id="taskImportant"
+          class="workpad-area important"
+          placeholder="🟠 Important (següent pas)"
+        ></textarea>
+
+        <textarea
+          id="taskLater"
+          class="workpad-area later"
+          placeholder="🟢 Quan es pugui (no oblidar)"
+        ></textarea>
+      </div>
+
+     PANEL D'ACCIONS DEL CLIENT -->
       <div id="clientActionsPanel" class="client-actions-panel">
         <div class="grid" style="margin-top: 12px;">
           <button id="setDeliveryDateBtn" class="primary">
-            <span data-i18n="data_entrega">📅 Data d'entrega</span>
+            📅 Data d'entrega
           </button>
         </div> 
    
         <div class="grid centered" style="margin-top: 12px;">
           <button id="addExtraHoursBtn" class="secondary">
-            <span data-i18n="afegir_hores">⏱️ Afegir hores</span>
+            ⏱️ Afegir hores
           </button>
           <button id="viewExtraHoursBtn" class="secondary">
-            <span data-i18n="veure_resum">📊 Veure resum d'hores</span>
+            📊 Veure resum d'hores
           </button>
         </div>
 
         <div class="grid centered" style="margin-top: 12px;">
           <button id="generateReportBtn" class="primary">
-            <span data-i18n="generar_informe">📋 Generar informe</span>
+            📋 Generar informe
           </button>
         </div>
 
@@ -228,7 +240,7 @@
     text-align: center;
     padding: 12px 24px;
   ">
-    <span data-i18n="afegir_foto">📷 Afegir foto</span>
+    📷 Afegir foto
   </label>
 </div>
 
@@ -239,7 +251,7 @@
     text-align: center;
     padding: 12px 24px;
   ">
-    <span data-i18n="afegir_arxiu">📎 Afegir arxiu</span>
+    📎 Afegir arxiu
   </label>
 </div>
 <!-- Galeria d'arxius -->
@@ -252,9 +264,9 @@
     <!-- BACKUP Y GESTIÓN -->
     <section class="panel">
       <div class="grid">
-        <button id="exportWorkBtn" data-i18n="guardar_sessio">💾 Guardar sessió</button>
-        <button id="importWorkBtn" data-i18n="carregar_treball">📂 Carregar treball</button>
-        <button id="exportAllBtn" class="full-width" data-i18n="copia_seguretat">📦 Còpia de seguretat</button>
+        <button id="exportWorkBtn">💾 Guardar sessió</button>
+        <button id="importWorkBtn">📂 Carregar treball</button>
+        <button id="exportAllBtn" class="full-width">📦 Còpia de seguretat</button>
       </div>
     </section>
 
@@ -266,45 +278,31 @@
     </section>
 
     <!-- FOOTER -->
-    <!-- FOOTER + LLICÈNCIA: un sol panel elegant -->
-    <div class="footer-panel">
-
-      <!-- Fila 1: Focus i Activar Horari en 2 columnes -->
-      <div class="footer-main-btns">
-        <button id="focusBtn" class="footer-btn" data-i18n="focus_btn">🎯 Focus</button>
-        <button id="scheduleBtn" class="footer-btn" data-i18n="activar_horari">⏰ Activar Horari</button>
-      </div>
-
-      <!-- Fila 2: Sortir centrat, taronja -->
-      <button onclick="signOut()" class="footer-btn footer-btn-exit">
-        <span data-i18n="sortir">🚪 Sortir</span>
-      </button>
-
-      <!-- Separador -->
-      <div class="footer-divider"></div>
-
-      <!-- Fila 3: Llicència
-      <div class="footer-license-text">
-        ⭐ Llicència completa activa · Clients il·limitats
-      </div> -->
-
-      <div class="footer-license-btns">
-        <button id="loadLicenseBtn" type="button" class="footer-license-btn">
-          <span data-i18n="carregar_llicencia">📄 Carregar llicència</span>
-        </button>
-        <button id="requestLicenseBtn" type="button" class="footer-license-btn">
-          <span data-i18n="solicitar_whatsapp">💬 Sol·licitar per WhatsApp</span>
-        </button>
-      </div>
-
-      <div id="licenseInfo" style="display:none"></div>
-    </div>
-
-    <!-- footer i versionBox ocults per compatibilitat JS -->
-    <footer id="footerHidden" style="display:none">
-      <button id="todayBtn" style="display:none">📄 Report</button>
+    <footer class="footer">
+      <button id="focusBtn">🎯 Focus</button>
+      <button id="scheduleBtn">⏰ Activar Horari</button>
+      <button id="todayBtn">📄 Report</button>
     </footer>
-    <div id="versionBox" style="display:none"></div>
+
+    <!-- VERSIÓN / ACTIVACIÓN -->
+   <div id="versionBox" class="version-box">
+  <div class="lock">
+    🔒 Versió de mostra: fins a 2 clients actius ·
+    ⭐ Llicència completa: clients il·limitats · pagament únic 34€ (Bizum)
+  </div>
+
+  <div class="version-actions">
+    <button id="loadLicenseBtn" type="button">
+      📄 Carregar arxiu amb la llicència
+    </button>
+
+    <button id="requestLicenseBtn" type="button">
+      💬 Sol·licitar llicència per WhatsApp
+    </button>
+  </div>
+
+  <div id="licenseInfo" style="display:none"></div>
+</div>
 
   <!-- ===============================================
        MODALES
@@ -315,14 +313,14 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">➕</span>
-        <h2 class="modal-title" data-i18n="modal_nou_client">Nou client</h2>
+        <h2 class="modal-title">Nou client</h2>
       </div>
       <div class="modal-body">
-        <label class="modal-label" data-i18n="label_client_desc">Client + descripció de la feina</label>
+        <label class="modal-label">Client + descripció de la feina</label>
         <textarea
   id="newClientInput"
   class="workpad-area"
-  data-i18n-ph="ph_nou_client" placeholder="Ex: Joan - Targetes presentació"
+  placeholder="Ex: Joan - Targetes presentació"
   rows="2"
   autocomplete="off"
   autocorrect="off"
@@ -335,8 +333,8 @@
       
       
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalNewClient')" data-i18n="cancellar">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmNewClient()" data-i18n="crear">Crear</button>
+        <button class="btn-secondary" onclick="closeModal('modalNewClient')">Cancel·lar</button>
+        <button class="btn-primary" onclick="confirmNewClient()">Crear</button>
       </div>
     </div>
   </div>
@@ -346,7 +344,7 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">🔄</span>
-        <h2 class="modal-title" data-i18n="modal_canviar">Canviar d'encàrrec</h2>
+        <h2 class="modal-title">Canviar d'encàrrec</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.7; margin-bottom: 15px;">
@@ -355,7 +353,7 @@
         <div id="activeClientsList" class="clients-list"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalChangeClient')" data-i18n="cancellar">Cancel·lar</button>
+        <button class="btn-secondary" onclick="closeModal('modalChangeClient')">Cancel·lar</button>
       </div>
     </div>
   </div>
@@ -365,15 +363,15 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📂</span>
-        <h2 class="modal-title" data-i18n="modal_clients_tancats">Clients tancats</h2>
+        <h2 class="modal-title">Clients tancats</h2>
       </div>
       <div class="modal-body">
-        <input type="text" id="searchHistory" class="modal-input" data-i18n-ph="ph_buscar" placeholder="🔍 Buscar client o feina...">
+        <input type="text" id="searchHistory" class="modal-input" placeholder="🔍 Buscar client o feina...">
         <div id="historyClientsList" class="clients-list"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-danger" onclick="showBulkDeleteModal()" data-i18n="esborrar_antics">🗑️ Esborrar antics</button>
-        <button class="btn-secondary" onclick="closeModal('modalHistory')" data-i18n="tancar">Tancar</button>
+        <button class="btn-danger" onclick="showBulkDeleteModal()">🗑️ Esborrar antics</button>
+        <button class="btn-secondary" onclick="closeModal('modalHistory')">Tancar</button>
       </div>
     </div>
   </div>
@@ -383,13 +381,13 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">🗑️</span>
-        <h2 class="modal-title" data-i18n="modal_esborrar_antics">Esborrar clients antics</h2>
+        <h2 class="modal-title">Esborrar clients antics</h2>
       </div>
       <div class="modal-body">
         <div id="bulkDeleteList"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalBulkDelete')" data-i18n="cancellar">Cancel·lar</button>
+        <button class="btn-secondary" onclick="closeModal('modalBulkDelete')">Cancel·lar</button>
       </div>
     </div>
   </div>
@@ -399,14 +397,14 @@
     <div class="modal modal-confirm">
       <div class="modal-header">
         <span class="modal-icon">✅</span>
-        <h2 class="modal-title" data-i18n="modal_tancar_client">Tancar client</h2>
+        <h2 class="modal-title">Tancar client</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="closeClientText"></p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalCloseClient')" data-i18n="cancellar">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmCloseClient()" data-i18n="modal_tancar_client">Tancar client</button>
+        <button class="btn-secondary" onclick="closeModal('modalCloseClient')">Cancel·lar</button>
+        <button class="btn-primary" onclick="confirmCloseClient()">Tancar client</button>
       </div>
     </div>
   </div>
@@ -416,14 +414,14 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">💾</span>
-        <h2 class="modal-title" data-i18n="modal_guardar_tancar">Guardar abans de tancar</h2>
+        <h2 class="modal-title">Guardar abans de tancar</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="exportBeforeCloseText"></p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="confirmCloseClient()" data-i18n="no_tancar">No, tancar sense guardar</button>
-        <button class="btn-primary" onclick="exportAndClose()" data-i18n="si_guardar">Sí, guardar i tancar</button>
+        <button class="btn-secondary" onclick="confirmCloseClient()">No, tancar sense guardar</button>
+        <button class="btn-primary" onclick="exportAndClose()">Sí, guardar i tancar</button>
       </div>
     </div>
   </div>
@@ -433,15 +431,15 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📋</span>
-        <h2 class="modal-title" data-i18n="modal_informe">Informe del Projecte</h2>
+        <h2 class="modal-title">Informe del Projecte</h2>
       </div>
       <div class="modal-body">
         <pre id="reportContent" class="report-content"></pre>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalReport')" data-i18n="tancar">Tancar</button>
-        <button class="btn-primary" onclick="copyReport()" data-i18n="copiar">📋 Copiar</button>
-        <button class="btn-primary" onclick="shareReport()" data-i18n="compartir">📤 Compartir</button>
+        <button class="btn-secondary" onclick="closeModal('modalReport')">Tancar</button>
+        <button class="btn-primary" onclick="copyReport()">📋 Copiar</button>
+        <button class="btn-primary" onclick="shareReport()">📤 Compartir</button>
       </div>
     </div>
   </div>
@@ -451,20 +449,20 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📂</span>
-        <h2 class="modal-title" data-i18n="modal_importar">Importar Feina</h2>
+        <h2 class="modal-title">Importar Feina</h2>
       </div>
       <div class="modal-body">
-        <p class="modal-text" data-i18n="vols_importar">Vols importar aquest treball?</p>
+        <p class="modal-text">Vols importar aquest treball?</p>
         <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
-          <p style="margin: 8px 0;"><strong data-i18n="label_client">Client:</strong> <span id="importClientName"></span></p>
-          <p style="margin: 8px 0;"><strong data-i18n="label_temps">Temps total:</strong> <span id="importClientTime"></span></p>
-          <p style="margin: 8px 0;"><strong data-i18n="label_fotos">Fotos:</strong> <span id="importClientPhotos"></span></p>
-          <p style="margin: 8px 0;"><strong data-i18n="label_notes">Notes:</strong> <span id="importClientNotes"></span></p>
+          <p style="margin: 8px 0;"><strong>Client:</strong> <span id="importClientName"></span></p>
+          <p style="margin: 8px 0;"><strong>Temps total:</strong> <span id="importClientTime"></span></p>
+          <p style="margin: 8px 0;"><strong>Fotos:</strong> <span id="importClientPhotos"></span></p>
+          <p style="margin: 8px 0;"><strong>Notes:</strong> <span id="importClientNotes"></span></p>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalImportWork')">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmImport()" data-i18n="importar">Importar</button>
+        <button class="btn-primary" onclick="confirmImport()">Importar</button>
       </div>
     </div>
   </div>
@@ -474,21 +472,21 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📦</span>
-        <h2 class="modal-title" data-i18n="modal_restaurar">Restaurar còpia completa</h2>
+        <h2 class="modal-title">Restaurar còpia completa</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="color: #fbbf24;">⚠️ ATENCIÓ: això restaurarà TOTES les teves dades des de la còpia de seguretat.</p>
         <div style="background: rgba(51, 65, 85, 0.4); padding: 16px; border-radius: 12px; margin: 12px 0;">
-          <p style="margin: 8px 0;"><strong data-i18n="label_total_clients">Total clients:</strong> <span id="importBackupClients"></span></p>
-          <p style="margin: 8px 0;"><strong data-i18n="label_clients_actius">Clients actius:</strong> <span id="importBackupActive"></span></p>
-          <p style="margin: 8px 0;"><strong data-i18n="label_data_copia">Data de la còpia:</strong> <span id="importBackupDate"></span></p>
-          <p style="margin: 8px 0;"><strong data-i18n="label_llicencia">Llicència inclosa:</strong> <span id="importBackupLicense"></span></p>
+          <p style="margin: 8px 0;"><strong>Total clients:</strong> <span id="importBackupClients"></span></p>
+          <p style="margin: 8px 0;"><strong>Clients actius:</strong> <span id="importBackupActive"></span></p>
+          <p style="margin: 8px 0;"><strong>Data de la còpia:</strong> <span id="importBackupDate"></span></p>
+          <p style="margin: 8px 0;"><strong>Llicència inclosa:</strong> <span id="importBackupLicense"></span></p>
         </div>
         <p class="modal-text" style="font-size: 13px; opacity: 0.8;">La pàgina es recarregarà automàticament després de restaurar.</p>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalImportBackup')" data-i18n="cancellar">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmImportBackup()" data-i18n="restaurar">Restaurar còpia</button>
+        <button class="btn-secondary" onclick="closeModal('modalImportBackup')">Cancel·lar</button>
+        <button class="btn-primary" onclick="confirmImportBackup()">Restaurar còpia</button>
       </div>
     </div>
   </div>
@@ -499,7 +497,7 @@
       <div class="modal-header">
         <span class="modal-icon">🎯</span>
         <div>
-          <h2 class="modal-title" data-i18n="modal_focus">Focus diari</h2>
+          <h2 class="modal-title">Focus diari</h2>
           <p class="modal-subtitle" id="modalUserName"></p>
         </div>
       </div>
@@ -513,7 +511,7 @@
         <div id="modalFocusState" class="focus-state"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalEnfoque')" data-i18n="acceptar">Acceptar</button>
+        <button class="btn-primary" onclick="closeModal('modalEnfoque')">Acceptar</button>
       </div>
     </div>
   </div>
@@ -523,16 +521,16 @@
     <div class="modal modal-confirm">
       <div class="modal-header">
         <span class="modal-icon">🗑️</span>
-        <h2 class="modal-title" data-i18n="modal_esborrar_client">Esborrar client</h2>
+        <h2 class="modal-title">Esborrar client</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" id="deleteClientText"></p>
-        <label class="modal-label" data-i18n="escriu_esborrar">Escriu ESBORRAR per confirmar</label>
-        <input type="text" id="inputDeleteConfirm" class="modal-input" data-i18n-ph="ph_esborrar" placeholder="ESBORRAR">
+        <label class="modal-label">Escriu ESBORRAR per confirmar</label>
+        <input type="text" id="inputDeleteConfirm" class="modal-input" placeholder="ESBORRAR">
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalDeleteClient')" data-i18n="cancellar">Cancel·lar</button>
-        <button class="btn-danger" onclick="confirmDeleteClient()" data-i18n="esborrar">Esborrar</button>
+        <button class="btn-secondary" onclick="closeModal('modalDeleteClient')">Cancel·lar</button>
+        <button class="btn-danger" onclick="confirmDeleteClient()">Esborrar</button>
       </div>
     </div>
   </div>
@@ -542,10 +540,10 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📅</span>
-        <h2 class="modal-title" data-i18n="modal_data_entrega">Data d'entrega</h2>
+        <h2 class="modal-title">Data d'entrega</h2>
       </div>
       <div class="modal-body">
-        <label class="modal-label" data-i18n="tria_data">Tria la data límit d'entrega:</label>
+        <label class="modal-label">Tria la data límit d'entrega:</label>
         <input type="date" id="inputDeliveryDate" class="modal-input">
         
         <div style="margin-top: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
@@ -555,9 +553,9 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="saveDeliveryDate()" data-i18n="esborrar_data">Esborrar data</button>
-        <button class="btn-secondary" onclick="closeModal('modalDeliveryDate')" data-i18n="cancellar">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveDeliveryDate()" data-i18n="guardar">Guardar</button>
+        <button class="btn-secondary" onclick="saveDeliveryDate()">Esborrar data</button>
+        <button class="btn-secondary" onclick="closeModal('modalDeliveryDate')">Cancel·lar</button>
+        <button class="btn-primary" onclick="saveDeliveryDate()">Guardar</button>
       </div>
     </div>
   </div>
@@ -567,17 +565,17 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">⏱️</span>
-        <h2 class="modal-title" data-i18n="modal_afegir_hores">Afegir hores manuals</h2>
+        <h2 class="modal-title">Afegir hores manuals</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
           Per a feines fetes fora de l'app (treball extern, reunions, correus...)
         </p>
 
-        <label class="modal-label" data-i18n="hores_label">Hores:</label>
+        <label class="modal-label">Hores:</label>
         <input type="number" id="inputExtraHours" placeholder="Ex: 2.5" step="0.5" min="0" class="modal-input" style="margin-bottom: 15px;">
 
-        <label class="modal-label" data-i18n="desc_label">Descripció (opcional):</label>
+        <label class="modal-label">Descripció (opcional):</label>
         <textarea id="inputExtraDescription" class="modal-input" rows="3" placeholder="Ex: Reunió amb client, correccions per correu..."></textarea>
 
         <div style="margin-top: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
@@ -587,8 +585,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalExtraHours')" data-i18n="cancellar">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveExtraHours()" data-i18n="afegir_hores">Afegir hores</button>
+        <button class="btn-secondary" onclick="closeModal('modalExtraHours')">Cancel·lar</button>
+        <button class="btn-primary" onclick="saveExtraHours()">Afegir hores</button>
       </div>
     </div>
   </div>
@@ -598,18 +596,18 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">📊</span>
-        <h2 class="modal-title" data-i18n="hores_extra">Hores Extra Registrades</h2>
+        <h2 class="modal-title">Hores Extra Registrades</h2>
       </div>
       <div class="modal-body">
         <div id="extraHoursList" class="extra-hours-list"></div>
         <div class="total-stats" style="margin-top: 16px;">
           <div class="total-time">
-            <span data-i18n="total_treballat">Total hores extra:</span> <strong id="extraHoursTotal">00:00:00</strong>
+            Total hores extra: <strong id="extraHoursTotal">00:00:00</strong>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-primary" onclick="closeModal('modalViewExtraHours')" data-i18n="tancar">Tancar</button>
+        <button class="btn-primary" onclick="closeModal('modalViewExtraHours')">Tancar</button>
       </div>
     </div>
   </div>
@@ -619,7 +617,7 @@
     <div class="modal">
       <div class="modal-header">
         <span class="modal-icon">⏰</span>
-        <h2 class="modal-title" data-i18n="config_horari">Horari de Focus diari</h2>
+        <h2 class="modal-title">Horari de Focus diari</h2>
       </div>
       <div class="modal-body">
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
@@ -628,23 +626,23 @@
 
         <label class="modal-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
           <input type="checkbox" id="scheduleEnabled" style="width: 20px; height: 20px; cursor: pointer;">
-          <span data-i18n="config_horari">Activar Horari de Focus diari</span>
+          <span>Activar Horari de Focus diari</span>
         </label>
 
         <div id="scheduleConfig" style="display: none;">
           <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
             <div style="flex: 1;">
-              <label class="modal-label" data-i18n="horari_inici">Hora inici</label>
+              <label class="modal-label">Hora inici</label>
               <input type="time" id="scheduleStart" class="modal-input" value="09:00">
             </div>
             <div style="flex: 1;">
-              <label class="modal-label" data-i18n="horari_fi">Hora fi</label>
+              <label class="modal-label">Hora fi</label>
               <input type="time" id="scheduleEnd" class="modal-input" value="17:00">
             </div>
           </div>
 
           <div class="schedule-presets">
-            <p class="modal-label" style="margin-bottom: 10px;" data-i18n="predefinits">Predefinits ràpids:</p>
+            <p class="modal-label" style="margin-bottom: 10px;">Predefinits ràpids:</p>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
               <button class="btn-secondary" onclick="applyPreset('07:00', '14:00')">🌅 Matí<br><small>07:00 - 14:00</small></button>
               <button class="btn-secondary" onclick="applyPreset('15:00', '22:00')">🌆 Tarda<br><small>15:00 - 22:00</small></button>
@@ -664,8 +662,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeModal('modalSchedule')" data-i18n="cancellar">Cancel·lar</button>
-        <button class="btn-primary" onclick="saveScheduleConfig()" data-i18n="guardar">Guardar</button>
+        <button class="btn-secondary" onclick="closeModal('modalSchedule')">Cancel·lar</button>
+        <button class="btn-primary" onclick="saveScheduleConfig()">Guardar</button>
       </div>
     </div>
   </div>
@@ -733,60 +731,7 @@
     </div>
   </div>
 
-  
-  <!-- MODAL: Dades de Facturació (s'obre en tancar client) -->
-  <div id="modalBillingDetails" class="modal-overlay hidden" style="display:none;">
-    <div class="modal" style="max-width: 480px; width: 95%;">
-      <div class="modal-header">
-        <span class="modal-icon">📋</span>
-        <h2 class="modal-title">Dades per a facturació</h2>
-      </div>
-      <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
-        <p style="font-size:13px; opacity:0.7; margin:0;">Omple les dades del treball per enviar-les automàticament a facturació.</p>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
-            ⏱️ Hores disseny
-            <input id="billingHoresDisseny" type="text" placeholder="ex: 3h 30m"
-              style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
-          </label>
-          <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
-            🔧 Hores col·locació
-            <input id="billingHoresCollocacio" type="text" placeholder="ex: 5h"
-              style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
-          </label>
-        </div>
-
-        <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
-          🏗️ Material i mides <span style="color:#f87171;">*</span>
-          <textarea id="billingMaterial" placeholder="ex: Vinil mat negre 3x1.2m, xapa alumini 2mm..."
-            rows="3"
-            style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px; resize:vertical; font-family:inherit;"></textarea>
-        </label>
-
-        <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
-          🚗 Desplaçament
-          <input id="billingDesplacament" type="text" placeholder="ex: 45 km / 2 viatges"
-            style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
-        </label>
-
-        <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
-          💬 Notes addicionals <span style="opacity:0.5;">(opcional)</span>
-          <textarea id="billingNotes" placeholder="Observacions, incidències, extras..."
-            rows="2"
-            style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px; resize:vertical; font-family:inherit;"></textarea>
-        </label>
-
-        <p style="font-size:11px; opacity:0.5; margin:0;">* Camp obligatori. S'enviarà un email automàtic a facturació.</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeBillingModal()">Cancel·lar</button>
-        <button class="btn-primary" onclick="confirmBillingAndClose()">📧 Enviar i tancar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
+    <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
 <!-- Llibreria Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -799,8 +744,6 @@
 <script src="app-core.js"></script>
 <script src="app-project-states-CORREGIT.js"></script>
 <script src="app-ui.js"></script>
-        <script src="photos-storage.js"></script>
- <script src="patch.js"></script>
 <script src="estats-listeners-SENSE-PROMPT.js"></script>
 <!-- app-client-view.js només si existeix -->
 <script>
@@ -866,7 +809,7 @@ async function renderClientsOverview() {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🔭</div>
-        <div class="empty-text" data-i18n="no_clients_filtre">No hi ha clients amb aquest filtre</div>
+        <div class="empty-text">No hi ha clients amb aquest filtre</div>
       </div>
     `;
     return;
@@ -891,10 +834,7 @@ function updateFilterCounts(clients) {
     in_progress: 0,
     waiting_feedback: 0,
     waiting_material: 0,
-    waiting_budget: 0,
     paused: 0,
-    ready_to_deliver: 0,
-    blocked: 0,
     urgent: 0
   };
   
@@ -916,13 +856,7 @@ function updateFilterCounts(clients) {
   document.getElementById('filterProgressCount').textContent = counts.in_progress;
   document.getElementById('filterFeedbackCount').textContent = counts.waiting_feedback;
   document.getElementById('filterWaitingCount').textContent = counts.waiting_material;
-  const budgetEl = document.getElementById('filterBudgetCount');
-  if (budgetEl) budgetEl.textContent = counts.waiting_budget;
   document.getElementById('filterPausedCount').textContent = counts.paused;
-  const readyEl = document.getElementById('filterReadyCount');
-  if (readyEl) readyEl.textContent = counts.ready_to_deliver;
-  const blockedEl = document.getElementById('filterBlockedCount');
-  if (blockedEl) blockedEl.textContent = counts.blocked;
   document.getElementById('filterUrgentCount').textContent = counts.urgent;
 }
 
@@ -1177,59 +1111,42 @@ function setupProgressListeners() {
   </div>
   
  <div class="lightbox-canvas-container">
-  <!-- Overlay transparent: captura TOTS els events de 2 dits per al zoom -->
-  <div id="pinchOverlay" style="
-    position:absolute;inset:0;z-index:50;
-    touch-action:none;pointer-events:none;
-  "></div>
-  <!-- Indicador del nivell de zoom actual -->
-  <div id="zoomIndicator">1×</div>
   <button class="lightbox-nav lightbox-nav-prev" onclick="prevPhoto()">‹</button>
-  <div class="canvas-stack" id="canvasStack">
-    <!-- Capa base: la foto original (mai es toca excepte al guardar) -->
-    <canvas id="photoCanvas"></canvas>
-    <!-- Capa de dibuix: tot el que dibuixes va aquí -->
-    <canvas id="drawingCanvas"></canvas>
-  </div>
+  <canvas id="photoCanvas"></canvas>
   <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
 </div>
 
-<!-- Toolbar compacte — 2 files, 6 columnes -->
-<div class="editor-toolbar-grid">
-
-  <!-- FILA 1: Color + Mida + Eines dibuix -->
-  <div class="etb-colorpicker-wrap" title="Color">
-    <input type="color" id="rgbColorPicker" value="#ef4444"
-           oninput="setDrawColorFromPicker(this.value)">
-    </div>
-  <div class="etb-slider-wrap" style="grid-column: span 2;">
-   <input type="range" class="etb-slider" min="2" max="60" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
-  </div>
-  <button class="etb-btn" onclick="setDrawTool('pencil')" id="drawToggle">✏️</button>
-  <button class="etb-btn" onclick="setDrawTool('eraser')" id="eraserToggle">🧹</button>
-  <button class="etb-btn" onclick="undoDraw()">↶</button>
-
-  <!-- FILA 2: Formes + Text + Capes -->
-  <button class="etb-btn" onclick="setDrawTool('fill')" id="fillToggle" title="Omplir">🪣</button>
-  <button class="etb-btn" onclick="setDrawTool('rect')" id="rectToggle" title="Rectangle">⬜</button>
-  <button class="etb-btn" onclick="setDrawTool('circle')" id="circleToggle" title="Cercle">⭕</button>
-  <button class="etb-btn" onclick="setDrawTool('line')" id="lineToggle" title="Línia">╱</button>
-  <button class="etb-btn" onclick="setDrawTool('text')" id="textToggle" title="Text">𝐓</button>
-  <button class="etb-btn" onclick="toggleLayerVisibility()" id="layerVisBtn" title="Mostrar/ocultar dibuixos">👁</button>
-
-  <!-- FILA 3: Zoom + Rotació PC + Guardar + Gestió -->
-  <button class="etb-btn etb-zoom-btn" id="zoomInBtn"  onclick="zoomIn()"    title="Ampliar">🔍+</button>
-  <button class="etb-btn etb-zoom-btn" id="zoomOutBtn" onclick="zoomOut()"   title="Reduir">🔍−</button>
-  <button class="etb-btn etb-zoom-btn" id="zoomResetBtn" onclick="resetZoom()" title="Zoom 1:1">⊡</button>
-  <div class="etb-rotate-knob" id="rotateKnob" title="Arrossega esquerra/dreta per rotar">
-    <span class="etb-rotate-icon">↻</span>
-    <span class="etb-rotate-label">Rotar</span>
-  </div>
-  <button class="etb-btn" onclick="rotatePhoto(-90)" title="Rotar 90° esquerra">↺ 90°</button>
-  <button class="etb-btn etb-save" onclick="saveEditedPhoto()" style="grid-column: span 2;">💾 Guardar</button>
-  <button class="etb-btn etb-danger" onclick="deleteCurrentPhoto()">🗑️</button>
-  <button class="etb-btn" onclick="downloadCurrentPhoto()">⬇️</button>
-
+<!-- Toolbar d'edició (just després del canvas) -->
+<div class="editor-toolbar">
+  <button class="color-picker-mini active" style="background: #ef4444;" onclick="setDrawColor('#ef4444')" data-color="#ef4444"></button>
+  <button class="color-picker-mini" style="background: #f59e0b;" onclick="setDrawColor('#f59e0b')" data-color="#f59e0b"></button>
+  <button class="color-picker-mini" style="background: #10b981;" onclick="setDrawColor('#10b981')" data-color="#10b981"></button>
+  <button class="color-picker-mini" style="background: #3b82f6;" onclick="setDrawColor('#3b82f6')" data-color="#3b82f6"></button>
+  <button class="color-picker-mini" style="background: white;" onclick="setDrawColor('#ffffff')" data-color="#ffffff"></button>
+  
+  <div style="width: 2px; height: 25px; background: rgba(255,255,255,0.2);"></div>
+  
+  <input type="range" class="size-slider-mini" min="2" max="8" value="3" id="drawSize" oninput="updateDrawSize(this.value)">
+  
+  <button class="editor-btn-small" onclick="toggleDrawing()" id="drawToggle">
+    <span>✏️</span>
+    <span id="drawToggleText">Dibuixar</span>
+  </button>
+  
+  <button class="editor-btn-small" onclick="undoDraw()">
+    <span>↶</span>
+    <span>Desfer</span>
+  </button>
+  
+  <button class="editor-btn-small" onclick="clearDrawing()">
+    <span>🗑️</span>
+    <span>Netejar</span>
+  </button>
+  
+  <button class="editor-btn-small" onclick="saveEditedPhoto()" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4);">
+    <span>💾</span>
+    <span>Guardar canvis</span>
+  </button>
 </div>
   
 <div class="lightbox-footer">
@@ -1243,7 +1160,21 @@ function setupProgressListeners() {
     ></textarea>
   </div>
   
-  <!-- Botons eliminats: ara al toolbar superior -->
+  <!-- Botons existents -->
+  <div class="lightbox-buttons">
+    <button class="lightbox-btn" onclick="downloadCurrentPhoto()">
+      <span>⬇️</span>
+      <span>Descarregar</span>
+    </button>
+    <button class="lightbox-btn" onclick="shareCurrentPhoto()">
+      <span>📤</span>
+      <span>Compartir</span>
+    </button>
+    <button class="lightbox-btn danger" onclick="deleteCurrentPhoto()">
+      <span>🗑️</span>
+      <span>Esborrar</span>
+    </button>
+  </div>
 </div>
 
 <!-- Estils addicionals per la vista de llista -->
@@ -1459,9 +1390,9 @@ label.primary {
   align-items: center !important;
   justify-content: center !important;
   margin: 0 auto 16px auto !important;
-  background: linear-gradient(135deg, #F97316, #EA580C) !important;
-  border: 3px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.5) !important;
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  border: 3px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
   transition: all 0.3s ease !important;
   cursor: pointer !important;
 }
@@ -1469,7 +1400,7 @@ label.primary {
 #newClientBtn:hover,
 #newClientBtn:active {
   transform: scale(1.05) !important;
-  box-shadow: 0 6px 24px rgba(249, 115, 22, 0.7) !important;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6) !important;
 }
 
 #clientMainButtons {
@@ -1478,25 +1409,24 @@ label.primary {
   align-items: center !important;
 }
 
-/* Footer botons (no sticky, scroll normal) */
+/* ✅ Alinear els 3 botons del footer en grid */
 .footer {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  padding: 14px;
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255,255,255,0.08);
-  margin-top: 8px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.95);
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
 }
 
 .footer button {
   padding: 12px;
   font-size: 14px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(30, 41, 59, 0.6);
+  border: none;
+  background: rgba(30, 41, 59, 0.8);
   color: #e2e8f0;
   cursor: pointer;
   transition: all 0.2s;
@@ -1506,17 +1436,13 @@ label.primary {
 
 .footer button:hover,
 .footer button:active {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(30, 41, 59, 1);
   transform: scale(0.98);
 }
 
 </style>
 <script src="botons-visibilitat.js"></script>
 <script src="buttons-ripple.js?v=1"></script>
-   <script src="loadclient-photos-fix.js"></script>
-  <!-- Mòdul de facturació (Gmail) -->
-  <script src="facturacio.js"></script>
 </body>
 
 </html>
