@@ -1,0 +1,772 @@
+import { useState, useRef, useCallback } from "react";
+
+const ASSETS = [
+  { id: "BTCUSDT", label: "BTC/USDT", type: "crypto", color: "#F7931A" },
+  { id: "ETHUSDT", label: "ETH/USDT", type: "crypto", color: "#627EEA" },
+  { id: "SOLUSDT", label: "SOL/USDT", type: "crypto", color: "#9945FF" },
+  { id: "BNBUSDT", label: "BNB/USDT", type: "crypto", color: "#F0B90B" },
+];
+
+const TIMEFRAMES = [
+  { id: "2h", label: "2H", binance: "2h" },
+  { id: "4h", label: "4H", binance: "4h" },
+  { id: "1d", label: "1D", binance: "1d" },
+];
+
+async function fetchBinanceCandles(symbol, interval, limit = 500) {
+  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.map((c) => ({
+    time: c[0],
+    open: parseFloat(c[1]),
+    high: parseFloat(c[2]),
+    low: parseFloat(c[3]),
+    close: parseFloat(c[4]),
+    volume: parseFloat(c[5]),
+  }));
+}
+
+function normalizeCandles(candles) {
+  const base = candles[0].open;
+  return candles.map((c) => ({
+    ...c,
+    open: (c.open / base - 1) * 100,
+    high: (c.high / base - 1) * 100,
+    low: (c.low / base - 1) * 100,
+    close: (c.close / base - 1) * 100,
+  }));
+}
+
+function patternSimilarity(patternVec, windowVec) {
+  if (patternVec.length !== windowVec.length) return 0;
+  let sumSq = 0;
+  for (let i = 0; i < patternVec.length; i++) {
+    sumSq += Math.pow(patternVec[i] - windowVec[i], 2);
+  }
+  const rmse = Math.sqrt(sumSq / patternVec.length);
+  return Math.max(0, 100 - rmse * 10);
+}
+
+function candlesToVector(candles) {
+  return candles.map((c) => c.close);
+}
+
+function findPatternMatches(patternCandles, historicalCandles, topN = 10) {
+  const normPattern = normalizeCandles(patternCandles);
+  const patternVec = candlesToVector(normPattern);
+  const len = patternCandles.length;
+  const matches = [];
+
+  for (let i = 0; i < historicalCandles.length - len - 5; i++) {
+    const window = historicalCandles.slice(i, i + len);
+    const normWindow = normalizeCandles(window);
+    const windowVec = candlesToVector(normWindow);
+    const score = patternSimilarity(patternVec, windowVec);
+    if (score > 40) {
+      const futureCandles = historicalCandles.slice(i + len, i + len + 5);
+      const futureReturn =
+        futureCandles.length > 0
+          ? ((futureCandles[futureCandles.length - 1].close - window[len - 1].close) /
+              window[len - 1].close) *
+            100
+          : null;
+      matches.push({ index: i, score, futureReturn, window, futureCandles });
+    }
+  }
+
+  matches.sort((a, b) => b.score - a.score);
+  return matches.slice(0, topN);
+}
+
+function MiniCandleChart({ candles, width = 120, height = 50, highlight = false }) {
+  if (!candles || candles.length === 0) return null;
+  const prices = candles.flatMap((c) => [c.high, c.low]);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const cw = width / candles.length;
+
+  const toY = (v) => height - ((v - min) / range) * height;
+
+  return (
+    <svg width={width} height={height} style={{ display: "block" }}>
+      {candles.map((c, i) => {
+        const x = i * cw + cw / 2;
+        const bodyTop = toY(Math.max(c.open, c.close));
+        const bodyBot = toY(Math.min(c.open, c.close));
+        const bodyH = Math.max(1, bodyBot - bodyTop);
+        const isGreen = c.close >= c.open;
+        const color = isGreen ? "#00d97e" : "#ff4d6d";
+        return (
+          <g key={i}>
+            <line x1={x} y1={toY(c.high)} x2={x} y2={toY(c.low)} stroke={color} strokeWidth={1} />
+            <rect
+              x={x - cw * 0.3}
+              y={bodyTop}
+              width={cw * 0.6}
+              height={bodyH}
+              fill={color}
+              opacity={highlight ? 1 : 0.7}
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function StatsBadge({ matches }) {
+  if (!matches || matches.length === 0) return null;
+  const withFuture = matches.filter((m) => m.futureReturn !== null);
+  const bullish = withFuture.filter((m) => m.futureReturn > 0).length;
+  const bearish = withFuture.filter((m) => m.futureReturn < 0).length;
+  const avgReturn =
+    withFuture.length > 0
+      ? withFuture.reduce((s, m) => s + m.futureReturn, 0) / withFuture.length
+      : 0;
+  const bullPct = withFuture.length > 0 ? (bullish / withFuture.length) * 100 : 0;
+
+  return (
+    <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "8px" }}>
+      <div style={statBox("#00d97e22", "#00d97e")}>
+        <span style={{ fontSize: "20px", fontWeight: 700 }}>{bullPct.toFixed0()}%</span>
+        <span style={{ fontSize: "10px", opacity: 0.8 }}>ALCISTA</span>
+      </div>
+      <div style={statBox("#ff4d6d22", "#ff4d6d")}>
+        <span style={{ fontSize: "20px", fontWeight: 700 }}>
+          {(100 - bullPct).toFixed0()}%
+        </span>
+        <span style={{ fontSize: "10px", opacity: 0.8 }}>BAJISTA</span>
+      </div>
+      <div style={statBox("#ffffff11", "#aaa")}>
+        <span
+          style={{
+            fontSize: "20px",
+            fontWeight: 700,
+            color: avgReturn >= 0 ? "#00d97e" : "#ff4d6d",
+          }}
+        >
+          {avgReturn >= 0 ? "+" : ""}
+          {avgReturn.toFixed(2)}%
+        </span>
+        <span style={{ fontSize: "10px", opacity: 0.8 }}>RET. MEDIO (5v)</span>
+      </div>
+      <div style={statBox("#ffffff11", "#aaa")}>
+        <span style={{ fontSize: "20px", fontWeight: 700 }}>{matches.length}</span>
+        <span style={{ fontSize: "10px", opacity: 0.8 }}>COINCIDENCIAS</span>
+      </div>
+    </div>
+  );
+}
+
+Number.prototype.toFixed0 = function () {
+  return this.toFixed(0);
+};
+
+function statBox(bg, border) {
+  return {
+    background: bg,
+    border: `1px solid ${border}33`,
+    borderRadius: "8px",
+    padding: "8px 14px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    minWidth: "70px",
+  };
+}
+
+async function analyzeImageWithClaude(imageBase64, mediaType) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mediaType, data: imageBase64 },
+            },
+            {
+              type: "text",
+              text: `Analiza este gráfico de velas japonesas. Responde SOLO en JSON sin markdown, con este formato exacto:
+{
+  "patternName": "nombre del patrón detectado",
+  "trend": "alcista|bajista|lateral",
+  "candleCount": número estimado de velas,
+  "description": "descripción breve del patrón en español",
+  "keyLevels": "descripción de niveles clave visibles",
+  "dominantFeature": "característica dominante más importante",
+  "normalizedMoves": [array de números del -10 al 10 representando el movimiento porcentual relativo de cada vela de cierre respecto a la apertura del período, de izquierda a derecha]
+}`,
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  const data = await response.json();
+  const text = data.content.map((i) => i.text || "").join("");
+  const clean = text.replace(/```json|```/g, "").trim();
+  return JSON.parse(clean);
+}
+
+export default function App() {
+  const [image, setImage] = useState(null);
+  const [imageBase64, setImageBase64] = useState(null);
+  const [mediaType, setMediaType] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
+  const [results, setResults] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("");
+  const [selectedTf, setSelectedTf] = useState("4h");
+  const [selectedAssets, setSelectedAssets] = useState(["BTCUSDT", "ETHUSDT"]);
+  const [error, setError] = useState(null);
+  const fileRef = useRef();
+
+  const handleFile = useCallback((file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target.result.split(",")[1];
+      const mt = file.type;
+      setImage(e.target.result);
+      setImageBase64(base64);
+      setMediaType(mt);
+      setAnalysis(null);
+      setResults({});
+      setError(null);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      handleFile(e.dataTransfer.files[0]);
+    },
+    [handleFile]
+  );
+
+  const toggleAsset = (id) => {
+    setSelectedAssets((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+    );
+  };
+
+  const runAnalysis = async () => {
+    if (!imageBase64) return;
+    setLoading(true);
+    setError(null);
+    setResults({});
+
+    try {
+      setLoadingMsg("Analizando patrón con IA...");
+      const claudeAnalysis = await analyzeImageWithClaude(imageBase64, mediaType);
+      setAnalysis(claudeAnalysis);
+
+      const newResults = {};
+      for (const assetId of selectedAssets) {
+        const asset = ASSETS.find((a) => a.id === assetId);
+        setLoadingMsg(`Descargando histórico de ${asset.label}...`);
+        const candles = await fetchBinanceCandles(assetId, selectedTf, 1000);
+
+        setLoadingMsg(`Buscando coincidencias en ${asset.label}...`);
+        const patternLen = claudeAnalysis.candleCount || 10;
+        const moves = claudeAnalysis.normalizedMoves || [];
+
+        const syntheticPattern = moves.map((m, i) => {
+          const base = 100 + i * 0.1;
+          return {
+            time: i,
+            open: base,
+            high: base + Math.abs(m) * 0.5,
+            low: base - Math.abs(m) * 0.5,
+            close: base + m,
+            volume: 1,
+          };
+        });
+
+        const usePattern =
+          syntheticPattern.length >= 3 ? syntheticPattern : candles.slice(-patternLen);
+        const matches = findPatternMatches(usePattern, candles, 12);
+        newResults[assetId] = matches;
+        setResults({ ...newResults });
+      }
+    } catch (err) {
+      setError("Error: " + err.message);
+    } finally {
+      setLoading(false);
+      setLoadingMsg("");
+    }
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#080c14",
+        color: "#e8eaf0",
+        fontFamily: "'IBM Plex Mono', 'Courier New', monospace",
+        padding: "0",
+      }}
+    >
+      <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+        rel="stylesheet"
+      />
+
+      {/* Header */}
+      <div
+        style={{
+          borderBottom: "1px solid #1a2235",
+          padding: "18px 32px",
+          display: "flex",
+          alignItems: "center",
+          gap: "16px",
+          background: "#0a0f1a",
+        }}
+      >
+        <div
+          style={{
+            width: "36px",
+            height: "36px",
+            background: "linear-gradient(135deg, #00d97e, #0066ff)",
+            borderRadius: "8px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "18px",
+          }}
+        >
+          📊
+        </div>
+        <div>
+          <div
+            style={{
+              fontSize: "16px",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              color: "#fff",
+            }}
+          >
+            PATTERN<span style={{ color: "#00d97e" }}>MATCH</span>
+          </div>
+          <div style={{ fontSize: "10px", color: "#556", letterSpacing: "0.15em" }}>
+            CANDLESTICK PATTERN RECOGNITION ENGINE
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "28px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: "24px" }}>
+          {/* LEFT PANEL */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Upload */}
+            <div
+              style={{
+                border: image ? "1px solid #1e3a2f" : "1px solid #1a2a3a",
+                borderRadius: "12px",
+                background: image ? "#0a1a0f" : "#0c1320",
+                overflow: "hidden",
+                padding: "16px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {image && (
+                <img
+                  src={image}
+                  alt="chart"
+                  style={{ width: "100%", maxHeight: "160px", objectFit: "contain", borderRadius: "6px", marginBottom: "8px" }}
+                />
+              )}
+              <button
+                onClick={() => fileRef.current.click()}
+                style={{
+                  padding: "14px 20px",
+                  borderRadius: "8px",
+                  border: "1px solid #00d97e55",
+                  background: "#00d97e18",
+                  color: "#00d97e",
+                  fontSize: "14px",
+                  fontFamily: "inherit",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  letterSpacing: "0.08em",
+                  width: "100%",
+                }}
+              >
+                {image ? "📷 CAMBIAR IMAGEN" : "📷 SELECCIONAR GRÁFICO"}
+              </button>
+              {!image && (
+                <div style={{ fontSize: "10px", color: "#334455", marginTop: "8px" }}>
+                  Captura de TradingView, Binance...
+                </div>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => handleFile(e.target.files[0])}
+              />
+            </div>
+
+            {/* Timeframe */}
+            <div>
+              <div style={{ fontSize: "10px", color: "#445", letterSpacing: "0.1em", marginBottom: "8px" }}>
+                TEMPORALIDAD
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                {TIMEFRAMES.map((tf) => (
+                  <button
+                    key={tf.id}
+                    onClick={() => setSelectedTf(tf.id)}
+                    style={{
+                      flex: 1,
+                      padding: "8px",
+                      borderRadius: "6px",
+                      border: selectedTf === tf.id ? "1px solid #00d97e" : "1px solid #1a2235",
+                      background: selectedTf === tf.id ? "#00d97e18" : "#0c1320",
+                      color: selectedTf === tf.id ? "#00d97e" : "#556",
+                      fontSize: "12px",
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {tf.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Assets */}
+            <div>
+              <div style={{ fontSize: "10px", color: "#445", letterSpacing: "0.1em", marginBottom: "8px" }}>
+                ACTIVOS A COMPARAR
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                {ASSETS.map((a) => {
+                  const active = selectedAssets.includes(a.id);
+                  return (
+                    <button
+                      key={a.id}
+                      onClick={() => toggleAsset(a.id)}
+                      style={{
+                        padding: "10px 8px",
+                        borderRadius: "8px",
+                        border: active ? `1px solid ${a.color}55` : "1px solid #1a2235",
+                        background: active ? `${a.color}15` : "#0c1320",
+                        color: active ? a.color : "#445",
+                        fontSize: "11px",
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        letterSpacing: "0.05em",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {a.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Run button */}
+            <button
+              onClick={runAnalysis}
+              disabled={!imageBase64 || loading || selectedAssets.length === 0}
+              style={{
+                padding: "14px",
+                borderRadius: "10px",
+                border: "none",
+                background:
+                  !imageBase64 || loading
+                    ? "#0f1a0f"
+                    : "linear-gradient(135deg, #00d97e, #00a86b)",
+                color: !imageBase64 || loading ? "#334" : "#001a0a",
+                fontSize: "13px",
+                fontFamily: "inherit",
+                fontWeight: 700,
+                cursor: !imageBase64 || loading ? "not-allowed" : "pointer",
+                letterSpacing: "0.1em",
+                transition: "all 0.2s",
+              }}
+            >
+              {loading ? `⟳ ${loadingMsg}` : "▶ ANALIZAR PATRÓN"}
+            </button>
+
+            {error && (
+              <div
+                style={{
+                  background: "#1a0a0a",
+                  border: "1px solid #ff4d6d44",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  fontSize: "11px",
+                  color: "#ff4d6d",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            {/* AI Analysis card */}
+            {analysis && (
+              <div
+                style={{
+                  background: "#0c1a28",
+                  border: "1px solid #1a3050",
+                  borderRadius: "12px",
+                  padding: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#0066ff",
+                    letterSpacing: "0.1em",
+                    marginBottom: "10px",
+                  }}
+                >
+                  ◈ ANÁLISIS IA
+                </div>
+                <div style={{ fontSize: "15px", fontWeight: 700, color: "#fff", marginBottom: "6px" }}>
+                  {analysis.patternName}
+                </div>
+                <div
+                  style={{
+                    display: "inline-block",
+                    padding: "3px 10px",
+                    borderRadius: "20px",
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    background:
+                      analysis.trend === "alcista"
+                        ? "#00d97e22"
+                        : analysis.trend === "bajista"
+                        ? "#ff4d6d22"
+                        : "#ffffff11",
+                    color:
+                      analysis.trend === "alcista"
+                        ? "#00d97e"
+                        : analysis.trend === "bajista"
+                        ? "#ff4d6d"
+                        : "#aaa",
+                    marginBottom: "10px",
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  {analysis.trend?.toUpperCase()}
+                </div>
+                <div style={{ fontSize: "11px", color: "#8899aa", lineHeight: 1.6, marginBottom: "8px" }}>
+                  {analysis.description}
+                </div>
+                <div style={{ fontSize: "10px", color: "#445566" }}>
+                  <span style={{ color: "#334455" }}>Niveles: </span>
+                  {analysis.keyLevels}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT PANEL - Results */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {selectedAssets.length === 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "200px",
+                  color: "#223",
+                  fontSize: "13px",
+                }}
+              >
+                Selecciona al menos un activo
+              </div>
+            )}
+
+            {!analysis && !loading && selectedAssets.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "300px",
+                  color: "#1a2a3a",
+                  gap: "12px",
+                }}
+              >
+                <div style={{ fontSize: "48px", opacity: 0.3 }}>🕯️</div>
+                <div style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
+                  SUBE UN GRÁFICO Y PULSA ANALIZAR
+                </div>
+              </div>
+            )}
+
+            {ASSETS.filter((a) => selectedAssets.includes(a.id)).map((asset) => {
+              const matches = results[asset.id];
+              const isLoadingAsset = loading && !matches;
+
+              return (
+                <div
+                  key={asset.id}
+                  style={{
+                    background: "#0a0f1a",
+                    border: `1px solid ${asset.color}22`,
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                  }}
+                >
+                  {/* Asset header */}
+                  <div
+                    style={{
+                      padding: "14px 18px",
+                      borderBottom: `1px solid ${asset.color}22`,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      background: `${asset.color}08`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        background: asset.color,
+                        boxShadow: `0 0 8px ${asset.color}`,
+                      }}
+                    />
+                    <span
+                      style={{ fontSize: "13px", fontWeight: 700, color: asset.color, letterSpacing: "0.08em" }}
+                    >
+                      {asset.label}
+                    </span>
+                    <span style={{ fontSize: "10px", color: "#334", marginLeft: "auto" }}>
+                      {selectedTf.toUpperCase()} • {matches ? `${matches.length} coincidencias` : "—"}
+                    </span>
+                  </div>
+
+                  <div style={{ padding: "16px 18px" }}>
+                    {isLoadingAsset && (
+                      <div style={{ color: "#334", fontSize: "11px", padding: "20px 0", textAlign: "center" }}>
+                        Cargando datos...
+                      </div>
+                    )}
+
+                    {matches && matches.length === 0 && (
+                      <div style={{ color: "#334", fontSize: "11px", padding: "20px 0", textAlign: "center" }}>
+                        Sin coincidencias significativas
+                      </div>
+                    )}
+
+                    {matches && matches.length > 0 && (
+                      <>
+                        <StatsBadge matches={matches} />
+
+                        <div style={{ marginTop: "16px" }}>
+                          <div
+                            style={{
+                              fontSize: "10px",
+                              color: "#334",
+                              letterSpacing: "0.1em",
+                              marginBottom: "10px",
+                            }}
+                          >
+                            TOP COINCIDENCIAS HISTÓRICAS
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                              gap: "10px",
+                            }}
+                          >
+                            {matches.slice(0, 6).map((m, i) => {
+                              const isUp = m.futureReturn > 0;
+                              const date = new Date(m.window[0].time);
+                              return (
+                                <div
+                                  key={i}
+                                  style={{
+                                    background: "#0c1320",
+                                    border: `1px solid ${isUp ? "#00d97e22" : "#ff4d6d22"}`,
+                                    borderRadius: "8px",
+                                    padding: "10px",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontSize: "9px",
+                                      color: "#334",
+                                      marginBottom: "6px",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                    }}
+                                  >
+                                    <span>{date.toLocaleDateString("es-ES", { month: "short", year: "2-digit" })}</span>
+                                    <span style={{ color: "#445" }}>sim: {m.score.toFixed(0)}%</span>
+                                  </div>
+                                  <div style={{ display: "flex", gap: "4px" }}>
+                                    <MiniCandleChart candles={m.window} width={90} height={40} />
+                                    {m.futureCandles.length > 0 && (
+                                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                        <div
+                                          style={{
+                                            width: "1px",
+                                            alignSelf: "stretch",
+                                            background: "#1a2235",
+                                            margin: "0 2px",
+                                          }}
+                                        />
+                                        <MiniCandleChart
+                                          candles={m.futureCandles}
+                                          width={36}
+                                          height={40}
+                                          highlight
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                  {m.futureReturn !== null && (
+                                    <div
+                                      style={{
+                                        marginTop: "6px",
+                                        fontSize: "12px",
+                                        fontWeight: 700,
+                                        color: isUp ? "#00d97e" : "#ff4d6d",
+                                      }}
+                                    >
+                                      {isUp ? "▲" : "▼"} {Math.abs(m.futureReturn).toFixed(2)}%
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
