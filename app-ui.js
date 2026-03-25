@@ -2019,6 +2019,9 @@ if (photoCanvas && photoCtx) {
     if (dc) {
       dc.width  = img.width;
       dc.height = img.height;
+      // Forçar mides CSS iguals al photoCanvas per evitar desincronització al guardar
+      dc.style.width  = img.width  + 'px';
+      dc.style.height = img.height + 'px';
       window.drawingCanvas = dc;
       window.drawingCtx    = dc.getContext('2d');
       dc.style.pointerEvents = 'none'; // inactiu per defecte
@@ -2795,6 +2798,15 @@ async function saveEditedPhoto() {
     out.height = photoCanvas.height;
     const octx = out.getContext('2d');
 
+    // Helper: dibuixa el drawingCanvas sempre escal·lat a les mides del photoCanvas
+    // Això evita que el dibuix quedi petit/desplaçat si les mides internes han desincronitzat
+    const drawDrawingLayer = (ctx, dx, dy) => {
+      const dc = window.drawingCanvas;
+      if (!dc) return;
+      // Sempre fem drawImage amb les 9 params per forçar l'escalat correcte
+      ctx.drawImage(dc, 0, 0, dc.width, dc.height, dx, dy, photoCanvas.width, photoCanvas.height);
+    };
+
     // Aplicar rotació si n'hi ha
     if (totalRotationDeg && totalRotationDeg % 360 !== 0) {
       const rad = totalRotationDeg * Math.PI / 180;
@@ -2804,10 +2816,10 @@ async function saveEditedPhoto() {
       octx.translate(out.width / 2, out.height / 2);
       octx.rotate(rad);
       octx.drawImage(photoCanvas, -photoCanvas.width / 2, -photoCanvas.height / 2);
-      if (window.drawingCanvas) octx.drawImage(window.drawingCanvas, -photoCanvas.width / 2, -photoCanvas.height / 2);
+      if (window.drawingCanvas) drawDrawingLayer(octx, -photoCanvas.width / 2, -photoCanvas.height / 2);
     } else {
       octx.drawImage(photoCanvas, 0, 0);
-      if (window.drawingCanvas) octx.drawImage(window.drawingCanvas, 0, 0);
+      if (window.drawingCanvas) drawDrawingLayer(octx, 0, 0);
     }
 
     const editedData = out.toDataURL('image/jpeg', 0.85);
