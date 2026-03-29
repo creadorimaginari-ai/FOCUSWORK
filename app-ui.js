@@ -2019,9 +2019,10 @@ if (photoCanvas && photoCtx) {
     if (dc) {
       dc.width  = img.width;
       dc.height = img.height;
-      // Forçar mides CSS iguals al photoCanvas per evitar desincronització al guardar
-      dc.style.width  = img.width  + 'px';
-      dc.style.height = img.height + 'px';
+      // No forçar mides CSS en píxels fixos: el CSS max-width:100% ja escala correctament
+      // Forçar-les causava desincronització entre mida visual i mida interna del canvas
+      dc.style.width  = '';
+      dc.style.height = '';
       window.drawingCanvas = dc;
       window.drawingCtx    = dc.getContext('2d');
       dc.style.pointerEvents = 'none'; // inactiu per defecte
@@ -2845,6 +2846,9 @@ async function saveEditedPhoto() {
       if (window.drawingCanvas) {
         window.drawingCanvas.width  = img.width;
         window.drawingCanvas.height = img.height;
+        // Reset CSS size overrides to avoid desync between CSS display size and internal canvas size
+        window.drawingCanvas.style.width  = '';
+        window.drawingCanvas.style.height = '';
         window.drawingCtx?.clearRect(0, 0, img.width, img.height);
       }
       totalRotationDeg = 0;
