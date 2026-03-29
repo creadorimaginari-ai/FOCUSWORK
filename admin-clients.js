@@ -132,7 +132,9 @@ async function loadAdminClientsList() {
   list.innerHTML = '<div style="color:#64748b;text-align:center;padding:40px;">Carregant...</div>';
 
   try {
-    _allClients = await dbGetAll('clients');
+    // Usar loadAllClients() que ja gestiona la inicialització de db
+    const clientsObj = await loadAllClients();
+    _allClients = Object.values(clientsObj);
     // Ordenar per nom
     _allClients.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
@@ -297,13 +299,8 @@ window.adminDeleteSelected = async function() {
 
   for (const id of _selectedIds) {
     try {
-      // Esborrar client
-      await dbDelete('clients', id);
-      // Esborrar fotos associades
-      const photos = await dbGetAll('photos', id);
-      for (const photo of photos) {
-        await dbDelete('photos', photo.id);
-      }
+      // deleteClient() ja esborra client + fotos associades
+      await deleteClient(id);
       deleted++;
     } catch(e) {
       console.error('Error esborrant client', id, e);

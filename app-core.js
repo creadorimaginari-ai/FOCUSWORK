@@ -337,6 +337,8 @@ async function loadAllClients() {
   }
 }
 
+window.deleteClient = deleteClient;
+window.loadAllClients = loadAllClients;
 async function deleteClient(clientId) {
   try {
     const photos = await dbGetByIndex('photos', 'clientId', clientId);
