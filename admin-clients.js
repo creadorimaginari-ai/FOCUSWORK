@@ -53,6 +53,10 @@ function injectAdminClientsModal() {
             background:#1e293b; border:1px solid #334155; color:#94a3b8;
             border-radius:6px; padding:5px 12px; cursor:pointer; font-size:12px;
           ">Tancats</button>
+          <button onclick="adminSelectDuplicates()" style="
+            background:rgba(234,179,8,0.15); border:1px solid rgba(234,179,8,0.3); color:#fbbf24;
+            border-radius:6px; padding:5px 12px; cursor:pointer; font-size:12px;
+          ">⚠️ Duplicats</button>
         </div>
 
         <!-- Selecció per rang -->
@@ -213,6 +217,35 @@ window.adminSelectClosed = function() {
   renderAdminClientsList();
 };
 
+// ── Seleccionar duplicats (manté el primer, selecciona la resta) ─────────────
+window.adminSelectDuplicates = function() {
+  _selectedIds.clear();
+  const seen = {};
+  _allClients.forEach(c => {
+    const key = (c.name || '').trim().toLowerCase();
+    if (!key) return;
+    if (seen[key] === undefined) {
+      seen[key] = c.id; // primer — es queda
+    } else {
+      _selectedIds.add(c.id); // duplicat — es marca per esborrar
+    }
+  });
+  const n = _selectedIds.size;
+  if (n === 0) {
+    alert('No s'han trobat duplicats pel nom.');
+  } else {
+    // Mostrar avís amb els duplicats trobats
+    const names = _allClients
+      .filter(c => _selectedIds.has(c.id))
+      .map(c => c.name)
+      .join(', ');
+    if (!confirm(`S'han trobat ${n} duplicat${n>1?'s':''} (es mantindrà el primer de cada nom):\n\n${names}\n\nVols seleccionar-los per esborrar?`)) {
+      _selectedIds.clear();
+    }
+  }
+  renderAdminClientsList();
+};
+
 // ── Seleccionar per rang ─────────────────────────────────────────────────────
 window.adminSelectRange = function() {
   const from = parseInt(document.getElementById('rangeFrom').value) - 1;
@@ -257,6 +290,7 @@ window.adminDeleteSelected = async function() {
   const btn = document.getElementById('adminDeleteBtn');
   btn.textContent = 'Esborrant...';
   btn.disabled = true;
+  btn.style.cursor = 'not-allowed';
 
   let deleted = 0;
   let errors = 0;
@@ -278,6 +312,12 @@ window.adminDeleteSelected = async function() {
   }
 
   _selectedIds.clear();
+
+  // Resetear botó
+  btn.textContent = '🗑️ Esborrar seleccionats';
+  btn.disabled = false;
+  btn.style.opacity = '0.4';
+  btn.style.cursor = 'not-allowed';
 
   // Recarregar llista
   await loadAdminClientsList();
@@ -303,3 +343,4 @@ document.addEventListener('keydown', (e) => {
 });
 
 })();
+    
