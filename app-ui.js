@@ -2901,18 +2901,26 @@ function setupCanvasDrawing() {
     const clientX = src ? src.clientX : e.clientX;
     const clientY = src ? src.clientY : e.clientY;
     const rect = dc.getBoundingClientRect();
-    const cx = rect.left + rect.width  / 2;
-    const cy = rect.top  + rect.height / 2;
-    const ddx = clientX - cx, ddy = clientY - cy;
-    const rad = -(totalRotationDeg || 0) * Math.PI / 180;
-    const ux = ddx * Math.cos(rad) - ddy * Math.sin(rad);
-    const uy = ddx * Math.sin(rad) + ddy * Math.cos(rad);
-    const stack  = document.getElementById('canvasStack');
-    const dispW  = (parseFloat(stack && stack.style.width)  || photoCanvas.width)  * currentZoom;
-    const dispH  = (parseFloat(stack && stack.style.height) || photoCanvas.height) * currentZoom;
+    // Escala directa entre mida CSS visible i mida interna del canvas
+    const scaleX = dc.width  / rect.width;
+    const scaleY = dc.height / rect.height;
+    // Si hi ha rotació, aplicar-la des del centre del canvas
+    if (totalRotationDeg && totalRotationDeg % 360 !== 0) {
+      const localX = (clientX - rect.left) * scaleX;
+      const localY = (clientY - rect.top)  * scaleY;
+      const cx = dc.width  / 2;
+      const cy = dc.height / 2;
+      const ddx = localX - cx, ddy = localY - cy;
+      const rad = -(totalRotationDeg) * Math.PI / 180;
+      return {
+        x: cx + ddx * Math.cos(rad) - ddy * Math.sin(rad),
+        y: cy + ddx * Math.sin(rad) + ddy * Math.cos(rad)
+      };
+    }
+    // Cas normal (sense rotació): mapatge directe pixel a pixel
     return {
-      x: (ux / dispW  + 0.5) * photoCanvas.width,
-      y: (uy / dispH  + 0.5) * photoCanvas.height
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top)  * scaleY
     };
   }
 
