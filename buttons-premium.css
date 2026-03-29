@@ -297,21 +297,21 @@ button.loading::after {
 /* Botón secundario (gris) */
 button.btn-secondary,
 .btn-secondary {
-  background: #64748b;
+  background: #f97316;
   border-color: rgba(255, 255, 255, 0.2);
   box-shadow: var(--shadow-sm) rgba(100, 116, 139, 0.25);
 }
 
 button.btn-secondary:hover,
 .btn-secondary:hover {
-  background: #475569;
+  background: #ea580c;
   box-shadow: var(--shadow-md) rgba(100, 116, 139, 0.25);
   transform: translateY(-2px);
 }
 
 button.btn-secondary:active,
 .btn-secondary:active {
-  background: #334155;
+  background: #c2410c;
   box-shadow: var(--shadow-sm) rgba(100, 116, 139, 0.25);
   transform: translateY(0px) scale(0.98);
 }
