@@ -267,7 +267,7 @@
         <button id="exportWorkBtn">💾 Guardar sessió</button>
         <button id="importWorkBtn">📂 Carregar treball</button>
         <button id="exportAllBtn" class="full-width">📦 Còpia de seguretat</button>
-        <button onclick="openAdminClientsModal()" class="full-width" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#f87171;margin-top:4px;">🗂️ Gestió massiva de clients</button>
+        <button onclick="openAdminClientsModal()" class="full-width btn-danger-soft">🗂️ Gestió massiva de clients</button>
       </div>
     </section>
 
@@ -280,30 +280,30 @@
 
     <!-- FOOTER -->
     <footer class="footer">
-      <button id="focusBtn">🎯 Focus</button>
-      <button id="scheduleBtn">⏰ Activar Horari</button>
-      <button id="todayBtn">📄 Report</button>
+      <button id="focusBtn" class="footer-btn footer-btn-primary">🎯 Focus</button>
+      <button id="scheduleBtn" class="footer-btn">⏰ Activar Horari</button>
+      <button id="todayBtn" class="footer-btn">📄 Report</button>
     </footer>
 
     <!-- VERSIÓN / ACTIVACIÓN -->
-   <div id="versionBox" class="version-box">
-  <div class="lock">
-    🔒 Versió de mostra: fins a 2 clients actius ·
-    ⭐ Llicència completa: clients il·limitats · pagament únic 34€ (Bizum)
+  <div id="versionBox" class="version-box">
+    <div class="version-badge">
+      <span class="version-lock">🔒</span>
+      <div class="version-text">
+        <strong>Versió de prova</strong> · fins a 2 clients actius
+        <div class="version-sub">⭐ Llicència completa · clients il·limitats · <strong>34€</strong> pagament únic</div>
+      </div>
+    </div>
+    <div class="version-actions">
+      <button id="loadLicenseBtn" type="button" class="version-btn version-btn-secondary">
+        📄 Carregar llicència
+      </button>
+      <button id="requestLicenseBtn" type="button" class="version-btn version-btn-primary">
+        💬 Comprar per WhatsApp
+      </button>
+    </div>
+    <div id="licenseInfo" style="display:none"></div>
   </div>
-
-  <div class="version-actions">
-    <button id="loadLicenseBtn" type="button">
-      📄 Carregar arxiu amb la llicència
-    </button>
-
-    <button id="requestLicenseBtn" type="button">
-      💬 Sol·licitar llicència per WhatsApp
-    </button>
-  </div>
-
-  <div id="licenseInfo" style="display:none"></div>
-</div>
 
   <!-- ===============================================
        MODALES
