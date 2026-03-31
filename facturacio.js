@@ -3,7 +3,7 @@
  *************************************************/
 
 // ─── ÚNIC VALOR A CANVIAR ─────────────────────
-const BILLING_EMAIL = 'facturacio@empresa.com';
+const BILLING_EMAIL = 'lauraglobalgrafic@gmail.com';
 // ──────────────────────────────────────────────
 
 function openBillingModal(clientId) {
