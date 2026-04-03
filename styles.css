@@ -1306,17 +1306,22 @@ textarea:focus-visible {
 .footer {
   display: flex;
   gap: 8px;
-  padding: 12px 0 4px;
+  padding: 14px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
 }
 
 .footer button,
 .footer-btn {
   flex: 1;
-  padding: 14px 8px !important;
+  padding: 13px 8px !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   border-radius: 9999px !important;
-  background: var(--bg-card) !important;
+  background: var(--bg-hover) !important;
   color: var(--text-secondary) !important;
   border: 1px solid var(--border-color) !important;
   box-shadow: none !important;
@@ -1327,7 +1332,7 @@ textarea:focus-visible {
   background: var(--color-primary) !important;
   color: #fff !important;
   border-color: transparent !important;
-  box-shadow: 0 4px 14px rgba(249,115,22,0.35) !important;
+  box-shadow: 0 4px 14px rgba(249,115,22,0.4) !important;
 }
 
 /* ══════════════════════════════════════════════
@@ -1420,4 +1425,87 @@ textarea:focus-visible {
 .version-btn-secondary:hover {
   background: var(--bg-hover) !important;
   border-color: var(--border-hover) !important;
+}
+
+
+/* ══════════════════════════════════════════════
+   PANEL BACKUP — botons secundaris polits
+   ══════════════════════════════════════════════ */
+.panel-backup button:not(.btn-danger-soft):not(.full-width) {
+  background: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 9999px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+.panel-backup button:not(.btn-danger-soft):not(.full-width):hover {
+  background: var(--border-hover) !important;
+  color: var(--text-primary) !important;
+}
+.panel-backup #exportAllBtn {
+  background: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 9999px !important;
+  font-weight: 600 !important;
+}
+
+/* ══════════════════════════════════════════════
+   NOTES DEL CLIENT — estil foto 4
+   ══════════════════════════════════════════════ */
+.workpad-container {
+  margin-top: 12px;
+}
+
+.workpad-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.workpad-icon {
+  font-size: 16px;
+}
+
+.workpad-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.workpad-area {
+  width: 100%;
+  min-height: 100px;
+  padding: 14px 16px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.workpad-area:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+}
+
+.workpad-area::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.workpad-area.urgent {
+  border-left: 3px solid #ef4444;
+  min-height: 60px;
 }

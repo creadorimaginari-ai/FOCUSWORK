@@ -157,18 +157,21 @@
           id="clientWorkpad" 
           class="workpad-area" 
           placeholder="Apunts, tasques pendents, detalls del projecte…"
+          rows="4"
         ></textarea>
       </div>
 
       <!-- FEINES PER URGÈNCIA -->
       <div class="workpad-container">
         <div class="workpad-header">
+          <span class="workpad-icon">🔴</span>
+          <span class="workpad-title">Urgent</span>
         </div>
-
         <textarea
           id="taskUrgent"
           class="workpad-area urgent"
-          placeholder="🔴 Urgent (avui, bloquejant...)"
+          placeholder="Tasques urgents, bloquejants..."
+          rows="2"
         ></textarea>
 
          <!-- <textarea
@@ -262,7 +265,7 @@
 
 
     <!-- BACKUP Y GESTIÓN -->
-    <section class="panel">
+    <section class="panel panel-backup">
       <div class="grid">
         <button id="exportWorkBtn">💾 Guardar sessió</button>
         <button id="importWorkBtn">📂 Carregar treball</button>
@@ -787,6 +790,7 @@
     <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
 <!-- Scripts de FocusWork -->
 <script src="app-core.js"></script>
+<script src="onboarding.js"></script>
 <script src="app-project-states-CORREGIT.js"></script>
 <script src="app-ui.js"></script>
 <script src="facturacio.js"></script>
