@@ -1,22 +1,25 @@
+Index · HTML
+Copy
+
 <!DOCTYPE html>
 <html lang="ca">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-
+ 
   <title>FocusWork</title>
-
+ 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f172a">
   <meta name="background-color" content="#0f172a">
-
+ 
   <!-- iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FocusWork">
   <link rel="apple-touch-icon" href="/FOCUSWORK/icons/icon-192.png">
-
+ 
   <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-client-view.css">
@@ -24,10 +27,10 @@
   <link rel="stylesheet" href="buttons-onlyfora.css?v=4">
   <link rel="stylesheet" href="buttons-premium.css?v=4">
 </head>
-
+ 
 <body>
   <div class="app">
-
+ 
     <!-- HEADER -->
     <header class="header">
       <div id="clientName" class="client-name">Cap encàrrec actiu</div>
@@ -41,16 +44,16 @@
       <!-- AVISO FUERA DE HORARIO DE ENFOQUE -->
       <div id="focusScheduleStatus" style="display: none; margin-top: 8px; padding: 6px 12px; background: rgba(251, 191, 36, 0.2); border-radius: 6px; font-size: 0.85rem; color: #fbbf24; text-align: center;"></div>
     </header>
-
+ 
     <!-- ACTIVIDADES -->
 <section class="panel" id="activitiesPanel">
-
+ 
   <!-- ACCIÓ PRINCIPAL -->
 <div id="clientMainButtons" class="grid centered" style="margin-top: 12px;">
    
 <button id="newClientBtn" title="Nou encàrrec">➕</button>
  <!-- <button id="changeClient">🔄 Canviar d'encàrrec</button> -->
-     <button id="focusPriorityBtn" class="primary full-width">
+     <button id="focusPriorityBtn" class="full-width">
       👁️ Revisar encàrrecs
     </button>
       </div>
@@ -58,9 +61,9 @@
   <div class="grid activities" id="activitiesGrid">
     <!-- aquí ja podràs posar altres activitats més endavant -->
   </div>
-
+ 
 </section>
-
+ 
 <!-- ⬇️ AFEGIR AQUÍ LA VISTA DE LLISTA DE CLIENTS ⬇️ -->
 <!-- VISTA MILLORADA DE LLISTA DE CLIENTS -->
 <div class="clients-overview-panel" id="clientsOverviewPanel" style="display: none;">
@@ -115,8 +118,8 @@
   </div>
   
 </div>
-
-
+ 
+ 
 <!-- INFO CLIENTE (CÁMARA + NOTAS) -->
     <section class="panel" id="clientInfoPanel">
       
@@ -146,7 +149,7 @@
   <button id="closeClient" class="danger">✅ Tancar client</button>
 </div>
     
-
+ 
       <!-- WORKPAD (Bloc de notas) -->
       <div class="workpad-container">
         <div class="workpad-header">
@@ -160,7 +163,7 @@
           rows="4"
         ></textarea>
       </div>
-
+ 
       <!-- FEINES PER URGÈNCIA -->
       <div class="workpad-container">
         <div class="workpad-header">
@@ -173,20 +176,20 @@
           placeholder="Tasques urgents, bloquejants..."
           rows="2"
         ></textarea>
-
+ 
          <!-- <textarea
           id="taskImportant"
           class="workpad-area important"
           placeholder="🟠 Important (següent pas)"
         ></textarea>
-
+ 
         <textarea
           id="taskLater"
           class="workpad-area later"
           placeholder="🟢 Quan es pugui (no oblidar)"
         ></textarea>
       </div>
-
+ 
      PANEL D'ACCIONS DEL CLIENT -->
       <div id="clientActionsPanel" class="client-actions-panel">
         <div class="grid" style="margin-top: 12px;">
@@ -203,20 +206,20 @@
             📊 Veure resum d'hores
           </button>
         </div>
-
+ 
         <div class="grid centered" style="margin-top: 12px;">
           <button id="generateReportBtn" class="primary">
             📋 Generar informe
           </button>
         </div>
-
+ 
       <!-- ✅ AFEGEIX AQUEST INPUT (OBLIGATORI!) -->
 <!-- ============================================ -->
 <!-- BOTONS PER AFEGIR FOTOS I ARXIUS -->
 <!-- Substitueix la secció dels botons amb això -->
 <!-- ============================================ -->
-
-
+ 
+ 
 <!-- ✅ Input 1: Fotos -->
 <input 
   type="file" 
@@ -225,7 +228,7 @@
   style="display: none !important; position: absolute; left: -9999px; opacity: 0; width: 0; height: 0;"
   onchange="handlePhotoInputiPad(this)"
 >
-
+ 
 <!-- ✅ Input 2: Arxius (ID CORRECTE: fileInputiPad) -->
 <input 
   type="file" 
@@ -234,10 +237,10 @@
   style="display: none !important; position: absolute; left: -9999px; opacity: 0; width: 0; height: 0;"
   onchange="handleFileInputiPad(this)"
 >
-
+ 
 <!-- ✅ Labels amb classe primary i estils -->
 <div class="grid centered" style="margin-top: 12px;">
-  <label for="photoInputiPad" class="primary" style="
+  <label for="photoInputiPad" style="
     display: inline-block;
     cursor: pointer;
     text-align: center;
@@ -246,9 +249,9 @@
     📷 Afegir foto
   </label>
 </div>
-
+ 
 <div class="grid centered" style="margin-top: 12px;">
-  <label for="fileInputiPad" class="primary" style="
+  <label for="fileInputiPad" style="
     display: inline-block;
     cursor: pointer;
     text-align: center;
@@ -260,10 +263,10 @@
 <!-- Galeria d'arxius -->
 <div id="photoGallery" class="photo-gallery"></div>
    
-
+ 
     </section>
-
-
+ 
+ 
     <!-- BACKUP Y GESTIÓN -->
     <section class="panel panel-backup">
       <div class="grid">
@@ -273,21 +276,21 @@
         <button onclick="openAdminClientsModal()" class="full-width btn-danger-soft">🗂️ Gestió massiva de clients</button>
       </div>
     </section>
-
+ 
     <!-- BORRAR CLIENT (només visible per a clients tancats) -->
     <section class="panel" id="deleteClientPanel" style="display: none;">
       <button id="deleteClientBtn" class="danger">
         🗑️ Esborrar aquest client
       </button>
     </section>
-
+ 
     <!-- FOOTER -->
     <footer class="footer">
-      <button id="focusBtn" class="footer-btn footer-btn-primary">🎯 Focus</button>
+      <button id="focusBtn" class="footer-btn">🎯 Focus</button>
       <button id="scheduleBtn" class="footer-btn">⏰ Activar Horari</button>
       <button id="todayBtn" class="footer-btn">📄 Report</button>
     </footer>
-
+ 
     <!-- VERSIÓN / ACTIVACIÓN -->
   <div id="versionBox" class="version-box">
     <div class="version-badge">
@@ -307,11 +310,11 @@
     </div>
     <div id="licenseInfo" style="display:none"></div>
   </div>
-
+ 
   <!-- ===============================================
        MODALES
        =============================================== -->
-
+ 
   <!-- MODAL: Nou Client - ID CORREGIT -->
   <div id="modalNewClient" class="modal-overlay hidden">
     <div class="modal">
@@ -331,7 +334,7 @@
   autocapitalize="sentences"
   spellcheck="false"
 ></textarea>
-
+ 
       </div>
      
       
@@ -342,7 +345,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Canviar Client -->
   <div id="modalChangeClient" class="modal-overlay hidden">
     <div class="modal">
@@ -361,7 +364,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Clients tancats -->
   <div id="modalHistory" class="modal-overlay hidden">
     <div class="modal">
@@ -379,7 +382,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Esborrar clients antics (MASSIU) -->
   <div id="modalBulkDelete" class="modal-overlay hidden">
     <div class="modal">
@@ -395,7 +398,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Confirmar tancament de client -->
   <div id="modalCloseClient" class="modal-overlay hidden">
     <div class="modal modal-confirm">
@@ -412,7 +415,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Exportar abans de tancar -->
   <div id="modalExportBeforeClose" class="modal-overlay hidden">
     <div class="modal">
@@ -429,7 +432,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Dades de Facturació (s'obre en tancar client) -->
   <div id="modalBillingDetails" class="modal-overlay hidden" style="display:none;">
     <div class="modal" style="max-width: 480px; width: 95%;">
@@ -439,7 +442,7 @@
       </div>
       <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
         <p style="font-size:13px; opacity:0.7; margin:0;">Omple les dades del treball per enviar-les automàticament a facturació.</p>
-
+ 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
             ⏱️ Hores disseny
@@ -452,27 +455,27 @@
               style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
           </label>
         </div>
-
+ 
         <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
           🏗️ Material i mides <span style="color:#f87171;">*</span>
           <textarea id="billingMaterial" placeholder="ex: Vinil mat negre 3x1.2m, xapa alumini 2mm..."
             rows="3"
             style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px; resize:vertical; font-family:inherit;"></textarea>
         </label>
-
+ 
         <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
           🚗 Desplaçament
           <input id="billingDesplacament" type="text" placeholder="ex: 45 km / 2 viatges"
             style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px;">
         </label>
-
+ 
         <label style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
           💬 Notes addicionals <span style="opacity:0.5;">(opcional)</span>
           <textarea id="billingNotes" placeholder="Observacions, incidències, extras..."
             rows="2"
             style="padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:14px; resize:vertical; font-family:inherit;"></textarea>
         </label>
-
+ 
         <p style="font-size:11px; opacity:0.5; margin:0;">* Camp obligatori. S'enviarà un email automàtic a facturació.</p>
       </div>
       <div class="modal-footer">
@@ -481,7 +484,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Informe/Report -->
   <div id="modalReport" class="modal-overlay hidden">
     <div class="modal">
@@ -499,7 +502,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Importar Feina -->
   <div id="modalImportWork" class="modal-overlay hidden">
     <div class="modal">
@@ -522,7 +525,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Importar còpia completa -->
   <div id="modalImportBackup" class="modal-overlay hidden">
     <div class="modal">
@@ -546,7 +549,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Focus diari -->
   <div id="modalEnfoque" class="modal-overlay hidden">
     <div class="modal">
@@ -571,7 +574,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Eliminar client -->
   <div id="modalDeleteClient" class="modal-overlay hidden">
     <div class="modal modal-confirm">
@@ -590,7 +593,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Data d'entrega -->
   <div id="modalDeliveryDate" class="modal-overlay hidden">
     <div class="modal">
@@ -615,7 +618,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Afegir hores manuals -->
   <div id="modalExtraHours" class="modal-overlay hidden">
     <div class="modal">
@@ -627,13 +630,13 @@
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
           Per a feines fetes fora de l'app (treball extern, reunions, correus...)
         </p>
-
+ 
         <label class="modal-label">Hores:</label>
         <input type="number" id="inputExtraHours" placeholder="Ex: 2.5" step="0.5" min="0" class="modal-input" style="margin-bottom: 15px;">
-
+ 
         <label class="modal-label">Descripció (opcional):</label>
         <textarea id="inputExtraDescription" class="modal-input" rows="3" placeholder="Ex: Reunió amb client, correccions per correu..."></textarea>
-
+ 
         <div style="margin-top: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
           <p style="margin: 0; font-size: 13px; color: #93c5fd;">
             💡 Aquestes hores s'afegiran al temps total del client
@@ -646,7 +649,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Veure Hores Extra -->
   <div id="modalViewExtraHours" class="modal-overlay hidden">
     <div class="modal">
@@ -667,7 +670,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Configurar horari Focus diari -->
   <div id="modalSchedule" class="modal-overlay hidden">
     <div class="modal">
@@ -679,12 +682,12 @@
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
           L'enfocament només comptabilitza el temps dins de l'horari configurat. Fora d'aquest horari pots continuar treballant, però no afecta les mètriques d'enfocament.
         </p>
-
+ 
         <label class="modal-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
           <input type="checkbox" id="scheduleEnabled" style="width: 20px; height: 20px; cursor: pointer;">
           <span>Activar Horari de Focus diari</span>
         </label>
-
+ 
         <div id="scheduleConfig" style="display: none;">
           <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
             <div style="flex: 1;">
@@ -696,7 +699,7 @@
               <input type="time" id="scheduleEnd" class="modal-input" value="17:00">
             </div>
           </div>
-
+ 
           <div class="schedule-presets">
             <p class="modal-label" style="margin-bottom: 10px;">Predefinits ràpids:</p>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
@@ -706,7 +709,7 @@
               <button class="btn-secondary" onclick="applyPreset('09:00', '18:00')">💼 Complet<br><small>09:00 - 18:00</small></button>
             </div>
           </div>
-
+ 
           <div style="margin-top: 20px; padding: 12px; background: rgba(0, 255, 136, 0.1); border-radius: 8px; border-left: 3px solid #00ff88;">
             <p style="margin: 0; font-size: 13px; color: #00ff88;">
               <strong id="schedulePreview">09:00 - 17:00</strong>
@@ -723,7 +726,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Configuración de còpies automàtiques -->
   <div id="modalBackupConfig" class="modal-overlay hidden">
     <div class="modal">
@@ -735,12 +738,12 @@
         <p class="modal-text" style="opacity: 0.8; margin-bottom: 20px;">
           Configura les còpies de seguretat automàtiques a Google Drive. Es faran cada mitjanit.
         </p>
-
+ 
         <label class="modal-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer;">
           <input type="checkbox" id="autoDriveBackupCheckbox" style="width: 20px; height: 20px; cursor: pointer;">
           <span>Activar còpies automàtiques a Drive</span>
         </label>
-
+ 
         <div style="padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3b82f6;">
           <p style="margin: 0; font-size: 0.9rem; color: #93c5fd;">
             ℹ️ Els backups es guardaran automàticament al teu Google Drive cada dia a mitjanit
@@ -753,7 +756,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Eliminar Foto -->
   <div id="modalDeletePhoto" class="modal-overlay hidden">
     <div class="modal modal-confirm">
@@ -770,7 +773,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- MODAL: Avisos (substitueix alert genèric) -->
   <div id="modalAlert" class="modal-overlay hidden">
     <div class="modal modal-alert">
@@ -786,7 +789,7 @@
       </div>
     </div>
   </div>
-
+ 
     <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
 <!-- Scripts de FocusWork -->
 <script src="app-core.js"></script>
@@ -802,13 +805,13 @@ if (typeof updateClientViewContent !== 'function') {
   console.log('ℹ️ app-client-view.js no carregat - funcionarà sense ell');
 }
 </script>
-
+ 
 <!-- Scripts de la vista de llista de clients -->
 <script>
 // Variables globals per filtres
 let currentFilter = 'all';
 let currentSort = 'urgency';
-
+ 
 // Mostrar vista de clients
 async function showClientsOverview() {
   const overviewPanel = document.getElementById('clientsOverviewPanel');
@@ -819,26 +822,26 @@ async function showClientsOverview() {
   
   await renderClientsOverview();
 }
-
+ 
 // Amagar vista de clients
 function hideClientsOverview() {
   const overviewPanel = document.getElementById('clientsOverviewPanel');
   const activitiesPanel = document.getElementById('activitiesPanel');
   const clientInfoPanel = document.getElementById('clientInfoPanel');
-
+ 
   if (overviewPanel) overviewPanel.style.display = 'none';
   if (activitiesPanel) activitiesPanel.style.display = 'block';
-
+ 
   // 🔧 assegurar que el client es veu sempre
   if (clientInfoPanel && state.currentClientId) {
     clientInfoPanel.style.display = 'block';
   }
-
+ 
   if (typeof updateUI === "function") {
     updateUI();
   }
 }
-
+ 
 // Renderitzar la vista completa
 async function renderClientsOverview() {
   const clients = await loadAllClients();
@@ -876,7 +879,7 @@ async function renderClientsOverview() {
     });
   });
 }
-
+ 
 // Actualitzar comptadors de filtres
 function updateFilterCounts(clients) {
   const counts = {
@@ -909,7 +912,7 @@ function updateFilterCounts(clients) {
   document.getElementById('filterPausedCount').textContent = counts.paused;
   document.getElementById('filterUrgentCount').textContent = counts.urgent;
 }
-
+ 
 // Filtrar clients
 function filterClients(clients, filter) {
   if (filter === 'all') return clients;
@@ -926,7 +929,7 @@ function filterClients(clients, filter) {
   
   return clients.filter(client => (client.state || 'in_progress') === filter);
 }
-
+ 
 // Ordenar clients
 function sortClients(clients, sortBy) {
   const sorted = [...clients];
@@ -961,7 +964,7 @@ function sortClients(clients, sortBy) {
       return sorted;
   }
 }
-
+ 
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
   // Botó de tornar
@@ -1004,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
-
+ 
 <!-- Scripts de la secció d'estat i progrés -->
 <script>
 // Inicialitzar la secció d'estat i progrés
@@ -1038,7 +1041,7 @@ async function initProjectStatus() {
     setupProgressListeners();
   }
 }
-
+ 
 // Event listeners per al selector d'estat
 function setupStateListeners() {
   const changeStateBtn = document.getElementById('changeStateBtn');
@@ -1079,7 +1082,7 @@ function setupStateListeners() {
     });
   });
 }
-
+ 
 // Event listeners per al selector de progrés
 function setupProgressListeners() {
   const progressContainer = document.getElementById('projectProgressContainer');
@@ -1134,7 +1137,7 @@ function setupProgressListeners() {
   });
 }
 </script>
-
+ 
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
@@ -1177,10 +1180,10 @@ function setupProgressListeners() {
   </div>
   <button class="lightbox-nav lightbox-nav-next" onclick="nextPhoto()">›</button>
 </div>
-
+ 
 <!-- Toolbar compacte — 2 files, 6 columnes -->
 <div class="editor-toolbar-grid">
-
+ 
   <!-- FILA 1: Color + Mida + Eines dibuix -->
   <div class="etb-colorpicker-wrap" title="Color">
     <input type="color" id="rgbColorPicker" value="#ef4444"
@@ -1192,7 +1195,7 @@ function setupProgressListeners() {
   <button class="etb-btn" onclick="setDrawTool('pencil')" id="drawToggle">✏️</button>
   <button class="etb-btn" onclick="setDrawTool('eraser')" id="eraserToggle">🧹</button>
   <button class="etb-btn" onclick="undoDraw()">↶</button>
-
+ 
   <!-- FILA 2: Formes + Text + Capes -->
   <button class="etb-btn" onclick="setDrawTool('fill')" id="fillToggle" title="Omplir">🪣</button>
   <button class="etb-btn" onclick="setDrawTool('rect')" id="rectToggle" title="Rectangle">⬜</button>
@@ -1200,7 +1203,7 @@ function setupProgressListeners() {
   <button class="etb-btn" onclick="setDrawTool('line')" id="lineToggle" title="Línia">╱</button>
   <button class="etb-btn" onclick="setDrawTool('text')" id="textToggle" title="Text">𝐓</button>
   <button class="etb-btn" onclick="toggleLayerVisibility()" id="layerVisBtn" title="Mostrar/ocultar dibuixos">👁</button>
-
+ 
   <!-- FILA 3: Zoom + Rotació PC + Guardar + Gestió -->
   <button class="etb-btn etb-zoom-btn" id="zoomInBtn"  onclick="zoomIn()"    title="Ampliar">🔍+</button>
   <button class="etb-btn etb-zoom-btn" id="zoomOutBtn" onclick="zoomOut()"   title="Reduir">🔍−</button>
@@ -1213,7 +1216,7 @@ function setupProgressListeners() {
   <button class="etb-btn etb-save" onclick="saveEditedPhoto()" style="grid-column: span 2;">💾 Guardar</button>
   <button class="etb-btn etb-danger" onclick="deleteCurrentPhoto()">🗑️</button>
   <button class="etb-btn" onclick="downloadCurrentPhoto()">⬇️</button>
-
+ 
 </div>
   
 <div class="lightbox-footer">
@@ -1243,7 +1246,7 @@ function setupProgressListeners() {
     </button>
   </div>
 </div>
-
+ 
 <!-- Estils addicionals per la vista de llista -->
 <style>
 /* Header de la vista */
@@ -1254,7 +1257,7 @@ function setupProgressListeners() {
   z-index: 200;
   overflow-y: auto;
 }
-
+ 
 .overview-header {
   display: flex;
   align-items: center;
@@ -1267,7 +1270,7 @@ function setupProgressListeners() {
   z-index: 10;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
-
+ 
 .back-btn {
   padding: 8px;
   background: rgba(30, 41, 59, 0.6);
@@ -1284,13 +1287,13 @@ function setupProgressListeners() {
   min-width: 44px;
   min-height: 44px;
 }
-
+ 
 .back-btn:hover,
 .back-btn:active {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(255, 255, 255, 0.2);
 }
-
+ 
 .overview-title {
   flex: 1;
   font-size: 20px;
@@ -1298,7 +1301,7 @@ function setupProgressListeners() {
   color: #e2e8f0;
   margin: 0;
 }
-
+ 
 /* Filtres */
 .clients-filters {
   display: flex;
@@ -1308,7 +1311,7 @@ function setupProgressListeners() {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   overflow-x: auto;
 }
-
+ 
 .filter-btn {
   padding: 8px 16px;
   background: rgba(30, 41, 59, 0.6);
@@ -1324,19 +1327,19 @@ function setupProgressListeners() {
   gap: 6px;
   transition: all 0.2s;
 }
-
+ 
 .filter-btn:hover {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(255, 255, 255, 0.2);
   color: #e2e8f0;
 }
-
+ 
 .filter-btn.active {
   background: rgba(96, 165, 250, 0.2);
   border-color: rgba(96, 165, 250, 0.4);
   color: #60a5fa;
 }
-
+ 
 .filter-badge {
   background: rgba(255, 255, 255, 0.1);
   padding: 2px 8px;
@@ -1344,7 +1347,7 @@ function setupProgressListeners() {
   font-size: 11px;
   font-weight: 600;
 }
-
+ 
 /* Ordenació */
 .clients-sorting {
   display: flex;
@@ -1354,13 +1357,13 @@ function setupProgressListeners() {
   background: rgba(15, 23, 42, 0.4);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
-
+ 
 .sorting-label {
   font-size: 13px;
   color: #94a3b8;
   font-weight: 500;
 }
-
+ 
 .sorting-select {
   flex: 1;
   padding: 8px 12px;
@@ -1371,17 +1374,17 @@ function setupProgressListeners() {
   font-size: 14px;
   cursor: pointer;
 }
-
+ 
 .sorting-select:focus {
   outline: none;
   border-color: rgba(96, 165, 250, 0.5);
 }
-
+ 
 /* Llista de clients */
 .clients-list-container {
   padding: 20px;
 }
-
+ 
 /* Estat buit */
 .empty-state {
   display: flex;
@@ -1391,25 +1394,25 @@ function setupProgressListeners() {
   padding: 60px 20px;
   text-align: center;
 }
-
+ 
 .empty-icon {
   font-size: 64px;
   margin-bottom: 16px;
   opacity: 0.5;
 }
-
+ 
 .empty-text {
   font-size: 16px;
   color: #64748b;
 }
-
+ 
 /* Separació visual de la secció d'estat */
 #projectStatusSection {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
-
+ 
 /* Estils per la capçalera del client */
 .client-header {
   display: flex;
@@ -1421,7 +1424,7 @@ function setupProgressListeners() {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   margin: -20px -20px 20px -20px;
 }
-
+ 
 .client-header-title {
   flex: 1;
   font-size: 20px;
@@ -1429,23 +1432,23 @@ function setupProgressListeners() {
   color: #e2e8f0;
   margin: 0;
 }
-
+ 
 /* Estils per als botons finals del client - només millorar els existents */
 .grid.full-actions {
   margin-top: 12px;
 }
-
+ 
 .grid.full-actions button {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-
+ 
 /* ✅ Text blanc als botons blaus (primary) */
 .primary,
 label.primary {
   color: white !important;
 }
-
+ 
 /* ✅ Botó de Nou encàrrec circular i destacat */
 #newClientBtn {
   width: 70px !important;
@@ -1463,19 +1466,19 @@ label.primary {
   transition: all 0.3s ease !important;
   cursor: pointer !important;
 }
-
+ 
 #newClientBtn:hover,
 #newClientBtn:active {
   transform: scale(1.05) !important;
   box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6) !important;
 }
-
+ 
 #clientMainButtons {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
 }
-
+ 
 /* ✅ Alinear els 3 botons del footer en grid */
 .footer {
   display: grid;
@@ -1487,7 +1490,7 @@ label.primary {
   bottom: 0;
   z-index: 100;
 }
-
+ 
 .footer button {
   padding: 12px;
   font-size: 14px;
@@ -1500,17 +1503,18 @@ label.primary {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-
+ 
 .footer button:hover,
 .footer button:active {
   background: rgba(30, 41, 59, 1);
   transform: scale(0.98);
 }
-
+ 
 </style>
 <script src="botons-visibilitat.js"></script>
 <script src="buttons-ripple.js?v=1"></script>
 <script src="admin-clients.js"></script>
 </body>
-
+ 
 </html>
+ 
