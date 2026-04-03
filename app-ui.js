@@ -349,7 +349,7 @@ async function updateUI(preloadedClient = null) {
   }
 
   updates.push(() => {
-    $("clientName").textContent = client ? `Client: ${client.name}${client.active ? "" : " (tancat)"}` : "Cap encàrrec actiu";
+    $("clientName").textContent = client ? `${client.name}${client.active ? "" : " · tancat"}` : "Cap encàrrec actiu";
     $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
     $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
     const headerTitle = $("clientHeaderTitle");
