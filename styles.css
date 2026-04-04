@@ -738,6 +738,35 @@ button.primary:hover {
   background: rgba(239, 68, 68, 0.3);
 }
 
+/* ── FORCE: evita que buttons-premium/onlyfora sobreescriguin el lightbox ── */
+.lightbox-overlay .lightbox-btn,
+.lightbox-overlay .lightbox-btn.danger {
+  background: rgba(255,255,255,0.1) !important;
+  border: 1px solid rgba(255,255,255,0.25) !important;
+  color: white !important;
+  border-radius: 25px !important;
+  padding: 12px 20px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  animation: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.lightbox-overlay .lightbox-btn:hover {
+  background: rgba(255,255,255,0.2) !important;
+  transform: translateY(-2px) !important;
+}
+.lightbox-overlay .lightbox-btn.danger {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+.lightbox-overlay .lightbox-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+}
+
 /* ===============================
    MODALS
    =============================== */
@@ -1138,10 +1167,12 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 8px;
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  border-radius: 8px !important;
   overflow: hidden;
+  box-shadow: none !important;
+  animation: none !important;
 }
 
 .etb-colorpicker-wrap input[type="color"] {
@@ -1157,9 +1188,11 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   padding: 0 6px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  animation: none !important;
 }
 
 .etb-slider {
@@ -1173,17 +1206,22 @@ textarea:focus-visible {
   align-items: center !important;
   justify-content: center !important;
   line-height: 1 !important;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  padding: 0;
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 8px !important;
+  color: white !important;
+  cursor: pointer !important;
+  transition: background 0.15s, border-color 0.15s !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
+  transform: none !important;
 }
 
 .etb-btn:hover {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.12) !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .etb-btn.active {
@@ -1194,14 +1232,18 @@ textarea:focus-visible {
 /* Botó capa actiu (layer visible/ocult) */
 .etb-btn.layer-hidden { opacity: 0.4; }
 
-.etb-save {
-  background: rgba(16, 185, 129, 0.15) !important;
-  border-color: rgba(16, 185, 129, 0.4) !important;
+.etb-save,
+.editor-toolbar-grid .etb-save {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #6ee7b7 !important;
 }
 
-.etb-danger {
-  background: rgba(239, 68, 68, 0.1) !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
+.etb-danger,
+.editor-toolbar-grid .etb-danger {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #fca5a5 !important;
 }
 
 /* Mòbil: toolbar ocupa tot l'ample */
@@ -1545,6 +1587,7 @@ textarea:focus-visible {
     background: rgba(10, 15, 30, 0.98);
     border-left: 1px solid rgba(255,255,255,0.08);
     overflow-y: auto;
+    padding-top: 56px; /* espai pel header transparent que hi ha a sobre */
   }
 
   /* Toolbar en columna dreta */
