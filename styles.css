@@ -143,13 +143,7 @@ html, body {
 
 .activity-name,
 #activityName {
-  margin-top: 6px;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-muted);
-  text-transform: capitalize;
-  letter-spacing: 0.5px;
-  text-align: center;
+  display: none;
 }
 
 .timer,
@@ -1521,4 +1515,74 @@ textarea:focus-visible {
 .workpad-area.urgent {
   border-left: 3px solid #ef4444;
   min-height: 60px;
+}
+
+
+/* ══════════════════════════════════════════════
+   LIGHTBOX DESKTOP — imatge gran, toolbar petit
+   ══════════════════════════════════════════════ */
+@media (min-width: 769px) {
+  /* Lightbox ocupa tota la pantalla en landscape */
+  .lightbox-overlay {
+    flex-direction: row !important;
+    align-items: stretch !important;
+  }
+
+  /* Columna esquerra: imatge */
+  .lightbox-canvas-container {
+    flex: 1 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  /* Columna dreta: toolbar + comentari + botons */
+  .lightbox-right-panel {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 15, 30, 0.98);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    overflow-y: auto;
+  }
+
+  /* Toolbar en columna dreta */
+  .editor-toolbar-grid {
+    max-width: 100% !important;
+    width: 100% !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    padding: 10px !important;
+    gap: 6px !important;
+    border-top: none !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Botons toolbar més petits en desktop */
+  .etb-color,
+  .etb-btn,
+  .etb-slider-wrap,
+  .etb-colorpicker-wrap {
+    height: 34px !important;
+  }
+
+  /* Footer en columna dreta */
+  .lightbox-footer {
+    flex: 1;
+    padding: 12px !important;
+    background: transparent !important;
+    overflow-y: auto;
+  }
+
+  /* Comentari ocupa l'espai disponible */
+  .lightbox-comment-input {
+    min-height: 120px !important;
+  }
+
+  /* Header sobre la imatge */
+  .lightbox-header {
+    position: absolute !important;
+    top: 0; left: 0; right: 260px;
+    z-index: 10010;
+  }
 }

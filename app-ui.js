@@ -350,7 +350,7 @@ async function updateUI(preloadedClient = null) {
 
   updates.push(() => {
     $("clientName").textContent = client ? `${client.name}${client.active ? "" : " · tancat"}` : "Cap encàrrec actiu";
-    $("activityName").textContent = state.currentActivity ? activityLabel(state.currentActivity) : "—";
+    $("activityName").textContent = ""; // ocult — no cal mostrar l'activitat
     $("timer").textContent = client && client.active ? formatTime(state.sessionElapsed) : "00:00:00";
     const headerTitle = $("clientHeaderTitle");
     if (headerTitle) headerTitle.textContent = client ? client.name : "Client";
@@ -582,6 +582,13 @@ async function confirmNewClient() {
   // per evitar que el timer mostri 5-6s de retard de càrrega
   state.lastTick = Date.now();
   state._tickClock = Date.now();
+
+  // Assegurar que els botons de tancar client es mostren immediatament
+  const clientInfoPanel = document.getElementById('clientInfoPanel');
+  if (clientInfoPanel) clientInfoPanel.style.display = 'block';
+  const btns = $('clientFixedButtons');
+  if (btns) btns.style.display = 'grid';
+
   closeModal('modalNewClient');
 }
 
@@ -2331,24 +2338,7 @@ if (photoCanvas && photoCtx) {
   const commentInput = $('lightboxComment');
 
 if (commentInput) {
-  const template =
-`Projecte:
-Lloc:
-Mides:
-Disseny:
-Material:
-Hores:
-Entrega:
-`;
-
-  let commentText = photo.comment || '';
-
-  // només plantilla a la primera foto visible
-  if (!commentText.trim() && currentLightboxIndex === 0) {
-    commentText = template;
-    photo.comment = template;
-  }
-
+  const commentText = photo.comment || '';
   commentInput.value = commentText;
   commentInput.oninput = () => savePhotoComment(commentInput.value);
 }
