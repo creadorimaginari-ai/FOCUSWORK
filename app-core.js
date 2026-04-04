@@ -626,6 +626,7 @@ async function tick() {
 
   // Temps client
   client.total = (client.total || 0) + elapsedSeconds;
+  state._cachedClientTotal = client.total; // cache live per display
 
   client.activities = client.activities || {};
   client.activities[state.currentActivity] =
@@ -679,11 +680,18 @@ function updateTimerDisplay() {
 async function updateClientTotal() {
   if (!state.currentClientId) return;
 
+  // Usar el valor en viu (cached per tick) si disponible, evita delay de BD
+  const el = $("clientTotal");
+  if (!el) return;
+
+  if (state._cachedClientTotal !== undefined) {
+    el.textContent = `Total client: ${formatTime(state._cachedClientTotal)}`;
+    return;
+  }
+
   const client = await loadClient(state.currentClientId);
   if (!client) return;
-
-  const el = $("clientTotal");
-  if (el) el.textContent = `Total client: ${formatTime(client.total)}`;
+  el.textContent = `Total client: ${formatTime(client.total)}`;
 }
 
 setInterval(updateClientTotal, 5000);
@@ -704,6 +712,8 @@ async function setActivity(activity) {
   }
   state.currentActivity = activity;
   state.sessionElapsed = 0;
+  state._msRemainder = 0;
+  state._tickClock = Date.now();
   state.lastTick = Date.now();
   await save();
   updateUI();

@@ -572,11 +572,16 @@ async function confirmNewClient() {
   state.currentClientId = id;
   state.currentActivity = ACTIVITIES.WORK;
   state.sessionElapsed = 0;
-  state.lastTick = Date.now();
+  state._msRemainder = 0;
+  state._cachedClientTotal = 0;
   isWorkpadInitialized = false;
   areTasksInitialized = false;
   await save();
   await updateUI();
+  // Reiniciar lastTick i _tickClock DESPRÉS de la càrrega async
+  // per evitar que el timer mostri 5-6s de retard de càrrega
+  state.lastTick = Date.now();
+  state._tickClock = Date.now();
   closeModal('modalNewClient');
 }
 
@@ -641,19 +646,24 @@ async function selectClient(clientId) {
   }
   
   state.currentClientId = clientId;
-  
   state.currentActivity = ACTIVITIES.WORK;
   state.sessionElapsed = 0;
-  state.lastTick = Date.now();
-  
+  state._msRemainder = 0;
+  state._cachedClientTotal = undefined; // forçar recàrrega de BD per total correcte
+
   isWorkpadInitialized = false;
   areTasksInitialized = false;
-  
+
   await save();
-  
+
   const client = await loadClient(clientId);
-  
+  state._cachedClientTotal = client ? (client.total || 0) : 0;
+
 await updateUI(client);
+
+  // Reiniciar lastTick i _tickClock DESPRÉS de la càrrega async
+  state.lastTick = Date.now();
+  state._tickClock = Date.now();
 
 const clientInfoPanel = document.getElementById('clientInfoPanel');
 if (clientInfoPanel) clientInfoPanel.style.display = 'block';
