@@ -1403,90 +1403,208 @@ async function generateReport() {
     showAlert('Sense client', 'Selecciona un client primer', '⚠️');
     return;
   }
-  const billableTime = client.billableTime || 0;
-  const extraHoursTotal = (client.extraHours || []).reduce((sum, e) => sum + e.seconds, 0);
-  
-  let activitiesBreakdown = '';
-  if (state.focusSchedule.enabled) {
-    activitiesBreakdown = '\n📊 DESGLOSSAMENT D\'ACTIVITATS FACTURABLES:\n';
-    for (const act in client.activities) {
-      const time = client.activities[act];
-      activitiesBreakdown += `   • ${activityLabel(act)}: ${formatTime(time)}\n`;
-    }
-  }
-  
-  let extraHoursSection = '';
-  if (client.extraHours && client.extraHours.length > 0) {
-    extraHoursSection = '\n⏱️ HORES EXTRES:\n';
-    client.extraHours.forEach(entry => {
-      const date = new Date(entry.date).toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit' });
-      extraHoursSection += `   • ${date}: ${entry.hours}h - ${entry.description}\n`;
-    });
-    extraHoursSection += `   TOTAL EXTRES: ${formatTime(extraHoursTotal)}\n`;
-  }
-  
-  const notesSection = client.notes && client.notes.trim() ? `\n📝 NOTES:\n${client.notes}\n` : '';
-  
-  let deliverySection = '';
+
+  const billableTime   = client.billableTime || 0;
+  const extraHoursTotal = (client.extraHours || []).reduce((s, e) => s + e.seconds, 0);
+  const totalWithExtra  = client.total + extraHoursTotal;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ca-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  /* ── helpers ── */
+  const pct = client.total > 0
+    ? Math.round((billableTime / client.total) * 100)
+    : 0;
+
+  // Barra de progrés
+  const progressBar = `
+    <div class="rpt-progress-wrap">
+      <div class="rpt-progress-bar" style="width:${pct}%"></div>
+    </div>
+    <div class="rpt-progress-label">${pct}% facturable</div>`;
+
+  /* ── data de lliurament ── */
+  let deliveryHtml = '';
   if (client.deliveryDate) {
-    const deliveryDate = new Date(client.deliveryDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const delivery = new Date(deliveryDate);
-    delivery.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
-    let status = '';
-    if (diffDays < 0) status = '⚠️ VENÇUDA';
-    else if (diffDays === 0) status = '🔴 AVUI';
-    else if (diffDays <= 3) status = `🟡 ${diffDays} dies`;
-    else status = '📅';
-    deliverySection = `\n📅 DATA DE LLIURAMENT: ${deliveryDate.toLocaleDateString('ca-ES')} ${status}\n`;
+    const d = new Date(client.deliveryDate);
+    const diff = Math.ceil((d.setHours(0,0,0,0), d - new Date().setHours(0,0,0,0)) / 86400000);
+    const badge = diff < 0  ? `<span class="rpt-badge rpt-badge-red">⚠️ Vençuda</span>`
+                : diff === 0 ? `<span class="rpt-badge rpt-badge-red">🔴 Avui</span>`
+                : diff <= 3  ? `<span class="rpt-badge rpt-badge-yellow">🟡 ${diff} dies</span>`
+                :              `<span class="rpt-badge rpt-badge-green">📅 ${diff} dies</span>`;
+    deliveryHtml = `
+      <div class="rpt-row">
+        <span class="rpt-row-label">📅 Lliurament</span>
+        <span class="rpt-row-value">${new Date(client.deliveryDate).toLocaleDateString('ca-ES')} ${badge}</span>
+      </div>`;
   }
-  
-  const scheduleInfo = state.focusSchedule.enabled ? `\n⏰ HORARI FACTURABLE: ${state.focusSchedule.start} - ${state.focusSchedule.end}\n` : '\n⏰ Sense horari facturable configurat (tot el temps compta)\n';
 
-  let photosSection = '';
-
-if (client.photos && client.photos.length > 0) {
-  photosSection += '\n📷 FOTOGRAFIES\n\n';
-
-  client.photos.forEach((photo, index) => {
-    photosSection += `Foto ${index + 1}\n`;
-
-    // només el comentari, no la imatge
-    if (photo.comment && photo.comment.trim() !== '') {
-      photosSection += photo.comment.trim() + '\n';
-    }
-
-    photosSection += '\n';
+  /* ── desglossat per dies ── */
+  const dailyLog = client.dailyLog || {};
+  const extraByDay = {};
+  (client.extraHours || []).forEach(e => {
+    const k = new Date(e.date).toISOString().slice(0,10);
+    extraByDay[k] = (extraByDay[k] || 0) + e.seconds;
   });
-}
 
+  const allDays = [...new Set([...Object.keys(dailyLog), ...Object.keys(extraByDay)])].sort().reverse();
 
-  const reportText = 
-    `┌────────────────────────────────┐\n` +
-    `       📋 INFORME DE PROJECTE\n` +
-    `└────────────────────────────────┘\n\n` +
-    `👤 CLIENT: ${client.name}\n` +
-    `📅 Data: ${new Date().toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}\n` +
-    `👨‍💼 Responsable: ${userName}\n` +
-    deliverySection + scheduleInfo +
-    `\n────────────────────────────────\n` +
-    `⏱️ TEMPS TOTAL TREBALLAT: ${formatTime(client.total)}\n` +
-    `💰 TEMPS FACTURABLE: ${formatTime(billableTime)}\n` +
-    `${extraHoursSection}` + activitiesBreakdown +
-    photosSection + notesSection +
+  let daysHtml = '';
+  if (allDays.length > 0) {
+    daysHtml = allDays.map(day => {
+      const d = new Date(day + 'T12:00:00');
+      const dayLabel = d.toLocaleDateString('ca-ES', { weekday: 'short', day: '2-digit', month: '2-digit' });
+      const tracked  = dailyLog[day]?.total   || 0;
+      const billable = dailyLog[day]?.billable || 0;
+      const extra    = extraByDay[day]         || 0;
+      const dayTotal = tracked + extra;
 
-    `\n────────────────────────────────\n` +
-    `Generat amb FocoWork v${APP_VERSION}\n` +
-    `────────────────────────────────`;
-  
-  $('reportContent').textContent = reportText;
+      const billableChip = state.focusSchedule?.enabled
+        ? `<span class="rpt-chip rpt-chip-orange">💰 ${formatTime(billable)}</span>` : '';
+      const extraChip = extra > 0
+        ? `<span class="rpt-chip rpt-chip-blue">➕ ${formatTime(extra)}</span>` : '';
+
+      return `
+        <div class="rpt-day-row">
+          <span class="rpt-day-label">${dayLabel}</span>
+          <span class="rpt-day-chips">
+            <span class="rpt-chip">⏱ ${formatTime(dayTotal)}</span>
+            ${billableChip}${extraChip}
+          </span>
+        </div>`;
+    }).join('');
+  } else {
+    daysHtml = `<p class="rpt-empty">Encara no hi ha registre diari (es generarà a partir d'ara)</p>`;
+  }
+
+  /* ── activitats ── */
+  let activitiesHtml = '';
+  if (client.activities && Object.keys(client.activities).length > 0) {
+    activitiesHtml = Object.entries(client.activities)
+      .sort((a, b) => b[1] - a[1])
+      .map(([act, sec]) => {
+        const p = client.total > 0 ? Math.round((sec / client.total) * 100) : 0;
+        return `
+          <div class="rpt-act-row">
+            <span class="rpt-act-label">${activityLabel(act)}</span>
+            <div class="rpt-act-bar-wrap">
+              <div class="rpt-act-bar" style="width:${p}%"></div>
+            </div>
+            <span class="rpt-act-time">${formatTime(sec)}</span>
+          </div>`;
+      }).join('');
+  }
+
+  /* ── hores extres ── */
+  let extraHtml = '';
+  if (client.extraHours && client.extraHours.length > 0) {
+    extraHtml = client.extraHours.map(e => {
+      const d = new Date(e.date).toLocaleDateString('ca-ES', { day:'2-digit', month:'2-digit' });
+      return `<div class="rpt-extra-row"><span class="rpt-extra-date">${d}</span><span class="rpt-extra-desc">${e.description}</span><span class="rpt-extra-time">${e.hours}h</span></div>`;
+    }).join('');
+  }
+
+  /* ── notes ── */
+  const notesHtml = client.notes?.trim()
+    ? `<div class="rpt-notes">${client.notes.trim().replace(/\n/g,'<br>')}</div>` : '';
+
+  /* ── fotos ── */
+  const photosCount = (client.photos || []).length;
+  const photosHtml  = photosCount > 0
+    ? `<div class="rpt-photos-count">${photosCount} foto${photosCount > 1 ? 's' : ''} adjunta${photosCount > 1 ? 'des' : 'da'}</div>` : '';
+
+  /* ── horari ── */
+  const scheduleHtml = state.focusSchedule?.enabled
+    ? `<div class="rpt-schedule-badge">⏰ Horari facturable: ${state.focusSchedule.start} – ${state.focusSchedule.end}</div>` : '';
+
+  /* ── HTML final ── */
+  const html = `
+  <div class="rpt-wrap">
+
+    <!-- CAPÇALERA -->
+    <div class="rpt-header">
+      <div class="rpt-header-meta">${dateStr} · ${userName || 'FocusWork'}</div>
+      <div class="rpt-client-name">${client.name}</div>
+      ${scheduleHtml}
+    </div>
+
+    <!-- RESUM TEMPS -->
+    <div class="rpt-section">
+      <div class="rpt-kpi-grid">
+        <div class="rpt-kpi">
+          <div class="rpt-kpi-value">${formatTime(client.total)}</div>
+          <div class="rpt-kpi-label">Total treballat</div>
+        </div>
+        ${state.focusSchedule?.enabled ? `
+        <div class="rpt-kpi rpt-kpi-orange">
+          <div class="rpt-kpi-value">${formatTime(billableTime)}</div>
+          <div class="rpt-kpi-label">Facturable</div>
+        </div>` : ''}
+        ${extraHoursTotal > 0 ? `
+        <div class="rpt-kpi rpt-kpi-blue">
+          <div class="rpt-kpi-value">${formatTime(extraHoursTotal)}</div>
+          <div class="rpt-kpi-label">Hores extres</div>
+        </div>` : ''}
+      </div>
+      ${state.focusSchedule?.enabled ? progressBar : ''}
+    </div>
+
+    <!-- INFO GENERAL -->
+    <div class="rpt-section">
+      <div class="rpt-section-title">📌 Informació</div>
+      <div class="rpt-rows">
+        <div class="rpt-row">
+          <span class="rpt-row-label">🗂 Projecte</span>
+          <span class="rpt-row-value">${client.name}</span>
+        </div>
+        ${deliveryHtml}
+        <div class="rpt-row">
+          <span class="rpt-row-label">📆 Creat</span>
+          <span class="rpt-row-value">${new Date(client.createdAt).toLocaleDateString('ca-ES')}</span>
+        </div>
+        ${photosHtml ? `<div class="rpt-row"><span class="rpt-row-label">📷 Fotos</span><span class="rpt-row-value">${photosHtml}</span></div>` : ''}
+      </div>
+    </div>
+
+    <!-- REGISTRE DIARI -->
+    <div class="rpt-section">
+      <div class="rpt-section-title">📅 Registre per dies</div>
+      <div class="rpt-days">${daysHtml}</div>
+    </div>
+
+    ${activitiesHtml ? `
+    <!-- ACTIVITATS -->
+    <div class="rpt-section">
+      <div class="rpt-section-title">🎯 Activitats</div>
+      <div class="rpt-activities">${activitiesHtml}</div>
+    </div>` : ''}
+
+    ${extraHtml ? `
+    <!-- HORES EXTRES -->
+    <div class="rpt-section">
+      <div class="rpt-section-title">➕ Hores extres</div>
+      <div class="rpt-extras">${extraHtml}</div>
+    </div>` : ''}
+
+    ${notesHtml ? `
+    <!-- NOTES -->
+    <div class="rpt-section">
+      <div class="rpt-section-title">📝 Notes</div>
+      ${notesHtml}
+    </div>` : ''}
+
+    <!-- PEU -->
+    <div class="rpt-footer">Generat amb FocusWork v${APP_VERSION}</div>
+  </div>`;
+
+  const container = $('reportContent');
+  container.innerHTML = html;
   openModal('modalReport');
 }
 
 function copyReport() {
-  const reportText = $('reportContent').textContent;
+  const container = $('reportContent');
+  // Extreure text net del HTML generat
+  const reportText = container.innerText || container.textContent;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(reportText).then(() => {
       showAlert('Copiat', 'Informe copiat al porta-retalls', '✅');
@@ -1513,7 +1631,8 @@ function fallbackCopy(text) {
 }
 
 async function shareReport() {
-  const reportText = $('reportContent').textContent;
+  const container = $('reportContent');
+  const reportText = container.innerText || container.textContent;
   const client = await loadClient(state.currentClientId);
   if (!client) return;
   const files = [];
@@ -1585,6 +1704,154 @@ function showFocus() {
 }
 
 /* ================= CSV ================= */
+function showGlobalReport() {
+  const log    = state.globalLog || {};
+  const allKeys = Object.keys(log).sort().reverse(); // recent first
+
+  // Últims 14 dies (fins avui)
+  const days14 = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days14.push(d.toISOString().slice(0, 10));
+  }
+
+  // Màxim diari per escalar les barres
+  const maxSec = days14.reduce((m, k) => Math.max(m, log[k]?.total || 0), 0) || 1;
+
+  // ── Barres últims 14 dies ──
+  const barsHtml = days14.map(k => {
+    const entry   = log[k] || { total: 0, billable: 0, clients: {} };
+    const pct     = Math.round((entry.total / maxSec) * 100);
+    const billPct = entry.total > 0 ? Math.round((entry.billable / entry.total) * 100) : 0;
+    const d       = new Date(k + 'T12:00:00');
+    const dayNum  = d.toLocaleDateString('ca-ES', { day: '2-digit' });
+    const dayName = d.toLocaleDateString('ca-ES', { weekday: 'short' }).slice(0, 2);
+    const isToday = k === new Date().toISOString().slice(0, 10);
+    const isEmpty = entry.total === 0;
+
+    return `
+      <div class="gl-bar-col${isToday ? ' gl-today' : ''}">
+        <div class="gl-bar-wrap">
+          <div class="gl-bar-bg">
+            <div class="gl-bar-fill" style="height:${pct}%">
+              ${!isEmpty ? `<div class="gl-bar-bill" style="height:${billPct}%"></div>` : ''}
+            </div>
+          </div>
+          ${!isEmpty ? `<div class="gl-bar-tooltip">${formatTime(entry.total)}</div>` : ''}
+        </div>
+        <div class="gl-bar-label">${dayName}<br><b>${dayNum}</b></div>
+      </div>`;
+  }).join('');
+
+  // ── Resum setmana actual i anterior ──
+  const weekTotal   = (wOffset) => {
+    let s = 0;
+    const today = new Date();
+    const dow   = today.getDay() || 7; // dilluns = 1
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (dow - 1) + i + wOffset * 7);
+      const k = d.toISOString().slice(0, 10);
+      s += log[k]?.total || 0;
+    }
+    return s;
+  };
+  const thisWeek = weekTotal(0);
+  const lastWeek = weekTotal(-1);
+  const diff     = thisWeek - lastWeek;
+  const diffSign = diff >= 0 ? '+' : '';
+  const diffClass= diff >= 0 ? 'gl-diff-up' : 'gl-diff-down';
+
+  // ── Clients actius últims 14 dies ──
+  const clientMap = {};
+  days14.forEach(k => {
+    const entry = log[k];
+    if (!entry) return;
+    Object.entries(entry.clients).forEach(([id, data]) => {
+      if (!clientMap[id]) clientMap[id] = { name: data.name, total: 0, billable: 0, days: 0 };
+      clientMap[id].total    += data.total;
+      clientMap[id].billable += data.billable;
+      clientMap[id].days++;
+    });
+  });
+  const totalPeriod = Object.values(clientMap).reduce((s, c) => s + c.total, 0) || 1;
+  const clientsHtml = Object.values(clientMap)
+    .sort((a, b) => b.total - a.total)
+    .map(c => {
+      const pct = Math.round((c.total / totalPeriod) * 100);
+      return `
+        <div class="gl-client-row">
+          <div class="gl-client-info">
+            <span class="gl-client-name">${c.name}</span>
+            <span class="gl-client-days">${c.days} dia${c.days !== 1 ? 'es' : ''}</span>
+          </div>
+          <div class="gl-client-bar-wrap">
+            <div class="gl-client-bar" style="width:${pct}%"></div>
+          </div>
+          <span class="gl-client-time">${formatTime(c.total)}</span>
+        </div>`;
+    }).join('') || `<p class="gl-empty">Encara no hi ha dades registrades</p>`;
+
+  // ── Dies sense activitat últims 14 dies ──
+  const activeDays   = days14.filter(k => (log[k]?.total || 0) > 0).length;
+  const inactiveDays = 14 - activeDays;
+
+  // ── HTML final ──
+  const html = `
+  <div class="gl-wrap">
+
+    <!-- CAPÇALERA -->
+    <div class="gl-header">
+      <div class="gl-header-sub">Últims 14 dies</div>
+      <div class="gl-header-title">Activitat global</div>
+    </div>
+
+    <!-- KPIs SETMANA -->
+    <div class="gl-section">
+      <div class="gl-kpi-row">
+        <div class="gl-kpi">
+          <div class="gl-kpi-value">${formatTime(thisWeek)}</div>
+          <div class="gl-kpi-label">Aquesta setmana</div>
+        </div>
+        <div class="gl-kpi">
+          <div class="gl-kpi-value">${formatTime(lastWeek)}</div>
+          <div class="gl-kpi-label">Setmana passada</div>
+        </div>
+        <div class="gl-kpi gl-kpi-diff">
+          <div class="gl-kpi-value ${diffClass}">${diffSign}${formatTime(Math.abs(diff))}</div>
+          <div class="gl-kpi-label">Diferència</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BARRES 14 DIES -->
+    <div class="gl-section">
+      <div class="gl-section-title">📊 Hores per dia</div>
+      <div class="gl-legend">
+        <span class="gl-legend-item"><span class="gl-legend-dot gl-legend-total"></span>Total</span>
+        <span class="gl-legend-item"><span class="gl-legend-dot gl-legend-bill"></span>Facturable</span>
+      </div>
+      <div class="gl-bars">${barsHtml}</div>
+      <div class="gl-activity-summary">
+        <span>${activeDays} dies actius</span>
+        <span>${inactiveDays} dies sense activitat</span>
+      </div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div class="gl-section">
+      <div class="gl-section-title">👤 Per client (últims 14 dies)</div>
+      <div class="gl-clients">${clientsHtml}</div>
+    </div>
+
+    <div class="gl-footer">FocusWork v${APP_VERSION}</div>
+  </div>`;
+
+  $('globalReportContent').innerHTML = html;
+  openModal('modalGlobalReport');
+}
+
 async function exportTodayCSV() {
   const allClients = await loadAllClients();
   let csv = "Usuari,Client,Temps,Notes\n";
@@ -1855,7 +2122,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if ($('requestLicenseBtn')) $('requestLicenseBtn').onclick = requestLicense;
   if ($('focusBtn')) $('focusBtn').onclick = showFocus;
   if ($('scheduleBtn')) $('scheduleBtn').onclick = openScheduleModal;
-  if ($('todayBtn')) $('todayBtn').onclick = exportTodayCSV;
+  if ($('todayBtn')) $('todayBtn').onclick = showGlobalReport;
   
   document.querySelectorAll('.activity').forEach(btn => {
     btn.onclick = () => setActivity(btn.dataset.activity);

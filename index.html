@@ -484,18 +484,34 @@
 
   <!-- MODAL: Informe/Report -->
   <div id="modalReport" class="modal-overlay hidden">
-    <div class="modal">
+    <div class="modal modal-report-wide">
       <div class="modal-header">
         <span class="modal-icon">📋</span>
         <h2 class="modal-title">Informe del Projecte</h2>
       </div>
-      <div class="modal-body">
-        <pre id="reportContent" class="report-content"></pre>
+      <div class="modal-body modal-body-report">
+        <div id="reportContent"></div>
       </div>
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('modalReport')">Tancar</button>
         <button class="btn-primary" onclick="copyReport()">📋 Copiar</button>
         <button class="btn-primary" onclick="shareReport()">📤 Compartir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Report Global -->
+  <div id="modalGlobalReport" class="modal-overlay hidden">
+    <div class="modal modal-report-wide">
+      <div class="modal-header">
+        <span class="modal-icon">📊</span>
+        <h2 class="modal-title">Activitat Global</h2>
+      </div>
+      <div class="modal-body modal-body-report">
+        <div id="globalReportContent"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('modalGlobalReport')">Tancar</button>
       </div>
     </div>
   </div>
@@ -1509,23 +1525,342 @@ label.primary {
 
 
 /* ══════════════════════════════════════════════
-   FIX: Footer buttons — mai amb color propi
-   (evita que button[id*="focus"] de buttons-premium
-   pinti el botó Focus de blau)
+   REPORT MODAL — disseny complet
    ══════════════════════════════════════════════ */
-#focusBtn,
-#scheduleBtn,
-#todayBtn {
+.modal-report-wide { max-width: 560px !important; }
+.modal-body-report { padding: 0 !important; background: var(--bg-main) !important; }
+
+.rpt-wrap { font-family: inherit; color: var(--text-primary); }
+
+/* Capçalera */
+.rpt-header {
+  padding: 20px 24px 16px;
+  background: linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05));
+  border-bottom: 1px solid var(--border-color);
+}
+.rpt-header-meta {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.rpt-client-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.rpt-schedule-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(249,115,22,0.15);
+  color: #f97316;
+  border: 1px solid rgba(249,115,22,0.3);
+}
+
+/* Seccions */
+.rpt-section {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+.rpt-section:last-child { border-bottom: none; }
+.rpt-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+/* KPIs */
+.rpt-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.rpt-kpi {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.rpt-kpi-orange {
+  background: rgba(249,115,22,0.1);
+  border-color: rgba(249,115,22,0.25);
+}
+.rpt-kpi-blue {
+  background: rgba(99,179,237,0.1);
+  border-color: rgba(99,179,237,0.25);
+}
+.rpt-kpi-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.rpt-kpi-orange .rpt-kpi-value { color: #f97316; }
+.rpt-kpi-blue    .rpt-kpi-value { color: #63b3ed; }
+.rpt-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+/* Progress */
+.rpt-progress-wrap {
+  height: 6px;
+  background: var(--bg-hover);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.rpt-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+.rpt-progress-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+/* Files info */
+.rpt-rows { display: flex; flex-direction: column; gap: 8px; }
+.rpt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.rpt-row-label { color: var(--text-secondary); font-weight: 500; }
+.rpt-row-value { color: var(--text-primary); font-weight: 600; text-align: right; }
+
+/* Badges */
+.rpt-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-left: 6px;
+}
+.rpt-badge-red    { background: rgba(239,68,68,0.15); color: #f87171; }
+.rpt-badge-yellow { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.rpt-badge-green  { background: rgba(16,185,129,0.15); color: #34d399; }
+
+/* Registre diari */
+.rpt-days { display: flex; flex-direction: column; gap: 6px; }
+.rpt-day-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 9px 12px;
+}
+.rpt-day-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 90px;
+}
+.rpt-day-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.rpt-chip {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  font-variant-numeric: tabular-nums;
+}
+.rpt-chip-orange { background: rgba(249,115,22,0.12); color: #f97316; border-color: rgba(249,115,22,0.25); }
+.rpt-chip-blue   { background: rgba(99,179,237,0.12); color: #63b3ed; border-color: rgba(99,179,237,0.25); }
+.rpt-empty { font-size: 13px; color: var(--text-secondary); font-style: italic; margin: 0; }
+
+/* Activitats */
+.rpt-activities { display: flex; flex-direction: column; gap: 8px; }
+.rpt-act-row { display: flex; align-items: center; gap: 10px; }
+.rpt-act-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); min-width: 80px; }
+.rpt-act-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-hover);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.rpt-act-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  border-radius: 99px;
+}
+.rpt-act-time { font-size: 13px; font-weight: 700; color: var(--text-primary); min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Hores extres */
+.rpt-extras { display: flex; flex-direction: column; gap: 6px; }
+.rpt-extra-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+.rpt-extra-date  { font-weight: 700; color: var(--text-secondary); min-width: 36px; }
+.rpt-extra-desc  { flex: 1; color: var(--text-primary); }
+.rpt-extra-time  { font-weight: 800; color: #f97316; }
+
+/* Notes */
+.rpt-notes {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid #f97316;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+/* Photos count */
+.rpt-photos-count {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(99,179,237,0.12);
+  color: #63b3ed;
+  border: 1px solid rgba(99,179,237,0.25);
+}
+
+/* ══════════════════════════════════════════════
+   GLOBAL REPORT — vista setmanal/mensual
+   ══════════════════════════════════════════════ */
+.gl-wrap { font-family: inherit; color: var(--text-primary); }
+
+.gl-header {
+  padding: 20px 24px 16px;
+  background: linear-gradient(135deg, rgba(99,179,237,0.12), rgba(99,179,237,0.04));
+  border-bottom: 1px solid var(--border-color);
+}
+.gl-header-sub {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-secondary); margin-bottom: 4px;
+}
+.gl-header-title { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+
+.gl-section { padding: 16px 24px; border-bottom: 1px solid var(--border-color); }
+.gl-section:last-of-type { border-bottom: none; }
+.gl-section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px;
+}
+
+/* KPIs setmana */
+.gl-kpi-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.gl-kpi {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 12px; padding: 12px 10px; text-align: center;
+}
+.gl-kpi-value { font-size: 17px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.gl-kpi-label { font-size: 10px; font-weight: 600; color: var(--text-secondary); margin-top: 3px; }
+.gl-diff-up   { color: #34d399 !important; }
+.gl-diff-down { color: #f87171 !important; }
+
+/* Barres */
+.gl-legend { display: flex; gap: 14px; margin-bottom: 12px; }
+.gl-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+.gl-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+.gl-legend-total { background: var(--bg-hover); border: 1px solid var(--border-color); }
+.gl-legend-bill  { background: #f97316; }
+
+.gl-bars {
+  display: flex; align-items: flex-end; gap: 4px;
+  height: 110px; padding-bottom: 28px; position: relative;
+}
+.gl-bar-col {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; position: relative;
+}
+.gl-bar-col.gl-today .gl-bar-label { color: #63b3ed; font-weight: 800; }
+.gl-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; position: relative; }
+.gl-bar-wrap:hover .gl-bar-tooltip { display: block; }
+.gl-bar-bg {
+  width: 100%; height: 82px; display: flex;
+  align-items: flex-end; position: relative;
+}
+.gl-bar-fill {
+  width: 100%; background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 4px 4px 0 0; min-height: 3px;
+  position: relative; transition: height 0.4s ease;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.gl-bar-bill {
+  width: 100%; background: #f97316;
+  border-radius: 0 0 3px 3px; min-height: 2px;
+}
+.gl-bar-tooltip {
+  display: none; position: absolute; bottom: 100%; left: 50%;
+  transform: translateX(-50%); white-space: nowrap;
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 6px; padding: 3px 7px;
+  font-size: 11px; font-weight: 700; color: var(--text-primary);
+  z-index: 10; margin-bottom: 4px; pointer-events: none;
+}
+.gl-bar-label {
+  position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; color: var(--text-secondary); text-align: center;
+  line-height: 1.2; white-space: nowrap;
+}
+.gl-bar-label b { font-size: 10px; }
+.gl-activity-summary {
+  display: flex; justify-content: space-between; margin-top: 6px;
+  font-size: 11px; color: var(--text-secondary);
+}
+
+/* Clients */
+.gl-clients { display: flex; flex-direction: column; gap: 10px; }
+.gl-client-row { display: flex; align-items: center; gap: 10px; }
+.gl-client-info { display: flex; flex-direction: column; min-width: 100px; }
+.gl-client-name { font-size: 13px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+.gl-client-days { font-size: 11px; color: var(--text-secondary); }
+.gl-client-bar-wrap { flex: 1; height: 6px; background: var(--bg-hover); border-radius: 99px; overflow: hidden; }
+.gl-client-bar { height: 100%; background: linear-gradient(90deg, #63b3ed, #90cdf4); border-radius: 99px; }
+.gl-client-time { font-size: 13px; font-weight: 800; color: var(--text-primary); min-width: 58px; text-align: right; font-variant-numeric: tabular-nums; }
+.gl-empty { font-size: 13px; color: var(--text-secondary); font-style: italic; margin: 0; }
+
+.gl-footer { padding: 12px 24px; font-size: 11px; color: var(--text-secondary); text-align: center; opacity: 0.5; }
+
+/* ══════════════════════════════════════════════
+   FIX: Footer buttons — mai amb color propi
+   ══════════════════════════════════════════════ */
+#focusBtn, #scheduleBtn, #todayBtn {
   background: var(--bg-hover) !important;
   color: var(--text-secondary) !important;
   border: 1px solid var(--border-color) !important;
   box-shadow: none !important;
   transform: none !important;
 }
-
-#focusBtn:hover,
-#scheduleBtn:hover,
-#todayBtn:hover {
+#focusBtn:hover, #scheduleBtn:hover, #todayBtn:hover {
   background: var(--bg-card) !important;
   color: var(--text-primary) !important;
 }

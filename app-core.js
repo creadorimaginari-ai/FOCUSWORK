@@ -239,6 +239,7 @@ let state = {
   focusSchedule: { enabled: false, start: "09:00", end: "17:00" },
   autoDriveBackup: false,
   lastBackupDate: null,
+  globalLog: {},
 };
 
 async function loadState() {
@@ -632,6 +633,16 @@ async function tick() {
   client.activities[state.currentActivity] =
     (client.activities[state.currentActivity] || 0) + elapsedSeconds;
 
+  // Registre diari (per desglossar per dies al report)
+  client.dailyLog = client.dailyLog || {};
+  const todayKey = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  if (!client.dailyLog[todayKey]) {
+    client.dailyLog[todayKey] = { total: 0, billable: 0 };
+  }
+  client.dailyLog[todayKey].total += elapsedSeconds;
+  client.activities[state.currentActivity] =
+    (client.activities[state.currentActivity] || 0) + elapsedSeconds;
+
   // Temps facturable exacte
   const billableElapsed = calculateBillableSeconds(
     state.lastTick - elapsedSeconds * 1000,
@@ -640,6 +651,22 @@ async function tick() {
 
   client.billableTime =
     (client.billableTime || 0) + billableElapsed;
+
+  client.dailyLog[todayKey].billable += billableElapsed;
+
+  // Registre global (per vista setmanal/mensual de tota l'activitat)
+  state.globalLog = state.globalLog || {};
+  if (!state.globalLog[todayKey]) {
+    state.globalLog[todayKey] = { total: 0, billable: 0, clients: {} };
+  }
+  state.globalLog[todayKey].total    += elapsedSeconds;
+  state.globalLog[todayKey].billable += billableElapsed;
+  const glc = state.globalLog[todayKey].clients;
+  if (!glc[state.currentClientId]) {
+    glc[state.currentClientId] = { total: 0, billable: 0, name: client.name };
+  }
+  glc[state.currentClientId].total    += elapsedSeconds;
+  glc[state.currentClientId].billable += billableElapsed;
 
   state.focus[state.currentActivity] =
     (state.focus[state.currentActivity] || 0) + billableElapsed;
