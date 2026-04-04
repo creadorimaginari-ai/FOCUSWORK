@@ -1,6 +1,7 @@
 /* ===============================
-   BOTONES - SOBRESCRITURA FORZADA
-   Tema taronja FocusWork
+   BOTONES FOCUSWORK — TEMA TARONJA
+   Només selectors específics per ID.
+   Cap :first-child ni :last-child genèric.
    =============================== */
 
 :root {
@@ -9,11 +10,9 @@
   --fw-orange-glow: rgba(249, 115, 22, 0.4);
 }
 
-/* Botó principal (Nou encàrrec) */
-.grid.centered button:first-child,
-#clientMainButtons button:first-child,
-button[id*="new"], button[id*="New"],
-#newClientBtn, #newClient {
+/* ── Botó "Nou encàrrec" (circular) ── */
+#newClientBtn,
+#newClient {
   background: var(--fw-orange) !important;
   color: #ffffff !important;
   border: none !important;
@@ -22,69 +21,69 @@ button[id*="new"], button[id*="New"],
   border-radius: 9999px !important;
   position: relative !important;
   overflow: hidden !important;
+  animation: neonPulseOrange 2.5s ease-in-out infinite !important;
 }
-
-.grid.centered button:first-child:hover,
-#clientMainButtons button:first-child:hover,
-button[id*="new"]:hover, button[id*="New"]:hover,
 #newClientBtn:hover, #newClient:hover {
   background: var(--fw-orange-dark) !important;
   box-shadow: 0 10px 28px var(--fw-orange-glow) !important;
   transform: translateY(-2px) !important;
 }
+@keyframes neonPulseOrange {
+  0%, 100% { box-shadow: 0 0 10px var(--fw-orange-glow); }
+  50%       { box-shadow: 0 0 20px rgba(249,115,22,0.7); }
+}
 
-/* Botó secundari (Revisar encàrrecs) */
-.grid.centered button:last-child,
-#clientMainButtons button:last-child,
-button[id*="focus"], button[id*="Focus"],
-button[id*="priority"], button[id*="Priority"],
+/* ── Botó "Revisar encàrrecs" → TARONJA ── */
 #focusPriorityBtn {
-  background: rgba(249, 115, 22, 0.15) !important;
-  color: #f97316 !important;
-  border: 1px solid rgba(249, 115, 22, 0.35) !important;
-  box-shadow: none !important;
-  font-weight: 700 !important;
-  border-radius: 9999px !important;
-}
-
-.grid.centered button:last-child:hover,
-#clientMainButtons button:last-child:hover,
-button[id*="focus"]:hover, button[id*="Focus"]:hover,
-button[id*="priority"]:hover, button[id*="Priority"]:hover,
-#focusPriorityBtn:hover {
-  background: rgba(249, 115, 22, 0.25) !important;
-  border-color: rgba(249, 115, 22, 0.6) !important;
-  transform: translateY(-2px) !important;
-}
-
-/* Classe primary */
-button.primary, .primary {
   background: var(--fw-orange) !important;
   color: #ffffff !important;
   border: none !important;
-  box-shadow: 0 6px 20px var(--fw-orange-glow) !important;
+  box-shadow: 0 4px 14px var(--fw-orange-glow) !important;
+  font-weight: 700 !important;
   border-radius: 9999px !important;
 }
-
-button.primary:hover, .primary:hover {
+#focusPriorityBtn:hover {
   background: var(--fw-orange-dark) !important;
-  box-shadow: 0 10px 28px var(--fw-orange-glow) !important;
-  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px var(--fw-orange-glow) !important;
+  transform: translateY(-1px) !important;
 }
 
-/* Efecte brillo */
-.grid.centered button::before,
-#clientMainButtons button::before {
-  content: "" !important;
-  position: absolute !important;
-  top: 0 !important; left: -100% !important;
-  width: 100% !important; height: 100% !important;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent) !important;
-  transition: left 0.5s ease !important;
-  pointer-events: none !important;
+/* ── Classe .primary — botons d'acció principals ── */
+button.primary {
+  background: var(--fw-orange) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px var(--fw-orange-glow) !important;
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+}
+button.primary:hover {
+  background: var(--fw-orange-dark) !important;
+  box-shadow: 0 6px 20px var(--fw-orange-glow) !important;
+  transform: translateY(-1px) !important;
 }
 
-.grid.centered button:hover::before,
-#clientMainButtons button:hover::before {
-  left: 100% !important;
+/* ── Labels que fan de botó (Afegir foto / Afegir arxiu) → TARONJA ── */
+label.btn-label {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  padding: 18px 16px !important;
+  border-radius: 9999px !important;
+  background: var(--fw-orange) !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px var(--fw-orange-glow) !important;
+  box-sizing: border-box !important;
+  transition: background 0.2s, box-shadow 0.2s !important;
+}
+label.btn-label:hover {
+  background: var(--fw-orange-dark) !important;
+  box-shadow: 0 6px 20px var(--fw-orange-glow) !important;
+  transform: translateY(-1px) !important;
 }

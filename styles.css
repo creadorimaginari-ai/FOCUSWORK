@@ -1629,3 +1629,92 @@ textarea:focus-visible {
     z-index: 10010;
   }
 }
+
+/* ══════════════════════════════════════════════
+   NEUTRALITZAR EFECTES NO DESITJATS
+   Tots els botons que NO han de ser taronja ni
+   tenir animació — cobreix els selectors genèrics
+   de buttons-onlyfora i buttons-premium
+   ══════════════════════════════════════════════ */
+
+/* Footer: Focus, Activar Horari, Report */
+#focusBtn, #scheduleBtn, #todayBtn {
+  background: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+#focusBtn:hover, #scheduleBtn:hover, #todayBtn:hover {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  transform: none !important;
+}
+
+/* Hores extres: Afegir hores + Veure resum → TARONJA com la resta d'accions */
+#addExtraHoursBtn, #viewExtraHoursBtn {
+  background: var(--fw-orange, #f97316) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(249,115,22,0.35) !important;
+  animation: none !important;
+  transform: none !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+}
+#addExtraHoursBtn:hover, #viewExtraHoursBtn:hover {
+  background: #ea580c !important;
+  box-shadow: 0 6px 20px rgba(249,115,22,0.5) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Tanca client / botó de canvi → neutre */
+#closeClientBtn, #changeClientBtn, #exitClientBtn {
+  background: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* Llicència: Carregar + Comprar */
+.version-btn-secondary {
+  background: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+.version-btn-primary {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px var(--fw-orange-glow, rgba(249,115,22,0.35)) !important;
+  animation: none !important;
+}
+
+/* Labels botó (Afegir foto / Afegir arxiu) → TARONJA */
+label.btn-label {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  padding: 18px 16px !important;
+  border-radius: 9999px !important;
+  background: var(--fw-orange, #f97316) !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 4px 14px rgba(249,115,22,0.35) !important;
+  transition: background 0.2s, box-shadow 0.2s !important;
+}
+label.btn-label:hover {
+  background: #ea580c !important;
+  box-shadow: 0 6px 20px rgba(249,115,22,0.5) !important;
+  transform: translateY(-1px) !important;
+}
