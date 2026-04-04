@@ -11,6 +11,9 @@ window._showNewOnboarding = function() {
 
   const SLIDES = [
     {
+      isLangStep: true,
+    },
+    {
       emoji: '⏱️',
       title: 'Controla el teu temps',
       color: 'from #f97316 to #ea580c',
@@ -60,6 +63,26 @@ window._showNewOnboarding = function() {
   `;
 
   function buildSlide(s, idx) {
+    if (s.isLangStep) {
+      return `
+        <div class="fw-slide${idx===0?' active':''}" data-idx="${idx}" style="width:100%;padding:40px 28px 24px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:16px;">🌐</div>
+          <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:8px;">FocusWork</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:32px;">Tria el teu idioma · Elige tu idioma · Choose your language</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <button class="fw-lang-btn" data-lang="ca" onclick="window._fwSetLang('ca')">
+              🇪🇸 <span style="margin-left:4px;">Català</span>
+            </button>
+            <button class="fw-lang-btn" data-lang="es" onclick="window._fwSetLang('es')">
+              🇪🇸 <span style="margin-left:4px;">Castellano</span>
+            </button>
+            <button class="fw-lang-btn" data-lang="en" onclick="window._fwSetLang('en')">
+              🇬🇧 <span style="margin-left:4px;">English</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
     if (s.isNameStep) {
       return `
         <div class="fw-slide${idx===0?' active':''}" data-idx="${idx}" style="width:100%;padding:32px 28px 20px;">
@@ -99,6 +122,7 @@ window._showNewOnboarding = function() {
   }
 
   const gradients = [
+    'linear-gradient(160deg,#1e293b,#0f172a)',
     'linear-gradient(160deg,#f97316,#ea580c)',
     'linear-gradient(160deg,#8b5cf6,#6d28d9)',
     'linear-gradient(160deg,#0ea5e9,#0369a1)',
@@ -134,6 +158,23 @@ window._showNewOnboarding = function() {
   document.body.appendChild(overlay);
 
   // ── Navegació ────────────────────────────────────────────────────────────────
+  // Funció selecció d'idioma
+  window._fwSetLang = function(lang) {
+    if (typeof applyLang === 'function') applyLang(lang);
+    // Marcar botó actiu
+    overlay.querySelectorAll('.fw-lang-btn').forEach(b => {
+      b.style.background = b.dataset.lang === lang
+        ? 'rgba(249,115,22,0.9)'
+        : 'rgba(255,255,255,0.1)';
+      b.style.borderColor = b.dataset.lang === lang
+        ? '#f97316'
+        : 'rgba(255,255,255,0.2)';
+      b.style.fontWeight = b.dataset.lang === lang ? '800' : '600';
+    });
+    // Avançar al següent slide després de 400ms
+    setTimeout(() => window._fwNextSlide(), 400);
+  };
+
   window._fwGoSlide = function(idx) {
     const slides = overlay.querySelectorAll('.fw-slide');
     const dots   = overlay.querySelectorAll('.fw-dot');

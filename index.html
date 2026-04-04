@@ -72,7 +72,7 @@
         <path d="M15 18l-6-6 6-6"/>
       </svg>
     </button>
-    <h2 class="overview-title">📊 Els meus projectes</h2>
+    <h2 class="overview-title" data-i18n="els_meus_projectes">📊 Els meus projectes</h2>
   </div>
   
   <!-- Filtres -->
@@ -81,19 +81,19 @@
       Tots <span class="filter-badge" id="filterAllCount">0</span>
     </button>
     <button class="filter-btn" data-filter="in_progress">
-      🔵 En progrés <span class="filter-badge" id="filterProgressCount">0</span>
+      🔵 <span data-i18n="en_progres_filter">En progrés</span> <span class="filter-badge" id="filterProgressCount">0</span>
     </button>
     <button class="filter-btn" data-filter="waiting_feedback">
-      ✉️ Prova enviada <span class="filter-badge" id="filterFeedbackCount">0</span>
+      ✉️ <span data-i18n="prova_enviada_filter">Prova enviada</span> <span class="filter-badge" id="filterFeedbackCount">0</span>
     </button>
     <button class="filter-btn" data-filter="waiting_material">
-      🟡 Esperant <span class="filter-badge" id="filterWaitingCount">0</span>
+      🟡 <span data-i18n="esperant_filter">Esperant</span> <span class="filter-badge" id="filterWaitingCount">0</span>
     </button>
     <button class="filter-btn" data-filter="paused">
-      ⸚️ Pausats <span class="filter-badge" id="filterPausedCount">0</span>
+      ⸚️ <span data-i18n="pausats_filter">Pausats</span> <span class="filter-badge" id="filterPausedCount">0</span>
     </button>
     <button class="filter-btn" data-filter="urgent">
-      🔴 Urgents <span class="filter-badge" id="filterUrgentCount">0</span>
+      🔴 <span data-i18n="urgents_filter">Urgents</span> <span class="filter-badge" id="filterUrgentCount">0</span>
     </button>
   </div>
   
@@ -142,8 +142,8 @@
       <!-- FECHA DE ENTREGA -->
       <div id="deliveryDateBox" class="delivery-info hidden"></div>
 <div id="clientFixedButtons" class="grid centered" style="margin-top: 12px;">
-  <button id="historyBtn">📂 Clients tancats</button>
-  <button id="closeClient" class="danger">✅ Tancar client</button>
+  <button id="historyBtn" data-i18n="clients_tancats">📂 Clients tancats</button>
+  <button id="closeClient" class="danger" data-i18n="tancar_client">✅ Tancar client</button>
 </div>
     
 
@@ -156,7 +156,7 @@
         <textarea 
           id="clientWorkpad" 
           class="workpad-area" 
-          placeholder="Apunts, tasques pendents, detalls del projecte…"
+          placeholder="Apunts, tasques pendents, detalls del projecte…" data-i18n-ph="ph_notes"
           rows="4"
         ></textarea>
       </div>
@@ -170,7 +170,7 @@
         <textarea
           id="taskUrgent"
           class="workpad-area urgent"
-          placeholder="Tasques urgents, bloquejants..."
+          placeholder="Tasques urgents, bloquejants..." data-i18n-ph="ph_urgent"
           rows="2"
         ></textarea>
 
@@ -267,9 +267,9 @@
     <!-- BACKUP Y GESTIÓN -->
     <section class="panel panel-backup">
       <div class="grid">
-        <button id="exportWorkBtn">💾 Guardar sessió</button>
-        <button id="importWorkBtn">📂 Carregar treball</button>
-        <button id="exportAllBtn" class="full-width">📦 Còpia de seguretat</button>
+        <button id="exportWorkBtn" data-i18n="guardar_sessio">💾 Guardar sessió</button>
+        <button id="importWorkBtn" data-i18n="carregar_treball">📂 Carregar treball</button>
+        <button id="exportAllBtn" class="full-width" data-i18n="copia_seguretat">📦 Còpia de seguretat</button>
         <button onclick="openAdminClientsModal()" class="full-width btn-danger-soft">🗂️ Gestió massiva de clients</button>
       </div>
     </section>
@@ -283,8 +283,8 @@
 
     <!-- FOOTER -->
     <footer class="footer">
-      <button id="focusBtn" class="footer-btn">🎯 Focus</button>
-      <button id="scheduleBtn" class="footer-btn">⏰ Activar Horari</button>
+      <button id="focusBtn" class="footer-btn" data-i18n="focus_btn">🎯 Focus</button>
+      <button id="scheduleBtn" class="footer-btn" data-i18n="activar_horari">⏰ Activar Horari</button>
       <button id="todayBtn" class="footer-btn">📄 Report</button>
     </footer>
 
@@ -805,6 +805,7 @@
 
     <!-- ✅ SCRIPTS EN L'ORDRE CORRECTE -->
 <!-- Scripts de FocusWork -->
+<script src="i18n.js"></script>
 <script src="app-core.js"></script>
 <script src="onboarding.js"></script>
 <script src="app-project-states-CORREGIT.js"></script>
