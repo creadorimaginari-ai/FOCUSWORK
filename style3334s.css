@@ -263,59 +263,54 @@ button:hover,
   border-color: rgba(148, 163, 184, 0.2);
 }
 
-/* Botón Nou – reborde neón verde */
+/* Botón Nou – reborde neón taronja */
 #newClient {
-  border: 1px solid rgba(16, 185, 129, 0.6);
+  border: 1px solid rgba(249, 115, 22, 0.5);
   box-shadow:
-    0 0 8px rgba(16, 185, 129, 0.4),
-    inset 0 0 6px rgba(16, 185, 129, 0.2);
+    0 0 8px rgba(249, 115, 22, 0.3),
+    inset 0 0 6px rgba(249, 115, 22, 0.1);
 }
 
-@keyframes neonPulseGreen {
-  0%, 100% {
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 16px rgba(16, 185, 129, 0.8);
-  }
+@keyframes neonPulseOrangeBtn {
+  0%, 100% { box-shadow: 0 0 8px rgba(249, 115, 22, 0.3); }
+  50%       { box-shadow: 0 0 16px rgba(249, 115, 22, 0.6); }
 }
 
 #newClient {
-  animation: neonPulseGreen 2.5s ease-in-out infinite;
+  animation: neonPulseOrangeBtn 2.5s ease-in-out infinite;
 }
-
 
 #newClient:hover {
-  border-color: rgba(16, 185, 129, 0.9);
+  border-color: rgba(249, 115, 22, 0.8);
   box-shadow:
-    0 0 14px rgba(16, 185, 129, 0.7),
-    inset 0 0 8px rgba(16, 185, 129, 0.3);
+    0 0 14px rgba(249, 115, 22, 0.6),
+    inset 0 0 8px rgba(249, 115, 22, 0.2);
 }
 
 
 /* ===============================
-   BOTONES ACTIVOS
+   BOTONS ACTIUS — TARONJA
    =============================== */
 
 .activity.active,
 .activity.primary {
-  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  background: linear-gradient(135deg, #f97316, #ea580c) !important;
   color: #ffffff;
-  border-color: rgba(59, 130, 246, 0.4);
+  border-color: rgba(249, 115, 22, 0.4);
   box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.2),
-    0 8px 24px rgba(37, 99, 235, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+    0 0 0 3px rgba(249, 115, 22, 0.15),
+    0 8px 24px rgba(234, 88, 12, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
 }
 
 .activity.active:hover,
 .activity.primary:hover {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  background: linear-gradient(135deg, #ea580c, #c2410c) !important;
   box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.3),
-    0 12px 32px rgba(37, 99, 235, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 0 0 3px rgba(249, 115, 22, 0.25),
+    0 12px 32px rgba(234, 88, 12, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* ✅ ELIMINAR OUTLINE dels botons primaris específicament */
@@ -344,9 +339,9 @@ button:hover,
 #cameraBtn,
 #setDeliveryDateBtn,
 #activateFull {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.6), rgba(30, 64, 175, 0.6)) !important;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.25), rgba(234, 88, 12, 0.2)) !important;
   backdrop-filter: blur(10px);
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(249, 115, 22, 0.35);
   grid-column: span 2;
   margin-top: 12px;
 }
@@ -354,16 +349,16 @@ button:hover,
 #cameraBtn:hover,
 #setDeliveryDateBtn:hover,
 #activateFull:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(30, 64, 175, 0.8)) !important;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.4), rgba(234, 88, 12, 0.35)) !important;
 }
 
 #cameraBtn.active,
 #setDeliveryDateBtn.active {
-  background: linear-gradient(135deg, #3b82f6, #1e40af) !important;
+  background: linear-gradient(135deg, #f97316, #ea580c) !important;
   box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.2),
-    0 8px 24px rgba(30, 64, 175, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 0 0 3px rgba(249, 115, 22, 0.2),
+    0 8px 24px rgba(234, 88, 12, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* ===============================
@@ -379,31 +374,23 @@ button:hover,
   grid-column: auto;
 }
 
-/* Botón Tancar – verde degradado permanente */
+/* Botón Tancar – ambre fosc elegant */
 #closeClient {
-  background: linear-gradient(135deg, #10b981, #059669);
-  border-color: rgba(16, 185, 129, 0.4);
-  color: #ffffff;
-  box-shadow:
-    0 0 0 3px rgba(16, 185, 129, 0.15),
-    0 8px 24px rgba(5, 150, 105, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.25);
+  color: #fbbf24;
+  box-shadow: none;
 }
 #closeClient:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  box-shadow:
-    0 0 0 3px rgba(16, 185, 129, 0.25),
-    0 12px 32px rgba(5, 150, 105, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.4);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.15);
 }
 .danger.active,
 #closeClient.active {
-  background: linear-gradient(135deg, #10b981, #059669);
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow:
-    0 0 0 3px rgba(16, 185, 129, 0.2),
-    0 8px 24px rgba(5, 150, 105, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.3);
+  box-shadow: none;
 }
 
 /* ===============================
