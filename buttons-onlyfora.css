@@ -40,7 +40,7 @@
   border: none !important;
   box-shadow: 0 4px 14px var(--fw-orange-glow) !important;
   font-weight: 700 !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
 }
 #focusPriorityBtn:hover {
   background: var(--fw-orange-dark) !important;
@@ -54,7 +54,7 @@ button.primary {
   color: #ffffff !important;
   border: none !important;
   box-shadow: 0 4px 14px var(--fw-orange-glow) !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   font-weight: 700 !important;
 }
 button.primary:hover {
@@ -71,7 +71,7 @@ label.btn-label {
   gap: 8px !important;
   width: 100% !important;
   padding: 18px 16px !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   background: var(--fw-orange) !important;
   color: #ffffff !important;
   font-size: 16px !important;
