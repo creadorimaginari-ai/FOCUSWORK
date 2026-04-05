@@ -308,7 +308,7 @@ button:active,
 .activity.primary,
 button.primary {
   background: var(--color-primary);
-  border-radius: var(--radius-full);
+  border-radius: 16px;
   box-shadow: 0 4px 14px rgba(249,115,22,0.35);
   color: white;
   border-color: var(--color-primary);
@@ -328,9 +328,10 @@ button.primary:hover {
 #cameraBtn,
 #setDeliveryDateBtn,
 #activateFull {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: var(--color-primary);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+  border-radius: 16px;
   grid-column: span 2;
   margin-top: 12px;
 }
@@ -338,8 +339,8 @@ button.primary:hover {
 #cameraBtn:hover,
 #setDeliveryDateBtn:hover,
 #activateFull:hover {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: var(--color-primary);
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
 }
 
 #cameraBtn.active,
