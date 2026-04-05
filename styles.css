@@ -1810,7 +1810,7 @@ label.btn-label:hover {
   cursor: pointer;
   text-align: center;
   padding: 18px 16px;
-  border-radius: var(--radius-full);
+  border-radius: 16px;
   background: var(--color-primary);
   color: white;
   font-size: 16px;
