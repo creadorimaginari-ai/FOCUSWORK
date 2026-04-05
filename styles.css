@@ -1369,7 +1369,7 @@ textarea:focus-visible {
   padding: 13px 8px !important;
   font-size: 13px !important;
   font-weight: 600 !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   background: var(--bg-hover) !important;
   color: var(--text-secondary) !important;
   border: 1px solid var(--border-color) !important;
@@ -1391,7 +1391,7 @@ textarea:focus-visible {
   background: rgba(239, 68, 68, 0.1) !important;
   border: 1px solid rgba(239, 68, 68, 0.25) !important;
   color: #f87171 !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   box-shadow: none !important;
 }
 .btn-danger-soft:hover {
@@ -1446,7 +1446,7 @@ textarea:focus-visible {
   padding: 13px 16px !important;
   font-size: 14px !important;
   font-weight: 600 !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   text-align: center;
   cursor: pointer;
 }
@@ -1484,7 +1484,7 @@ textarea:focus-visible {
   background: var(--bg-hover) !important;
   color: var(--text-secondary) !important;
   border: 1px solid var(--border-color) !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   box-shadow: none !important;
@@ -1497,7 +1497,7 @@ textarea:focus-visible {
   background: var(--bg-hover) !important;
   color: var(--text-secondary) !important;
   border: 1px solid var(--border-color) !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   font-weight: 600 !important;
 }
 
@@ -1661,7 +1661,7 @@ textarea:focus-visible {
   animation: none !important;
   transform: none !important;
   font-weight: 700 !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
 }
 #addExtraHoursBtn:hover, #viewExtraHoursBtn:hover {
   background: #ea580c !important;
@@ -1702,7 +1702,7 @@ label.btn-label {
   gap: 8px !important;
   width: 100% !important;
   padding: 18px 16px !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   background: var(--fw-orange, #f97316) !important;
   color: #ffffff !important;
   font-size: 16px !important;
@@ -1744,7 +1744,7 @@ label.btn-label:hover {
   border: 1px solid var(--border-color) !important;
   box-shadow: none !important;
   font-weight: 600 !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   animation: none !important;
   transform: none !important;
 }
@@ -1761,7 +1761,7 @@ label.btn-label:hover {
   border: 1px solid rgba(148,163,184,0.12) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04) !important;
   font-weight: 600 !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   animation: none !important;
   backdrop-filter: blur(4px);
 }
@@ -1778,7 +1778,7 @@ label.btn-label:hover {
   border: 1px solid rgba(148,163,184,0.12) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04) !important;
   font-weight: 600 !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   animation: none !important;
 }
 #exportAllBtn:hover {
@@ -1792,7 +1792,7 @@ label.btn-label:hover {
   background: rgba(239,68,68,0.06) !important;
   border: 1px solid rgba(239,68,68,0.18) !important;
   color: rgba(248,113,113,0.85) !important;
-  border-radius: 9999px !important;
+  border-radius: 16px !important;
   box-shadow: none !important;
   animation: none !important;
 }
