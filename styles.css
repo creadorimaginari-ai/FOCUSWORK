@@ -223,7 +223,7 @@ button,
 .activity,
 .primary,
 .danger {
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-lg);
   padding: 18px 16px;
   background: var(--bg-card);
   color: var(--text-secondary);
