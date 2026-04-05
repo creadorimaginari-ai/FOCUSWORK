@@ -1801,3 +1801,34 @@ label.btn-label:hover {
   border-color: rgba(239,68,68,0.3) !important;
   color: #f87171 !important;
 }
+
+/* ===============================
+   FIX: Label buttons (foto/arxiu)
+   =============================== */
+.btn-label-primary {
+  display: block;
+  cursor: pointer;
+  text-align: center;
+  padding: 18px 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(249,115,22,0.35);
+  transition: background 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.btn-label-primary:hover {
+  background: var(--color-primary-hover);
+  box-shadow: 0 6px 18px rgba(249,115,22,0.45);
+}
+
+/* FIX: Revisar encàrrecs - assegurar taronja sobre regla base */
+#focusPriorityBtn.primary,
+button.primary.full-width {
+  background: var(--color-primary) !important;
+  color: white !important;
+  border-color: var(--color-primary) !important;
+}
