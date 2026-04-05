@@ -1290,9 +1290,9 @@ textarea:focus-visible {
   letter-spacing: -0.5px;
   background: #1e40af !important;
   color: white !important;
-  border: 1px solid #3b82f6 !important;
+  border: 1px solid rgba(249,115,22,0.4) !important;
 }
-.etb-zoom-btn:active { background: #1d4ed8 !important; transform: scale(0.92); }
+.etb-zoom-btn:active { background: #c2410c !important; transform: scale(0.92); }
 
 /* Indicador zoom actual */
 #zoomIndicator {
@@ -1831,4 +1831,59 @@ button.primary.full-width {
   background: var(--color-primary) !important;
   color: white !important;
   border-color: var(--color-primary) !important;
+}
+
+/* ===============================
+   FIX: ELIMINAR BLAU - TOT TARONJA
+   =============================== */
+
+/* Taronja fosc com a segon color (substitueix blau/cyan) */
+:root {
+  --color-secondary: #c2410c;       /* taronja fosc */
+  --color-secondary-hover: #9a3412; /* taronja molt fosc */
+}
+
+/* accent-color (checkboxes, inputs) → taronja */
+* { accent-color: var(--color-primary) !important; }
+
+/* Botons zoom amb blau hardcoded */
+.etb-zoom-btn {
+  border: 1px solid rgba(249,115,22,0.4) !important;
+}
+.etb-zoom-btn:active {
+  background: var(--color-primary-hover) !important;
+}
+
+/* ── #historyBtn "Clients tancats" → taronja fosc ── */
+#historyBtn {
+  background: var(--color-secondary) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(194,65,12,0.35) !important;
+}
+#historyBtn:hover {
+  background: var(--color-secondary-hover) !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+/* ── #closeClient "Tancar client" → taronja primari ── */
+#closeClient {
+  background: var(--color-primary) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(249,115,22,0.4) !important;
+}
+#closeClient:hover {
+  background: var(--color-primary-hover) !important;
+}
+
+/* ── "Revisar encàrrecs" ja té primary, però per si de cas ── */
+#focusPriorityBtn {
+  background: var(--color-primary) !important;
+  color: white !important;
+  border: none !important;
+}
+#focusPriorityBtn:hover {
+  background: var(--color-primary-hover) !important;
 }
